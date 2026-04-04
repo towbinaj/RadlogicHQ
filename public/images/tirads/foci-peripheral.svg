@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150">
+  <ellipse cx="100" cy="75" rx="50" ry="45" fill="#3a4a5a" stroke="#60a5fa" stroke-width="2.5"/>
+  <!-- Peripheral calcifications along the rim -->
+  <circle cx="62" cy="55" r="2.5" fill="#e2e8f0"/>
+  <circle cx="54" cy="72" r="2.5" fill="#e2e8f0"/>
+  <circle cx="58" cy="90" r="2.5" fill="#e2e8f0"/>
+  <circle cx="75" cy="108" r="2.5" fill="#e2e8f0"/>
+  <circle cx="100" cy="118" r="2.5" fill="#e2e8f0"/>
+  <circle cx="125" cy="108" r="2.5" fill="#e2e8f0"/>
+  <circle cx="142" cy="90" r="2.5" fill="#e2e8f0"/>
+  <circle cx="148" cy="72" r="2.5" fill="#e2e8f0"/>
+  <circle cx="138" cy="55" r="2.5" fill="#e2e8f0"/>
+  <circle cx="120" cy="38" r="2.5" fill="#e2e8f0"/>
+  <circle cx="80" cy="38" r="2.5" fill="#e2e8f0"/>
+  <circle cx="70" cy="100" r="2.5" fill="#e2e8f0"/>
+  <circle cx="130" cy="100" r="2.5" fill="#e2e8f0"/>
+</svg>

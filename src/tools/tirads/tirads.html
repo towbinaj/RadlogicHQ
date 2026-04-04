@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACR TI-RADS Calculator | RadlogicHQ</title>
+  <meta name="description" content="ACR TI-RADS thyroid nodule risk stratification calculator with structured report output for PowerScribe and RadAI.">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-header__logo">RadlogicHQ</a>
+      <nav class="site-header__nav">
+        <a href="/">All Tools</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="tool-hero">
+      <h1>ACR TI-RADS Calculator</h1>
+      <p class="tool-hero__desc">Thyroid Imaging Reporting and Data System &mdash; risk stratification for thyroid nodules based on ultrasound features.</p>
+      <div class="tool-hero__summary">
+        <div class="summary-badge">
+          <span class="summary-badge__label">Total Score</span>
+          <span class="summary-badge__value" id="total-score">0</span>
+        </div>
+        <div class="summary-badge summary-badge--level">
+          <span class="summary-badge__label">TI-RADS Level</span>
+          <span class="summary-badge__value" id="tirads-level" data-level="0">--</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-layout">
+      <div class="tool-layout__input" id="tool-input">
+        <!-- Form sections rendered by renderer.js -->
+      </div>
+      <div class="tool-layout__output">
+        <report-output></report-output>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./tirads.js"></script>
+</body>
+</html>

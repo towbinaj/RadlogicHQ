@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150">
+  <ellipse cx="100" cy="75" rx="50" ry="45" fill="#3a4a5a" stroke="#60a5fa" stroke-width="2.5"/>
+  <!-- Large bright calcifications -->
+  <circle cx="85" cy="65" r="6" fill="#e2e8f0"/>
+  <circle cx="115" cy="80" r="7" fill="#e2e8f0"/>
+  <!-- Acoustic shadows below each -->
+  <path d="M 79,71 L 75,100 L 95,100 L 91,71" fill="#1a2030" opacity="0.5"/>
+  <path d="M 108,87 L 104,115 L 126,115 L 122,87" fill="#1a2030" opacity="0.5"/>
+</svg>
