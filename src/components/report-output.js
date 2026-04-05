@@ -353,7 +353,7 @@ export class ReportOutput extends HTMLElement {
     }
 
     if (allAvailable.length === 0 && placedIds.size > 0) {
-      palette.innerHTML = '<div class="pill-palette__title">All fields placed</div>';
+      palette.innerHTML = '<div class="pill-palette__title">All fields placed</div><div class="pill-palette__group"><button class="pill-palette__add-field">+ New field</button></div>';
     } else {
       const findings = allAvailable.filter((p) => p.category === 'finding');
       const scores = allAvailable.filter((p) => p.category === 'score');
