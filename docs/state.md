@@ -56,10 +56,15 @@
 
 - **Hosting**: Not yet deployed
 - **Backend**: None (pure static site)
-- **Repo**: Not yet created
+- **Repo**: `github.com/towbinaj/RadlogicHQ` (public, branch `main`)
 - **Build**: Vite 8 MPA, `npm run build` → `dist/`
 
 ## Feature Backlog
+
+### Database / Backend
+- [ ] **Backend database** — replace `src/data/tools-registry.js` with a real database (Supabase or similar). Currently the tools registry, labels, and metadata are hardcoded in a JS file acting as a local DB. When migrated, update the landing page and any search/filter to fetch from API instead of importing the static file.
+- [ ] **Label management UI** — admin interface to add/edit/remove body parts, modalities, and specialties labels. Currently labels are defined as arrays in `tools-registry.js` (`BODY_PARTS`, `MODALITIES`, `SPECIALTIES`). New labels must be added manually to those arrays. Need a UI or at minimum a config file that's easier to edit than code.
+- [ ] **Tool metadata CRUD** — ability to add/edit tool registry entries (name, description, labels, status) without editing code
 
 ### Tools to Build
 - [ ] Bone Age Calculator (Greulich & Pyle) — date inputs, atlas image browser, statistical analysis
@@ -73,6 +78,7 @@
 - [ ] `<toggle-group>` component — binary toggle buttons (Male/Female)
 - [ ] `<date-input>` component — date picker with label
 - [ ] Computed field support in engine — auto-calculate values from other inputs (e.g., chronologic age from DOB + study date)
+- [ ] Landing page search/filter/sort by labels (body part, modality, specialty)
 - [ ] Template import/export as JSON for sharing between colleagues
 - [ ] Print stylesheet for report output
 - [ ] Dark/light mode toggle (currently dark-only)

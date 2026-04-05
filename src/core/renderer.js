@@ -9,24 +9,178 @@
  * @param {Object} definition - Tool definition
  * @param {Function} onChange - Called with (inputId, value) on every change
  */
-export function renderToolForm(container, definition, onChange) {
+/**
+ * @param {HTMLElement} container
+ * @param {Object} definition
+ * @param {Function} onChange - (inputId, value) on every input change
+ * @param {Object} [options]
+ * @param {Function} [options.onReorder] - (newSectionOrder: string[]) called when sections are dragged
+ */
+export function renderToolForm(container, definition, onChange, options = {}) {
   container.innerHTML = '';
 
   const imageBase = `/images/${definition.id}/`;
 
-  // Scored sections
-  for (const section of definition.sections) {
-    const sectionEl = createScoredSection(section, onChange, imageBase);
-    container.appendChild(sectionEl);
+  // Primary inputs first
+  if (definition.primaryInputs) {
+    const primaryRow = document.createElement('div');
+    primaryRow.className = 'primary-inputs card';
+    for (const input of definition.primaryInputs) {
+      const inputEl = createAdditionalInput(input, onChange);
+      inputEl.classList.remove('card');
+      inputEl.classList.add('primary-input-item');
+      primaryRow.appendChild(inputEl);
+    }
+    container.appendChild(primaryRow);
   }
 
-  // Additional inputs (size, location, text, etc.)
+  // Image toggle
+  if (definition.sections.some((s) => s.options?.some((o) => o.image))) {
+    const toggle = document.createElement('button');
+    toggle.className = 'view-toggle-link';
+    toggle.id = 'toggle-compact';
+    const isCompact = document.body.classList.contains('compact');
+    toggle.textContent = isCompact ? 'Show images' : 'Hide images';
+    toggle.addEventListener('click', () => {
+      const compact = !document.body.classList.contains('compact');
+      document.body.classList.toggle('compact', compact);
+      toggle.textContent = compact ? 'Show images' : 'Hide images';
+      localStorage.setItem('radtools:compact', compact ? '1' : '0');
+    });
+    container.appendChild(toggle);
+  }
+
+  // Scored sections — with drag-to-reorder
+  const sectionsContainer = document.createElement('div');
+  sectionsContainer.className = 'sections-container';
+  container.appendChild(sectionsContainer);
+
+  for (const section of definition.sections) {
+    const sectionEl = createScoredSection(section, onChange, imageBase);
+    sectionEl.draggable = true;
+
+    // Drag handle indicator
+    const header = sectionEl.querySelector('.score-section__header');
+    const handle = document.createElement('span');
+    handle.className = 'score-section__drag-handle';
+    handle.textContent = '\u2261';
+    handle.title = 'Drag to reorder';
+    header.insertBefore(handle, header.firstChild);
+
+    sectionEl.addEventListener('dragstart', (e) => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', section.id);
+      sectionEl.classList.add('score-section--dragging');
+    });
+    sectionEl.addEventListener('dragend', () => {
+      sectionEl.classList.remove('score-section--dragging');
+      sectionsContainer.querySelectorAll('.score-section--dragover').forEach(
+        (el) => el.classList.remove('score-section--dragover')
+      );
+    });
+    sectionEl.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      sectionEl.classList.add('score-section--dragover');
+    });
+    sectionEl.addEventListener('dragleave', () => {
+      sectionEl.classList.remove('score-section--dragover');
+    });
+    sectionEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      sectionEl.classList.remove('score-section--dragover');
+      const fromId = e.dataTransfer.getData('text/plain');
+      const toId = section.id;
+      if (fromId === toId) return;
+
+      // Reorder definition.sections array
+      const fromIdx = definition.sections.findIndex((s) => s.id === fromId);
+      const toIdx = definition.sections.findIndex((s) => s.id === toId);
+      if (fromIdx === -1 || toIdx === -1) return;
+
+      const [moved] = definition.sections.splice(fromIdx, 1);
+      definition.sections.splice(toIdx, 0, moved);
+
+      // Re-render sections in new order
+      sectionsContainer.innerHTML = '';
+      for (const s of definition.sections) {
+        const el = createScoredSection(s, onChange, imageBase);
+        addSectionDragHandlers(el, s, sectionsContainer, definition, onChange, imageBase, options);
+        sectionsContainer.appendChild(el);
+      }
+
+      // Notify parent of new order
+      if (options.onReorder) {
+        options.onReorder(definition.sections.map((s) => s.id));
+      }
+    });
+
+    sectionsContainer.appendChild(sectionEl);
+  }
+
+  // Additional inputs
   if (definition.additionalInputs) {
     for (const input of definition.additionalInputs) {
       const inputEl = createAdditionalInput(input, onChange);
       container.appendChild(inputEl);
     }
   }
+}
+
+function addSectionDragHandlers(sectionEl, section, sectionsContainer, definition, onChange, imageBase, options) {
+  sectionEl.draggable = true;
+
+  const header = sectionEl.querySelector('.score-section__header');
+  const handle = document.createElement('span');
+  handle.className = 'score-section__drag-handle';
+  handle.textContent = '\u2261';
+  handle.title = 'Drag to reorder';
+  header.insertBefore(handle, header.firstChild);
+
+  sectionEl.addEventListener('dragstart', (e) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', section.id);
+    sectionEl.classList.add('score-section--dragging');
+  });
+  sectionEl.addEventListener('dragend', () => {
+    sectionEl.classList.remove('score-section--dragging');
+    sectionsContainer.querySelectorAll('.score-section--dragover').forEach(
+      (el) => el.classList.remove('score-section--dragover')
+    );
+  });
+  sectionEl.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    sectionEl.classList.add('score-section--dragover');
+  });
+  sectionEl.addEventListener('dragleave', () => {
+    sectionEl.classList.remove('score-section--dragover');
+  });
+  sectionEl.addEventListener('drop', (e) => {
+    e.preventDefault();
+    sectionEl.classList.remove('score-section--dragover');
+    const fromId = e.dataTransfer.getData('text/plain');
+    const toId = section.id;
+    if (fromId === toId) return;
+
+    const fromIdx = definition.sections.findIndex((s) => s.id === fromId);
+    const toIdx = definition.sections.findIndex((s) => s.id === toId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const [moved] = definition.sections.splice(fromIdx, 1);
+    definition.sections.splice(toIdx, 0, moved);
+
+    sectionsContainer.innerHTML = '';
+    for (const s of definition.sections) {
+      const el = createScoredSection(s, onChange, imageBase);
+      addSectionDragHandlers(el, s, sectionsContainer, definition, onChange, imageBase, options);
+      sectionsContainer.appendChild(el);
+    }
+
+    if (options.onReorder) {
+      options.onReorder(definition.sections.map((s) => s.id));
+    }
+  });
 }
 
 function createScoredSection(section, onChange, imageBase) {
@@ -114,6 +268,8 @@ function createOptionCard(option, sectionId, imageBase) {
     html += `<div class="option-card__image">
       <img src="${imageBase}${option.image}" alt="${option.label}" loading="lazy" onerror="this.parentElement.classList.add('no-image')">
     </div>`;
+  } else {
+    html += `<div class="option-card__image option-card__image--empty"></div>`;
   }
 
   html += `<div class="option-card__body">

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TI-RADS Calculator | RadlogicHQ</title>
-  <meta name="description" content="TI-RADS thyroid nodule risk stratification calculator with structured report output for PowerScribe and RadAI.">
+  <title>LI-RADS Calculator | RadlogicHQ</title>
+  <meta name="description" content="LI-RADS v2018 CT/MRI liver observation categorization with structured report output for PowerScribe and RadAI.">
 </head>
 <body>
   <header class="site-header">
@@ -19,28 +19,20 @@
   <main class="container">
     <div class="tool-hero">
       <div class="tool-hero__text">
-        <h1>TI-RADS <a href="https://www.jacr.org/article/s1546-1440(17)30186-2/fulltext" target="_blank" rel="noopener" class="tool-hero__ref" title="Tessler FN, et al. ACR Thyroid Imaging, Reporting and Data System (TI-RADS): White Paper of the ACR TI-RADS Committee. J Am Coll Radiol. 2017;14(5):587-595.">Ref</a></h1>
+        <h1>LI-RADS <a href="https://edge.sitecorecloud.io/americancoldf5f-acrorgf92a-productioncb02-3650/media/ACR/Files/RADS/LI-RADS/LI-RADS-CT-MRI-2018-Core.pdf" target="_blank" rel="noopener" class="tool-hero__ref" title="ACR LI-RADS v2018 CT/MRI Core">Ref</a></h1>
       </div>
       <div class="tool-hero__summary">
-        <div class="summary-badge">
-          <span class="summary-badge__label">Score</span>
-          <span class="summary-badge__value" id="total-score">0</span>
-        </div>
         <div class="summary-badge summary-badge--level">
-          <span class="summary-badge__label">Level</span>
-          <span class="summary-badge__value" id="tirads-level" data-level="0">--</span>
+          <span class="summary-badge__label">Category</span>
+          <span class="summary-badge__value" id="lirads-category" data-level="0">--</span>
         </div>
       </div>
-    </div>
-
-    <div class="nodule-tabs-bar" id="nodule-tabs">
-      <!-- Nodule tabs rendered by tirads.js -->
     </div>
 
     <div class="tool-layout">
       <div class="tool-layout__input">
-        <div id="tool-input">
-          <!-- Per-nodule form sections rendered by renderer.js -->
+        <div id="step-container">
+          <!-- Steps rendered by lirads.js -->
         </div>
         <div class="study-findings card">
           <label for="additional-findings">Additional Findings</label>
@@ -61,6 +53,6 @@
     </div>
   </main>
 
-  <script type="module" src="./tirads.js"></script>
+  <script type="module" src="./lirads.js"></script>
 </body>
 </html>

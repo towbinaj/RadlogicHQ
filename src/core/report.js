@@ -68,17 +68,48 @@ export function buildTemplateData(definition, formState, calcResult) {
     }
   }
 
-  // Map additional inputs
-  if (definition.additionalInputs) {
-    for (const input of definition.additionalInputs) {
-      const value = formState[input.id];
-      data[input.id] = value != null ? value : '';
-      data[`${input.id}Provided`] = value != null && value !== '';
-    }
+  // Map primary + additional inputs
+  const allInputs = [
+    ...(definition.primaryInputs || []),
+    ...(definition.additionalInputs || []),
+  ];
+  for (const input of allInputs) {
+    const value = formState[input.id];
+    data[input.id] = value != null ? value : '';
+    data[`${input.id}Provided`] = value != null && value !== '';
   }
 
   // Merge calculator results (tool-specific keys like tiradsLevel, recommendation, etc.)
   Object.assign(data, calcResult);
 
   return data;
+}
+
+/**
+ * Render an ordered list of blocks into report text.
+ * @param {Array} blocks - Block definitions with { id, template, pointsTemplate, enabled, showPoints, condition }
+ * @param {Object} data - Template data for substitution
+ * @param {boolean} globalShowPoints - Whether to append points to scoring fields
+ * @returns {string} Rendered report text
+ */
+export function renderBlocks(blocks, data, globalShowPoints = true) {
+  const lines = [];
+
+  for (const block of blocks) {
+    if (!block.enabled) continue;
+
+    // Skip conditional blocks whose condition is not met
+    if (block.condition && !data[block.condition]) continue;
+
+    let line = renderReport(block.template, data);
+
+    // Append points if this block has a pointsTemplate and points are enabled
+    if (block.pointsTemplate && block.showPoints && globalShowPoints) {
+      line += renderReport(block.pointsTemplate, data);
+    }
+
+    if (line) lines.push(line);
+  }
+
+  return lines.join('\n');
 }

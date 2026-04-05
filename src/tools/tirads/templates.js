@@ -1,54 +1,58 @@
 /**
  * Default report templates for TI-RADS output.
- * Three formats: PowerScribe 360, PowerScribe 1, RadAI Omni.
+ * Block-based: each block is a draggable, toggleable report field.
  */
+
+const FINDINGS_BLOCKS = [
+  { id: 'noduleLabel', label: 'Nodule Label', template: '{{noduleLabel}}:', enabled: true, locked: true },
+  { id: 'location', label: 'Location', template: 'Location: {{noduleLocation}}', enabled: true, condition: 'noduleLocationProvided' },
+  { id: 'size', label: 'Size', template: 'Size: {{noduleSize}} cm', enabled: true, condition: 'noduleSizeProvided' },
+  { id: 'composition', label: 'Composition', template: 'Composition: {{composition}}', pointsTemplate: ' ({{compositionPoints}} pts)', enabled: true, showPoints: true },
+  { id: 'echogenicity', label: 'Echogenicity', template: 'Echogenicity: {{echogenicity}}', pointsTemplate: ' ({{echogenicityPoints}} pts)', enabled: true, showPoints: true },
+  { id: 'shape', label: 'Shape', template: 'Shape: {{shape}}', pointsTemplate: ' ({{shapePoints}} pts)', enabled: true, showPoints: true },
+  { id: 'margin', label: 'Margin', template: 'Margin: {{margin}}', pointsTemplate: ' ({{marginPoints}} pts)', enabled: true, showPoints: true },
+  { id: 'echogenicFoci', label: 'Echogenic Foci', template: 'Echogenic Foci: {{echogenicFoci}}', pointsTemplate: ' ({{echogenicFociPoints}} pts)', enabled: true, showPoints: true },
+  { id: 'totalScore', label: 'Total Score', template: 'Total Score: {{totalScore}} points — {{tiradsFullLabel}}', enabled: true },
+];
 
 export const tiradsTemplates = {
   ps360: {
     label: 'PowerScribe 360',
-    template: `THYROID NODULE ASSESSMENT (ACR TI-RADS)
-
-{{#if noduleLocationProvided}}Location: {{noduleLocation}}
-{{/if}}{{#if noduleSizeProvided}}Size: {{noduleSize}} cm (maximum dimension)
-{{/if}}
-Composition: {{composition}} ({{compositionPoints}} pts)
-Echogenicity: {{echogenicity}} ({{echogenicityPoints}} pts)
-Shape: {{shape}} ({{shapePoints}} pts)
-Margin: {{margin}} ({{marginPoints}} pts)
-Echogenic Foci: {{echogenicFoci}} ({{echogenicFociPoints}} pts)
-
-Total Score: {{totalScore}} points
-TI-RADS Level: {{tiradsFullLabel}}
-
-RECOMMENDATION:
-{{recommendation}}
-{{recommendationDetail}}
-{{#if additionalFindingsProvided}}
-ADDITIONAL FINDINGS:
-{{additionalFindings}}
-{{/if}}`,
+    blocks: FINDINGS_BLOCKS.map((b) => ({ ...b })),
+    impression: {
+      template: 'IMPRESSION:\n{{noduleSummaries}}',
+      enabled: true,
+    },
+    showPoints: true,
   },
 
   ps1: {
     label: 'PowerScribe One',
-    template: `{{#if noduleLocationProvided}}{{noduleLocation}} thyroid nodule{{/if}}{{#if noduleSizeProvided}} measuring {{noduleSize}} cm{{/if}}. Composition is {{composition}}. Echogenicity is {{echogenicity}}. Shape is {{shape}}. Margin is {{margin}}. Echogenic foci: {{echogenicFoci}}. ACR TI-RADS score {{totalScore}} ({{tiradsFullLabel}}). {{recommendation}}.{{#if additionalFindingsProvided}} {{additionalFindings}}{{/if}}`,
+    blocks: FINDINGS_BLOCKS.map((b) => ({ ...b })),
+    impression: {
+      template: 'IMPRESSION:\n{{noduleSummaries}}',
+      enabled: true,
+    },
+    showPoints: true,
   },
 
   radai: {
     label: 'RadAI Omni',
-    template: `[STRUCTURED REPORT - ACR TI-RADS]
-{{#if noduleLocationProvided}}Location: {{noduleLocation}}
-{{/if}}{{#if noduleSizeProvided}}Size_cm: {{noduleSize}}
-{{/if}}Composition: {{composition}} | Points: {{compositionPoints}}
-Echogenicity: {{echogenicity}} | Points: {{echogenicityPoints}}
-Shape: {{shape}} | Points: {{shapePoints}}
-Margin: {{margin}} | Points: {{marginPoints}}
-Echogenic_Foci: {{echogenicFoci}} | Points: {{echogenicFociPoints}}
-Total_Score: {{totalScore}}
-TI-RADS_Level: {{tiradsName}}
-TI-RADS_Category: {{tiradsLabel}}
-Recommendation: {{recommendation}}
-{{#if additionalFindingsProvided}}Additional_Findings: {{additionalFindings}}
-{{/if}}[END STRUCTURED REPORT]`,
+    blocks: [
+      { id: 'noduleLabel', label: 'Nodule Label', template: '[{{noduleLabel}}]', enabled: true, locked: true },
+      { id: 'location', label: 'Location', template: 'Location: {{noduleLocation}}', enabled: true, condition: 'noduleLocationProvided' },
+      { id: 'size', label: 'Size', template: 'Size_cm: {{noduleSize}}', enabled: true, condition: 'noduleSizeProvided' },
+      { id: 'composition', label: 'Composition', template: 'Composition: {{composition}}', pointsTemplate: ' | Points: {{compositionPoints}}', enabled: true, showPoints: true },
+      { id: 'echogenicity', label: 'Echogenicity', template: 'Echogenicity: {{echogenicity}}', pointsTemplate: ' | Points: {{echogenicityPoints}}', enabled: true, showPoints: true },
+      { id: 'shape', label: 'Shape', template: 'Shape: {{shape}}', pointsTemplate: ' | Points: {{shapePoints}}', enabled: true, showPoints: true },
+      { id: 'margin', label: 'Margin', template: 'Margin: {{margin}}', pointsTemplate: ' | Points: {{marginPoints}}', enabled: true, showPoints: true },
+      { id: 'echogenicFoci', label: 'Echogenic Foci', template: 'Echogenic_Foci: {{echogenicFoci}}', pointsTemplate: ' | Points: {{echogenicFociPoints}}', enabled: true, showPoints: true },
+      { id: 'totalScore', label: 'Total Score', template: 'Total_Score: {{totalScore}}\nTI-RADS_Level: {{tiradsName}}\nTI-RADS_Category: {{tiradsLabel}}', enabled: true },
+    ],
+    impression: {
+      template: '[IMPRESSION]\n{{noduleSummaries}}\n[END STRUCTURED REPORT]',
+      enabled: true,
+    },
+    showPoints: true,
   },
 };

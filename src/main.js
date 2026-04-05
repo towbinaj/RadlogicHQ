@@ -1,30 +1,15 @@
 import './styles/base.css';
 import './styles/forms.css';
+import { toolsRegistry, getModalityLabel } from './data/tools-registry.js';
 
 // Landing page styles
 const style = document.createElement('style');
 style.textContent = `
-  .landing-hero {
-    padding: var(--space-2xl) 0 var(--space-xl);
-    text-align: center;
-  }
-
-  .landing-hero h1 {
-    font-size: 2.5rem;
-    margin-bottom: var(--space-sm);
-  }
-
-  .landing-hero__desc {
-    color: var(--text-secondary);
-    font-size: var(--text-lg);
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
   .tools-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--space-lg);
+    padding-top: var(--space-xl);
     padding-bottom: var(--space-2xl);
   }
 
@@ -37,6 +22,7 @@ style.textContent = `
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
     text-decoration: none;
+    text-align: left;
     color: inherit;
     transition: all var(--transition-base);
   }
@@ -46,6 +32,7 @@ style.textContent = `
     background: var(--bg-elevated);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
+    text-decoration: none;
   }
 
   .tool-card--coming-soon {
@@ -84,11 +71,26 @@ style.textContent = `
     line-height: 1.4;
   }
 
-  .tool-card__tag {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
+  .tool-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
     margin-top: var(--space-xs);
   }
+
+  .tool-card__label {
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    background: var(--bg-input);
+  }
+
+  .tool-card__label--body { color: var(--info); border-color: rgba(96, 165, 250, 0.3); }
+  .tool-card__label--modality { color: var(--success); border-color: rgba(52, 211, 153, 0.3); }
+  .tool-card__label--specialty { color: var(--warning); border-color: rgba(251, 191, 36, 0.3); }
 
   .tool-card__badge {
     position: absolute;
@@ -103,3 +105,39 @@ style.textContent = `
   }
 `;
 document.head.appendChild(style);
+
+// Render tool cards from registry
+const grid = document.getElementById('tools-grid');
+if (grid) {
+  for (const tool of toolsRegistry) {
+    const isActive = tool.status === 'active' && tool.path;
+    const tag = isActive ? 'a' : 'div';
+    const card = document.createElement(tag);
+    card.className = `tool-card ${!isActive ? 'tool-card--coming-soon' : ''}`;
+    if (isActive) card.href = tool.path;
+
+    // Build label tags
+    const labels = [];
+    for (const bp of tool.bodyParts || []) {
+      labels.push(`<span class="tool-card__label tool-card__label--body">${bp}</span>`);
+    }
+    for (const mod of tool.modalities || []) {
+      labels.push(`<span class="tool-card__label tool-card__label--modality">${getModalityLabel(mod)}</span>`);
+    }
+    for (const sp of tool.specialties || []) {
+      labels.push(`<span class="tool-card__label tool-card__label--specialty">${sp}</span>`);
+    }
+
+    card.innerHTML = `
+      <div class="tool-card__icon">${tool.icon}</div>
+      <div class="tool-card__body">
+        <h2 class="tool-card__title">${tool.name}</h2>
+        <p class="tool-card__desc">${tool.description}</p>
+        <div class="tool-card__tags">${labels.join('')}</div>
+      </div>
+      ${!isActive ? '<span class="tool-card__badge">Coming Soon</span>' : ''}
+    `;
+
+    grid.appendChild(card);
+  }
+}

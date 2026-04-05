@@ -10,6 +10,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         tirads: resolve(__dirname, 'src/tools/tirads/tirads.html'),
+        lirads: resolve(__dirname, 'src/tools/lirads/lirads.html'),
       },
     },
   },

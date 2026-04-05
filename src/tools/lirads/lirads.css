@@ -1,0 +1,341 @@
+/* LI-RADS tool-specific styles — follows toolui.md */
+
+/* Hero (per toolui.md) */
+.tool-hero {
+  padding: var(--space-md) 0 var(--space-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.tool-hero__text h1 {
+  font-size: var(--text-xl);
+  margin-bottom: 2px;
+}
+
+.tool-hero__ref {
+  font-size: var(--text-xs);
+  font-weight: 400;
+  color: var(--text-accent);
+  vertical-align: super;
+}
+
+.summary-badge {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.summary-badge__label {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.summary-badge__value {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Category badge colors */
+#lirads-category[data-level="1"] { color: var(--success); }
+#lirads-category[data-level="2"] { color: var(--success); }
+#lirads-category[data-level="3"] { color: var(--warning); }
+#lirads-category[data-level="4"] { color: #fb923c; }
+#lirads-category[data-level="5"] { color: var(--danger); }
+#lirads-category[data-level="6"] { color: var(--danger); }
+#lirads-category[data-level="7"] { color: var(--danger); }
+
+/* Step container — matches #tool-input gap from toolui.md */
+#step-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Step card — matches .score-section padding from toolui.md */
+.step-card {
+  padding: var(--space-sm) var(--space-md);
+}
+
+/* Disabled steps: dim but KEEP in layout — no height changes */
+.step-card--disabled {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.step-card--exit {
+  border-color: var(--accent);
+}
+
+/* Question label — matches section title from toolui.md */
+.step-card__question {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Hint — matches description from toolui.md */
+.step-card__hint {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Segment label — matches primary input label from toolui.md */
+.step-card__label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.step-card__select {
+  font-size: var(--text-sm);
+}
+
+/* Result badge — ALWAYS takes space, visibility toggled via opacity */
+.step-card__result {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--accent);
+  min-height: 1.4em;
+  margin-top: var(--space-xs);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.step-card__result--visible {
+  opacity: 1;
+}
+
+/* Yes/No / Present/Absent buttons */
+.step-card__buttons {
+  display: flex;
+  gap: 4px;
+  margin-top: var(--space-xs);
+}
+
+.step-btn {
+  padding: var(--space-xs) var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.step-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.step-btn--active {
+  color: white;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.step-btn:disabled {
+  cursor: not-allowed;
+}
+
+/* Major features card */
+.step-card--major {
+  padding: var(--space-sm) var(--space-md);
+}
+
+.major-feature {
+  margin-bottom: var(--space-sm);
+}
+
+.major-feature:last-child {
+  margin-bottom: 0;
+}
+
+/* Matches primary input label from toolui.md */
+.major-feature__label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.major-feature__desc {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: var(--space-xs);
+}
+
+.major-feature .input-with-unit input {
+  font-size: var(--text-sm);
+  max-width: 120px;
+}
+
+/* Ancillary features */
+.step-card--ancillary {
+  padding: var(--space-sm) var(--space-md);
+}
+
+.ancillary-details summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.ancillary-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.ancillary-details summary::before {
+  content: '\25B6';
+  display: inline-block;
+  margin-right: var(--space-xs);
+  font-size: var(--text-xs);
+  transition: transform var(--transition-fast);
+}
+
+.ancillary-details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.ancillary-group {
+  margin-top: var(--space-sm);
+  padding-left: var(--space-sm);
+}
+
+.ancillary-group__title {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.ancillary-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.ancillary-check input {
+  margin: 0;
+}
+
+/* Study findings — matches toolui.md */
+.study-findings {
+  padding: var(--space-sm) var(--space-md);
+}
+
+.study-findings label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.study-findings textarea {
+  margin-top: 2px;
+}
+
+/* Parse panel — matches toolui.md */
+.parse-panel {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+}
+
+.parse-panel label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.parse-panel textarea {
+  font-size: var(--text-sm);
+  margin-top: 4px;
+}
+
+.parse-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.parse-panel__btn {
+  font-size: var(--text-xs);
+  padding: var(--space-xs) var(--space-md);
+}
+
+.parse-panel__status {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.parse-panel__status--success {
+  color: var(--success);
+}
+
+/* Report output — matches toolui.md specs */
+.report-output {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.report-output__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.report-output__header h3 {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.report-output__text-wrap {
+  padding: var(--space-sm) var(--space-md);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.report-output__text {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .step-card__buttons {
+    flex-wrap: wrap;
+  }
+}
