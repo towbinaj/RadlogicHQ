@@ -494,8 +494,8 @@ input.no-spinner[type="number"] {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  min-width: 180px;
-  max-width: 250px;
+  min-width: 200px;
+  max-width: 300px;
 }
 
 .pill-popover__aliases {
@@ -524,6 +524,11 @@ input.no-spinner[type="number"] {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
+  resize: none;
+  overflow: hidden;
+  min-height: 1.6em;
+  line-height: 1.4;
+  field-sizing: content;
 }
 
 .pill-popover .pill-popover__alias-input:focus {

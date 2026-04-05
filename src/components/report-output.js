@@ -414,8 +414,9 @@ export class ReportOutput extends HTMLElement {
       html += `<div class="pill-popover__aliases-title">${section.label} display text</div>`;
       for (const opt of section.options) {
         const alias = aliases[opt.id] ?? opt.label;
+        const escaped = alias.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         html += `<div class="pill-popover__alias-row">
-          <input type="text" class="pill-popover__alias-input" data-option-id="${opt.id}" value="${alias.replace(/"/g, '&quot;')}" spellcheck="false">
+          <textarea class="pill-popover__alias-input" data-option-id="${opt.id}" rows="1" spellcheck="false">${escaped}</textarea>
         </div>`;
       }
       html += '</div>';
@@ -483,14 +484,33 @@ export class ReportOutput extends HTMLElement {
 
   _findSectionForPill(blockId) {
     if (!this._definition) return null;
+
+    // Map pill variable names to definition input IDs
+    const variableToInputMap = {
+      'noduleLocation': 'nodule-side',
+      'noduleSize': 'nodule-size',
+      'location': 'location',
+    };
+    const inputId = variableToInputMap[blockId] || blockId;
+
     // Check scored sections
-    const sections = this._definition.sections || [];
-    for (const s of sections) {
-      if (s.id === blockId) return s;
+    for (const s of this._definition.sections || []) {
+      if (s.id === inputId || s.id === blockId) return s;
+    }
+    // Check primary inputs
+    for (const p of this._definition.primaryInputs || []) {
+      if (p.id === inputId || p.id === blockId) {
+        if (p.options) return p;
+      }
     }
     // Check major features (LI-RADS)
     for (const f of this._definition.majorFeatures || []) {
-      if (f.id === blockId) return f;
+      if (f.id === inputId || f.id === blockId) return f;
+    }
+    // Check location input (LI-RADS)
+    if (this._definition.locationInput) {
+      const loc = this._definition.locationInput;
+      if (loc.id === inputId || loc.id === blockId) return loc;
     }
     return null;
   }
