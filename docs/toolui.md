@@ -1,123 +1,165 @@
 # Tool UI Style Guide
 
-Reference this when styling new tools to maintain visual consistency across RadlogicHQ. All values use CSS variables from `src/styles/variables.css`.
+Reference this when styling new tools to maintain visual consistency across RadioLogicHQ. All values use CSS variables from `src/styles/variables.css`. Shared styles live in `src/styles/forms.css`.
 
 *Last updated: 2026-04-05*
 
 ---
 
+## Shared vs Tool-Specific CSS
+
+**`src/styles/forms.css`** contains ALL shared styles:
+- Report output component (header, text, controls, edit bar, editable lines, toast)
+- Hero bar (layout, title, ref link, summary badges)
+- Study findings, parse panel
+- Unit toggle (mm/cm), no-spinner class
+- Form controls (inputs, selects, textareas, buttons)
+
+**`src/tools/{toolId}/{toolId}.css`** contains ONLY tool-specific styles:
+- Level badge colors
+- Section/card grid styles
+- Step wizard styles (decision-tree tools)
+- Ancillary feature grid
+- Compact mode overrides (point-based tools)
+
+**Never duplicate shared styles in tool CSS.**
+
+---
+
 ## Page Layout
 
-- **Two-column grid**: `3fr 2fr` — input column wider than output column
+- **Two-column grid**: `3fr 2fr` — input wider than output
 - **Column gap**: `var(--space-md)` (16px)
-- **Report output**: sticky, stays visible while scrolling input column
-
-```css
-.tool-layout {
-  grid-template-columns: 3fr 2fr;
-  gap: var(--space-md);
-}
-.tool-layout__output {
-  position: sticky;
-  top: var(--space-lg);
-}
-```
+- **Report output**: sticky, stays visible while scrolling
+- **Container**: max-width 1400px
 
 ---
 
 ## Hero Bar
 
-- **Layout**: flex row, title left, score/level badges right
-- **Title**: `var(--text-xl)` (1.25rem), weight 600
-- **Reference link**: superscript, `var(--text-xs)`, accent color, full citation in `title` tooltip
-- **Summary badges**: inline, `var(--space-xs) var(--space-md)` padding, border, flex row with label + value
-- **Badge label**: `var(--text-xs)`, uppercase, muted color
+- **Layout**: flex row, title left, badge(s) right
+- **Title**: `var(--text-xl)`, weight 600
+- **Reference link**: superscript `Ref`, `var(--text-xs)`, accent color, full citation in `title` tooltip
+- **Badge**: inline, `var(--space-xs) var(--space-md)` padding, label + value in a row
+- **Badge label**: `var(--text-xs)`, uppercase, muted
 - **Badge value**: `var(--text-lg)`, weight 700
 
-```css
-.tool-hero { padding: var(--space-md) 0 var(--space-sm); }
-.tool-hero__text h1 { font-size: var(--text-xl); }
-.tool-hero__ref { font-size: var(--text-xs); vertical-align: super; color: var(--text-accent); }
-```
+---
+
+## Multi-Item Tabs
+
+- **Layout**: flex row, 4px gap, bottom border
+- **Tab**: `var(--text-sm)`, weight 500, surface background
+- **Active**: white text, accent background
+- **Add (+)**: dashed border, success color
+- **Remove (−)**: dashed border, danger color, `margin-left: auto`
+- **Rename**: double-click tab
 
 ---
 
-## Item Tabs (Nodule 1, Nodule 2, +, −)
-
-- **Tab bar**: flex row, 4px gap, bottom border, `var(--space-sm)` vertical padding
-- **Tab buttons**: `var(--text-sm)`, weight 500, surface background, border
-- **Active tab**: white text, accent background
-- **Add button**: dashed border, success color
-- **Remove button**: dashed border, danger color, `margin-left: auto`
-- **Rename**: double-click tab to rename
-
----
-
-## Primary Inputs (Side, Size)
+## Primary Inputs (Location, Size, Series, Image)
 
 - **Layout**: flex row, `var(--space-md)` gap, `align-items: end`
-- **Card padding**: `var(--space-sm) var(--space-md)` — compact height
-- **Labels**: `var(--text-sm)`, weight 600, `var(--text-primary)` color
+- **Card padding**: `var(--space-sm) var(--space-md)`
+- **Labels**: `var(--text-sm)`, weight 600, primary color
 - **Inputs**: `var(--text-sm)` font size
-- **Same visual weight as section labels** — consistent typography
+- **Size input**: `class="no-spinner"`, with `unit-toggle` (mm | cm)
+- **Series/Image inputs**: `type="text"`, `inputmode="numeric"`, 70px width, centered, no spinner
+- **Unit toggle**: small inline button group next to size input, persists to localStorage
 
 ---
 
-## Score Sections (Finding Cards)
+## Score Sections — Point-Based Tools (TI-RADS pattern)
 
-### Container Spacing
-- **Between sections**: `var(--space-sm)` (8px) gap via `.sections-container`
-- **Between primary inputs and sections**: `var(--space-sm)` gap via `#tool-input`
-- **Section padding**: `var(--space-sm) var(--space-md)` (8px 16px)
+### Container
+- `#tool-input` and `.sections-container`: flex column, `var(--space-sm)` gap
+
+### Section Card
+- **Padding**: `var(--space-sm) var(--space-md)`
+- **Draggable**: drag handle (≡) appears on hover, opacity 0 → 0.6
 
 ### Section Header
-- **Layout**: flex row, title left (`margin-right: auto`), points badge right
+- **Layout**: flex row, handle + title left (`margin-right: auto`), points badge right
 - **Title**: `var(--text-sm)`, weight 600
-- **Points badge**: `var(--text-xs)`, muted bg, transitions to accent when has points
-- **Drag handle**: `var(--text-sm)`, opacity 0 → 0.6 on section hover, `cursor: grab`
-- **Header bottom margin**: `var(--space-sm)`
+- **Points badge**: `var(--text-xs)`, transitions to accent when has points
 
 ### Option Cards Grid
 - **Grid**: `repeat(auto-fill, minmax(100px, 1fr))`, 4px gap
-- **Card**: `var(--bg-input)` background, 2px transparent border, `var(--radius-md)` corners
-- **Card hover**: border becomes `var(--border-color)`, bg becomes `var(--bg-elevated)`
-- **Card selected**: border `var(--accent)`, bg `var(--accent-subtle)`
+- **Card**: `var(--bg-input)`, 2px transparent border, `var(--radius-md)`
+- **Hover**: border `var(--border-color)`, bg `var(--bg-elevated)`
+- **Selected**: border `var(--accent)`, bg `var(--accent-subtle)`
 
 ### Option Card Images
 - **Height**: 56px fixed
-- **Background**: `var(--bg-primary)` (matches empty placeholder)
-- **Image padding**: 2px
-- **Empty placeholder**: same `var(--bg-primary)` background, no text
+- **Background**: `var(--bg-primary)` (empty placeholders match)
+- **No-image cards**: get empty placeholder div, same background
 
 ### Option Card Body
-- **Padding**: `4px var(--space-sm)`
-- **Layout**: flex row, `align-items: baseline`
-- **Label**: `var(--text-xs)`, weight 500, `line-height: 1.2`, `flex: 1`
-- **Points**: `0.65rem`, muted color, weight 600, `white-space: nowrap`
+- **Padding**: `4px var(--space-sm)`, flex row, baseline
+- **Label**: `var(--text-xs)`, weight 500, `flex: 1`
+- **Points**: `0.65rem`, muted, `white-space: nowrap`
 - **Selected points**: accent color
 
+### Show/Hide Images Toggle
+- Inline text link, `var(--text-xs)`, accent color, `text-align: right`
+- Renders automatically if any option has an `image`
+
+### Compact Mode (`body.compact`)
+- Images hidden, grid becomes `1fr 1fr`, 3px gap
+- Section padding reduces, descriptions hidden
+- Layout columns become `1fr 1fr`
+
 ---
 
-## Show/Hide Images Toggle
+## Step Cards — Decision-Tree Tools (LI-RADS pattern)
 
-- **Position**: inline link between primary inputs and first score section
-- **Font**: `var(--text-xs)`, accent color
-- **Alignment**: `text-align: right`
-- **No border/background** — just a text link
-- **Hover**: opacity 0.8, underline
+### Step Container
+- `#step-container`: flex column, `var(--space-sm)` gap
+
+### Step Card
+- **Padding**: `var(--space-sm) var(--space-md)`
+- **Disabled**: opacity 0.25, pointer-events none (stays in DOM — no layout shift)
+
+### Question
+- `var(--text-sm)`, weight 600, primary color
+
+### Choice Buttons (benign assessment)
+- **Layout**: flex row, wrap, 4px gap
+- **Button**: `var(--text-xs)`, weight 500, secondary color, `var(--bg-input)`, border
+- **Active**: white, accent background
+- **Tooltips**: `title` attribute with definition — NO inline gray text
+
+### Result Badge
+- Always takes space (`min-height: 1.4em`, `opacity: 0`)
+- Visible via `step-card__result--visible` class (`opacity: 1`)
+- **No `hidden` attribute** — prevents layout jumping
+
+### Yes/No Buttons
+- Same style as choice buttons: `var(--text-xs)`, `var(--space-xs) var(--space-md)` padding
 
 ---
 
-## Compact Mode (`body.compact`)
+## Major Features — Decision-Tree Tools
 
-- **Images hidden**: `.option-card__image { display: none }`
-- **Grid**: `1fr 1fr` (two columns)
-- **Card gap**: 3px
-- **Card radius**: `var(--radius-sm)`
-- **Card body padding**: `3px var(--space-sm)`
-- **Section padding**: `var(--space-xs) var(--space-sm)`
-- **Description hidden**
-- **Layout columns**: `1fr 1fr` (equal split)
+- **Layout**: compact inline rows (label left, buttons right)
+- **Indented**: `padding-left: var(--space-md)` under section header
+- **Label**: `var(--text-xs)`, weight 500, primary color, `cursor: help`
+- **Label width**: `min-width: 200px` — aligns all buttons vertically
+- **Tooltip**: on the label itself via `title` attribute
+- **Buttons**: Present/Absent, same step-btn style
+- **No stacked layout** — label and buttons on one line
+
+---
+
+## Ancillary Features — Decision-Tree Tools
+
+- **Always open** — no `<details>` collapse, no caret
+- **Section title**: `var(--text-xs)`, weight 600, secondary color
+- **Groups separated**: `var(--space-md)` gap between Special Categories, Favoring Upgrade, Favoring Downgrade
+- **Card grid**: `repeat(auto-fill, minmax(120px, 1fr))`, 3px gap
+- **Card**: `var(--text-xs)`, weight 500, `var(--bg-input)`, 2px transparent border
+- **Selected**: white text, accent background
+- **Tooltips**: `title` on each card from official lexicon
 
 ---
 
@@ -127,99 +169,87 @@ Reference this when styling new tools to maintain visual consistency across Radl
 - **Padding**: `var(--space-sm) var(--space-md)`
 - **Background**: `var(--bg-secondary)`
 - **Title**: `var(--text-base)`, weight 600
-- **Controls**: flex row, `var(--space-sm)` gap
-- **Template selector**: `var(--text-sm)`, min-width 140px
+- **Controls**: flex row — template selector, Edit, Copy
 
 ### Report Text
-- **Padding**: `var(--space-sm) var(--space-md)`
-- **Max height**: 400px, scrollable
-- **Font**: `var(--font-mono)`, `var(--text-sm)`, `line-height: 1.6`
-- **White space**: `pre-wrap`
+- **Padding**: `var(--space-sm) var(--space-md)`, max-height 400px scrollable
+- **Font**: `var(--font-mono)`, `var(--text-sm)`, `line-height: 1.6`, `pre-wrap`
 
 ### Edit Mode (WYSIWYG)
-- **Editable lines**: flex row, 3px vertical padding, transparent bottom border
-- **Drag handle**: `var(--text-base)`, muted color, 14px width
-- **Toggle checkbox**: flex-shrink 0
-- **Editable text**: `var(--font-mono)`, `var(--text-sm)`, 1px transparent border
-- **Text focus**: accent border, `var(--bg-input)` background
-- **Empty/conditional**: muted color, italic
-
-### Edit Bar
-- **Background**: `var(--bg-secondary)`
-- **Padding**: `var(--space-sm) var(--space-md)`
-- **"Show points" toggle**: `var(--text-xs)`, secondary color, `margin-right: auto`
-- **Hint text**: `var(--text-xs)`, muted color
+- Report text becomes editable lines: drag handle + checkbox + contenteditable text
+- Edit bar below: "Show points" toggle, Reset to Default, Done
 
 ### Copy Toast
-- **Position**: fixed, bottom-right
-- **Background**: `var(--success)`
-- **Animation**: opacity 0→1, translateY 10px→0
+- Fixed bottom-right, success color, opacity transition
 
 ---
 
 ## Additional Findings (Study-Level)
 
-- **Label**: `var(--text-sm)`, weight 600, primary color — **must match section label style**
-- **Textarea**: `var(--text-sm)`, no placeholder text
-- **Card padding**: `var(--space-sm) var(--space-md)`
+- **Separate from item state** — shared across all items
+- **Label**: `var(--text-sm)`, weight 600, primary color
+- **Textarea**: no placeholder text, 2 rows
+- **In report**: separate `ADDITIONAL FINDINGS:` section between findings and impression
 
 ---
 
 ## Parse Panel
 
-- **Position**: below report output, `margin-top: var(--space-md)`
+- Below report output, `margin-top: var(--space-md)`
 - **Label**: `var(--text-sm)`, weight 600, primary color
-- **Textarea**: `var(--text-sm)`, 3 rows, placeholder "Paste report text to auto-fill..."
-- **Parse button**: `var(--text-xs)` font, `var(--space-xs) var(--space-md)` padding, primary style
-- **Status text**: `var(--text-xs)`, muted → success color on match
+- **Textarea**: 3 rows, placeholder "Paste report text to auto-fill..."
+- **Parse button**: `var(--text-xs)`, primary style
+- **Status**: `var(--text-xs)`, muted → success on match
 
 ---
 
-## Typography Consistency Rules
+## Typography Rules
 
-All labels across the tool must have the same visual weight:
+| Element | Size | Weight | Color |
+|---------|------|--------|-------|
+| Section titles (point-based) | `var(--text-sm)` | 600 | primary |
+| Step questions (decision-tree) | `var(--text-sm)` | 600 | primary |
+| Primary input labels | `var(--text-sm)` | 600 | primary |
+| Additional Findings label | `var(--text-sm)` | 600 | primary |
+| Paste Findings label | `var(--text-sm)` | 600 | primary |
+| Major feature labels | `var(--text-xs)` | 500 | primary |
+| Option card labels | `var(--text-xs)` | 500 | primary |
+| Ancillary card labels | `var(--text-xs)` | 500 | secondary |
+| Points text | `0.65rem` | 600 | muted |
+| Hints/tooltips only | `var(--text-xs)` | — | via `title` attr |
 
-| Element | Font Size | Weight | Color |
-|---------|-----------|--------|-------|
-| Section titles | `var(--text-sm)` | 600 | `var(--text-primary)` |
-| Primary input labels | `var(--text-sm)` | 600 | `var(--text-primary)` |
-| Additional Findings label | `var(--text-sm)` | 600 | `var(--text-primary)` |
-| Paste Findings label | `var(--text-sm)` | 600 | `var(--text-primary)` |
-| Option card labels | `var(--text-xs)` | 500 | `var(--text-primary)` |
-| Points text | `0.65rem` | 600 | `var(--text-muted)` |
-| Descriptions | `var(--text-xs)` | 400 | `var(--text-muted)` |
+**No inline gray description text.** Use hover tooltips exclusively.
 
 ---
 
-## Drag-and-Drop Conventions
+## Number Inputs
 
-- **Drag handle**: ≡ character, appears on hover (opacity transition)
-- **Dragging state**: opacity 0.3 (form sections) or 0.2 (report lines)
-- **Dragover state**: accent border highlight
-- **Drop**: reorders array, re-renders, persists to localStorage
-- **Bidirectional sync**: form section reorder ↔ report block reorder
+- All number inputs use `class="no-spinner"` — no up/down arrows
+- CSS hides WebKit and Firefox spinners globally
+- Series/Image fields: `type="text"` with `inputmode="numeric"`, 70px, centered
 
 ---
 
 ## Color Coding for Risk Levels
 
-Use data attributes on level badges and apply colors:
-
 ```css
-[data-level="1"], [data-level="2"] { color: var(--success); }   /* Green — benign/not suspicious */
-[data-level="3"]                    { color: var(--warning); }   /* Yellow — mildly suspicious */
-[data-level="4"]                    { color: #fb923c; }          /* Orange — moderately suspicious */
-[data-level="5"]                    { color: var(--danger); }    /* Red — highly suspicious */
+[data-level="1"], [data-level="2"] { color: var(--success); }   /* Green */
+[data-level="3"]                    { color: var(--warning); }   /* Yellow */
+[data-level="4"]                    { color: #fb923c; }          /* Orange */
+[data-level="5"]                    { color: var(--danger); }    /* Red */
+[data-level="6"], [data-level="7"]  { color: var(--danger); }    /* Red (LR-M, LR-TIV) */
 ```
-
-Adapt the scale per tool (e.g., BI-RADS, LI-RADS may have different level counts).
 
 ---
 
 ## Responsive (≤768px)
 
-- Layout switches to single column
-- Report output unsticks
+- Layout: single column, report unsticks
 - Option grid: `minmax(130px, 1fr)`
 - Summary badges stack vertically
-- Report header stacks vertically
+- Choice/step buttons wrap
+- Ancillary grid: `1fr 1fr`
+
+---
+
+*Update this doc when new patterns emerge or existing ones change.*

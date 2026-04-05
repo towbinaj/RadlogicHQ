@@ -1,5 +1,6 @@
 import './styles/base.css';
 import './styles/forms.css';
+import './components/auth-ui.js';
 import { toolsRegistry, getModalityLabel } from './data/tools-registry.js';
 
 // Landing page styles

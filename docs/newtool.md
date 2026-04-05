@@ -1,4 +1,4 @@
-# Adding a New Tool to RadlogicHQ
+# Adding a New Tool to RadioLogicHQ
 
 Reference this checklist when building any new calculator/tool. Update this doc as patterns evolve.
 
@@ -10,106 +10,140 @@ All files go in `src/tools/{toolId}/`:
 
 | File | Purpose |
 |------|---------|
-| `definition.js` | Declarative config: inputs, scoring sections, options, parse rules |
-| `calculator.js` | Pure functions: scoring logic, risk levels, management recommendations |
+| `definition.js` | Declarative config: inputs, features, options, parse rules, tooltips |
+| `calculator.js` | Pure functions: scoring/categorization logic, recommendations |
 | `templates.js` | Block-based report templates for PS360, PS1, RadAI Omni |
 | `{toolId}.html` | MPA entry point (page shell) |
 | `{toolId}.js` | Page controller wiring everything together |
-| `{toolId}.css` | Tool-specific styles (if needed beyond base styles) |
+| `{toolId}.css` | Tool-specific styles only (shared styles live in `forms.css`) |
 
 Also:
-- `public/images/{toolId}/` — SVG reference diagrams for option cards
+- `public/images/{toolId}/` — SVG reference diagrams (only for tools with visual option cards)
 - `src/data/cde-sets/{RDESXXX}.json` — Bundled CDE set (optional, for offline reference)
 
 ---
 
-## 2. Definition File (`definition.js`)
+## 2. Tool Types
 
-Export a single object with this structure:
+RadioLogicHQ supports two UI patterns. Choose based on the scoring system:
+
+### Point-based (e.g., TI-RADS)
+- All sections visible at once as clickable option card grids
+- Points summed across sections → maps to risk level
+- Uses `renderToolForm()` from `src/core/renderer.js`
+- Uses `calculateScore()` from `src/core/engine.js`
+- Sections are draggable to reorder
+
+### Decision-tree (e.g., LI-RADS)
+- Step-by-step questions with early exits
+- Feature combinations map to categories via lookup table
+- Custom UI built in page controller (no `renderToolForm()`)
+- Custom calculator with decision logic (no `calculateScore()`)
+
+---
+
+## 3. Definition File (`definition.js`)
+
+Export a single object. Structure varies by tool type.
+
+### Common fields (both types)
 
 ```js
 export const {toolId}Definition = {
-  id: '{toolId}',                    // URL-safe, used in image paths and localStorage keys
+  id: '{toolId}',                    // URL-safe, used in localStorage keys
   name: 'Human Readable Name',
   version: '1.0.0',
   description: 'One-line description.',
-  cdeSetId: 'RDESXXX',              // RadElement CDE set ID (from radelement.org)
+  cdeSetId: 'RDESXXX',              // RadElement CDE set ID (radelement.org)
 
-  // --- Primary Inputs (rendered first, above scoring sections) ---
+  // --- Primary Inputs (rendered first as compact inline row) ---
   primaryInputs: [
     {
-      id: 'input-id',               // Used as formState key
-      label: 'Label',
-      inputType: 'single-select',   // See input types below
+      id: 'location',
+      label: 'Location',             // Label should NOT include unit — use separate label
+      inputType: 'single-select',
       options: [
         { id: 'opt1', label: 'Option 1' },
       ],
-      cdeElementId: 'RDE####',      // Optional CDE mapping
+      cdeElementId: 'RDE####',
     },
     {
-      id: 'measurement',
-      label: 'Size (cm)',
+      id: 'size',
+      label: 'Size',                 // NOT "Size (cm)" — unit comes from toggle
       inputType: 'float',
-      min: 0.1,
-      max: 20,
-      step: 0.1,
-      unit: 'cm',
+      min: 0.1, max: 20, step: 0.1,
+      unit: 'cm',                    // Native unit for internal storage
+      unitToggle: true,              // Adds mm/cm toggle button
       placeholder: 'e.g., 1.5',
       cdeElementId: 'RDE####',
     },
   ],
 
-  // --- Scored Sections (rendered as option card grids) ---
+  // --- Parse Rules (for paste-to-autofill) ---
+  parseRules: { ... },               // See Parse Rules section below
+};
+```
+
+### Point-based tools: additional fields
+
+```js
+  // Scored sections — rendered as draggable option card grids
   sections: [
     {
-      id: 'section-id',             // Used as formState key
+      id: 'section-id',
       label: 'Section Label',
-      description: 'Optional helper text',  // Omit if not needed
-      inputType: 'single-select',   // or 'multi-select'
+      inputType: 'single-select',    // or 'multi-select'
       cdeElementId: 'RDE####',
       options: [
         {
           id: 'option-id',
-          label: 'Human readable label',
-          points: 0,                 // Scoring points
-          image: 'filename.svg',     // Optional — in public/images/{toolId}/
-          cdeCode: 'RDE####.#',      // Optional CDE value code
-          exclusive: true,           // Optional — for multi-select, deselects others (e.g., "None")
+          label: 'Label',
+          points: 0,
+          image: 'filename.svg',     // Optional
+          cdeCode: 'RDE####.#',      // Optional
+          exclusive: true,           // Optional — for multi-select "None" options
         },
       ],
     },
   ],
 
-  // --- Additional Inputs (rendered after scored sections) ---
-  additionalInputs: [],              // Same format as primaryInputs
+  additionalInputs: [],              // Rendered after scored sections
+```
 
-  // --- Parse Rules (for paste-to-autofill feature) ---
-  parseRules: {
-    // Regex rule — extracts a numeric value
-    'input-id': {
-      pattern: /(\d*\.?\d+)\s*cm/,   // Must match against lowercase text
-      group: 1,                       // Capture group index
-      transform: (m) => parseFloat(m[1]),  // Convert match to value
-    },
+### Decision-tree tools: additional fields
 
-    // Single-select keyword rule — matches longest keyword
-    'section-id': {
-      options: {
-        'option-id': ['keyword1', 'keyword phrase', 'alternate term'],
-        'option-id-2': ['other keyword'],
-      },
+```js
+  // Decision steps — rendered sequentially as yes/no or multi-choice
+  steps: [
+    {
+      id: 'stepId',
+      question: 'Is this observation benign?',
+      inputType: 'yes-no',          // or custom choice cards
+      earlyExit: { yes: 'LR-1' },  // Category if answered yes
     },
+  ],
 
-    // Multi-select keyword rule — matches ALL found keywords
-    'multi-section-id': {
-      multi: true,
-      options: {
-        'option-id': ['keyword1', 'keyword phrase'],
-        'option-id-2': ['other keyword'],
-      },
+  // Major features — rendered as compact inline rows (label left, buttons right)
+  majorFeatures: [
+    {
+      id: 'featureId',
+      label: 'Feature Name',
+      tooltip: 'Definition from lexicon for hover tooltip',  // REQUIRED
+      inputType: 'yes-no',
+      cdeElementId: 'RDE####',
     },
+  ],
+
+  // Ancillary features — rendered as compact toggleable card grids
+  ancillaryFeatures: {
+    favoringUpgrade: [
+      { id: 'featureId', label: 'Feature', tooltip: 'Definition...' },
+    ],
+    favoringDowngrade: [ ... ],
   },
-};
+
+  // Location input — separate from primaryInputs for decision-tree tools
+  locationInput: { ... },
 ```
 
 ### Supported Input Types
@@ -118,109 +152,146 @@ export const {toolId}Definition = {
 |-----------|-----------|----------------|
 | `single-select` (in section) | Clickable image cards, radio behavior | `string` (option ID) |
 | `multi-select` (in section) | Clickable image cards, checkbox behavior | `string[]` (option IDs) |
-| `single-select` (in primaryInputs/additionalInputs) | `<select>` dropdown | `string \| null` |
-| `float` | Number input with unit label | `number \| null` |
-| `integer` | Number input | `number \| null` |
+| `single-select` (in primaryInputs) | `<select>` dropdown | `string \| null` |
+| `float` | Number input (no spinner) with optional unit toggle | `number \| null` |
+| `integer` | Number input (no spinner) | `number \| null` |
 | `text` | Textarea | `string` |
+| `yes-no` | Present/Absent or Yes/No button pair | `'yes' \| 'no' \| null` |
 
-### Option Properties
+### Size Input with Unit Toggle
 
-| Property | Required | Description |
-|----------|----------|-------------|
-| `id` | Yes | Unique within the section, used as formState value |
-| `label` | Yes | Display text |
-| `points` | Yes (sections) | Numeric score for this option |
-| `image` | No | SVG filename in `public/images/{toolId}/` |
-| `cdeCode` | No | CDE value code (e.g., `RDE1040.3`) |
-| `exclusive` | No | For multi-select: selecting this deselects all others |
+- Set `unitToggle: true` on size inputs to add mm/cm toggle
+- Internal value always stored in the definition's native `unit`
+- Toggle converts display value and persists preference to localStorage
+- Number inputs use `class="no-spinner"` — no up/down arrows
+
+### Tooltips
+
+- **All feature labels should have tooltips** sourced from official lexicons
+- Use `tooltip` property on features, not inline gray text
+- Gray hint/description text is discouraged — it adds scroll and clutter
+- Tooltips render as native `title` attributes for hover
+- For multi-choice buttons, put `title` on each button
 
 ### Parse Rules
 
-- Keywords are matched case-insensitively against pasted text
-- List keywords longest-first for best matching (the engine handles this)
-- Include common synonyms and abbreviations
-- Regex rules: use `\d*\.?\d+` (not `\d+\.?\d*`) to handle values like `.5`
-- Matched text is stripped; remainder goes to Additional Findings
-- Section label variants (plural/singular) are auto-stripped from remainder
+```js
+parseRules: {
+  // Regex — extracts numeric value
+  'size': {
+    pattern: /(\d*\.?\d+)\s*mm/,    // Use \d*\.?\d+ not \d+\.?\d*
+    group: 1,
+    transform: (m) => parseInt(m[1], 10),
+  },
+
+  // Single-select keywords — matches longest
+  'featureId': {
+    options: {
+      'yes': ['keyword1', 'keyword phrase'],
+      'no': ['no keyword', 'absent'],
+    },
+  },
+
+  // Multi-select keywords — matches ALL found
+  'multiFeatureId': {
+    multi: true,
+    options: { ... },
+  },
+},
+```
+
+- Match against original text (not progressively stripped)
+- Remainder goes to Additional Findings, separated by semicolons
+- Section label variants (plural/singular) auto-stripped from remainder
+- Re-parse replaces form state (not appends)
 
 ---
 
-## 3. Calculator File (`calculator.js`)
+## 4. Calculator File (`calculator.js`)
 
-Export pure functions that take the total score + additional inputs and return a result object. The result object gets merged into template data.
+Two patterns:
+
+### Point-based
 
 ```js
-export function calculate{Tool}(totalScore, ...otherInputs) {
-  // Map score to risk level, category, recommendation, etc.
+export function calculate{Tool}(totalScore, sizeCm) {
+  const level = getLevel(totalScore);    // Map score → risk level
+  const mgmt = getManagement(level, sizeCm);
   return {
     totalScore,
-    levelName: '...',        // e.g., 'TR5'
-    levelLabel: '...',       // e.g., 'Highly Suspicious'
-    levelFullLabel: '...',   // e.g., 'TR5 - Highly Suspicious'
-    recommendation: '...',   // e.g., 'FNA recommended'
-    recommendationDetail: '...', // Longer explanation
-    // ... any other keys needed by report templates
+    levelName: 'TR5',
+    levelLabel: 'Highly Suspicious',
+    levelFullLabel: 'TR5 - Highly Suspicious',
+    recommendation: 'FNA recommended',
+    noduleSize: sizeCm,
+    noduleSizeProvided: sizeCm != null,
   };
 }
 ```
 
-**Important**: Every key returned here becomes a `{{variable}}` available in report templates.
+### Decision-tree
+
+```js
+export function calculate{Tool}(formState) {
+  // Check early exits first
+  if (formState.definitelyBenign === 'yes') return buildResult('LR-1', ...);
+  // Lookup table for feature combinations
+  const table = hasAPHE ? TABLE_APHE : TABLE_NO_APHE;
+  return buildResult(category, ...);
+}
+```
+
+**Important**: Every key returned becomes a `{{variable}}` in report templates.
 
 ---
 
-## 4. Templates File (`templates.js`)
+## 5. Templates File (`templates.js`)
 
-Export an object with three template configurations (PS360, PS1, RadAI Omni). Each has:
+Block-based. Each block = one line in the report.
 
 ```js
 export const {toolId}Templates = {
   ps360: {
     label: 'PowerScribe 360',
     blocks: [
-      {
-        id: 'blockId',              // Unique block identifier
-        label: 'Block Label',       // Shown in block editor
-        template: 'Label: {{variable}}',  // Template with {{variables}}
-        pointsTemplate: ' ({{variablePoints}} pts)',  // Optional — appended when points shown
-        enabled: true,              // Default visibility
-        locked: true,               // Optional — prevents toggle/reorder (use for nodule label)
-        showPoints: true,           // Optional — whether this block has points to show
-        condition: 'variableProvided',  // Optional — only render if this data key is truthy
-      },
+      { id: 'obsLabel', label: 'Label', template: '{{obsLabel}}:', enabled: true, locked: true },
+      { id: 'location', label: 'Location', template: 'Location: {{location}}', enabled: true, condition: 'locationProvided' },
+      { id: 'size', label: 'Size', template: 'Size: {{sizeMm}} mm', enabled: true, condition: 'sizeProvided' },
+      { id: 'feature', label: 'Feature', template: 'Feature: {{featureLabel}}', enabled: true },
+      { id: 'category', label: 'Category', template: 'Category: {{categoryFullLabel}}', enabled: true },
     ],
     impression: {
-      template: 'IMPRESSION:\n{{noduleSummaries}}',
+      template: 'IMPRESSION:\n{{impressionSummary}}',
       enabled: true,
     },
-    showPoints: true,               // Global default for "Show points" toggle
+    showPoints: true,      // false for tools without point scoring
   },
   ps1: { ... },
   radai: { ... },
 };
 ```
 
-### Template Variables
+### Block properties
 
-Variables come from three sources:
-1. **buildTemplateData()** — auto-maps section IDs to labels (e.g., `{{composition}}` = "Solid or almost completely solid")
-2. **buildTemplateData()** — auto-maps `{sectionId}Points` (e.g., `{{compositionPoints}}` = 2)
-3. **calculator.js return object** — all keys become available (e.g., `{{tiradsFullLabel}}`)
-4. **Page controller** — manually added keys (e.g., `{{noduleLabel}}`, `{{noduleLocation}}`)
+| Property | Required | Description |
+|----------|----------|-------------|
+| `id` | Yes | Unique block identifier |
+| `label` | Yes | Shown in block editor |
+| `template` | Yes | Template string with `{{variables}}` |
+| `pointsTemplate` | No | Appended when "Show points" is on |
+| `enabled` | Yes | Default visibility |
+| `locked` | No | Prevents toggle/reorder (use for item label) |
+| `showPoints` | No | Whether this block has points |
+| `condition` | No | Only render if this data key is truthy |
 
-### Special Variables (set by the page controller)
+### Impression variable
 
-| Variable | Source | Description |
-|----------|--------|-------------|
-| `{{noduleLabel}}` | Page controller | "Nodule 1", "Nodule 2", etc. |
-| `{{noduleLocation}}` | Page controller | Resolved from primaryInputs |
-| `{{noduleLocationProvided}}` | Page controller | Boolean for conditional rendering |
-| `{{noduleSummaries}}` | Page controller | Combined impression lines for all nodules |
+- Point-based tools: use `{{noduleSummaries}}` (built by page controller)
+- Decision-tree tools: use `{{impressionSummary}}` (built by page controller)
 
 ---
 
-## 5. Page HTML (`{toolId}.html`)
-
-Standard structure — copy from tirads.html and modify:
+## 6. Page HTML (`{toolId}.html`)
 
 ```html
 <!DOCTYPE html>
@@ -228,12 +299,12 @@ Standard structure — copy from tirads.html and modify:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{Tool Name} | RadlogicHQ</title>
+  <title>{Tool Name} | RadioLogicHQ</title>
 </head>
 <body>
   <header class="site-header">
     <div class="container">
-      <a href="/" class="site-header__logo">RadlogicHQ</a>
+      <a href="/" class="site-header__logo">RadioLogicHQ</a>
       <nav class="site-header__nav">
         <a href="/">All Tools</a>
       </nav>
@@ -241,29 +312,24 @@ Standard structure — copy from tirads.html and modify:
   </header>
 
   <main class="container">
-    <!-- Hero with score/level badges -->
     <div class="tool-hero">
       <div class="tool-hero__text">
-        <h1>{Tool Name} <a href="{reference_url}" target="_blank" rel="noopener" class="tool-hero__ref" title="{full citation}">{Ref}</a></h1>
+        <h1>{Tool Name} <a href="{url}" target="_blank" rel="noopener" class="tool-hero__ref" title="{full citation}">Ref</a></h1>
       </div>
       <div class="tool-hero__summary">
-        <div class="summary-badge">
-          <span class="summary-badge__label">Score</span>
-          <span class="summary-badge__value" id="total-score">0</span>
-        </div>
         <div class="summary-badge summary-badge--level">
-          <span class="summary-badge__label">Level</span>
+          <span class="summary-badge__label">{Score/Category}</span>
           <span class="summary-badge__value" id="{tool}-level" data-level="0">--</span>
         </div>
       </div>
     </div>
 
-    <!-- Multi-item tabs (if applicable) -->
-    <div class="nodule-tabs-bar" id="nodule-tabs"></div>
+    <!-- Multi-item tabs -->
+    <div class="{item}-tabs-bar" id="{item}-tabs"></div>
 
     <div class="tool-layout">
       <div class="tool-layout__input">
-        <div id="tool-input"></div>
+        <div id="tool-input"></div>  <!-- or id="step-container" for decision-tree -->
         <div class="study-findings card">
           <label for="additional-findings">Additional Findings</label>
           <textarea id="additional-findings" rows="2"></textarea>
@@ -290,99 +356,138 @@ Standard structure — copy from tirads.html and modify:
 
 ---
 
-## 6. Page Controller (`{toolId}.js`)
-
-Wires definition → renderer → engine → calculator → report output. Copy from tirads.js and modify:
+## 7. Page Controller (`{toolId}.js`)
 
 **Key responsibilities:**
-- Import all modules (styles, components, core libs, tool-specific files)
-- Manage multi-item state (nodules, lesions, etc.) — each item has its own `formState`
-- Render nodule/item tabs if multi-item
-- Wire `renderToolForm()` with onChange callback
-- Call `calculateScore()` + tool-specific calculator on every change
-- Build template data, add tool-specific keys (location resolution, camelCase remapping)
-- Set `reportEl.renderFn` that renders blocks per-item + combined impression
-- Handle study-level additional findings (separate from per-item state)
-- Wire parse button to `parseFindings()`
+- Import styles (`base.css`, `forms.css`, tool CSS) and `report-output.js` component
+- Manage multi-item state — each item has its own `formState`
+- Render item tabs (add, remove, switch, double-click to rename)
+- Build UI (point-based: `renderToolForm()` | decision-tree: custom DOM)
+- Wire all inputs to update `formState` → recalculate → update report
+- Build template data with all `{{variable}}` keys needed by templates
+- Set `reportEl.renderFn` to render FINDINGS + ADDITIONAL FINDINGS + IMPRESSION
+- Additional Findings is study-level (outside item state)
+- Wire parse button: replace (not merge) form state, remainder → Additional Findings
+- For LI-RADS-style: include series/image number fields → `Observation 1 (Series 4, Image 127)`
 
-**Template data remapping** — hyphenated section IDs need camelCase aliases for templates:
+**Report renderFn pattern:**
 ```js
-templateData.echogenicFoci = templateData['echogenic-foci'] || 'Not selected';
-templateData.echogenicFociPoints = sectionScores['echogenic-foci'] || 0;
+reportEl.renderFn = (config, _data) => {
+  const blocks = config.blocks || [];
+  const sections = [];
+  // FINDINGS per item
+  const findings = allItemData.map((data) => renderBlocks(blocks, data, config.showPoints));
+  sections.push('FINDINGS:\n' + findings.join('\n\n'));
+  // ADDITIONAL FINDINGS (study-level)
+  if (studyAdditionalFindings.trim())
+    sections.push('ADDITIONAL FINDINGS:\n' + studyAdditionalFindings.trim());
+  // IMPRESSION (combined)
+  if (config.impression?.enabled)
+    sections.push(renderReport(config.impression.template, { impressionSummary: ... }));
+  return sections.join('\n\n');
+};
 ```
 
 ---
 
-## 7. Reference Images
+## 8. Shared Styles (in `forms.css`)
+
+These styles are shared across ALL tools — do NOT duplicate in tool CSS:
+- Report output component (header, text, controls, edit bar, editable lines, toast)
+- Hero bar (layout, title, ref link, summary badges)
+- Study findings (label, textarea)
+- Parse panel (label, textarea, button, status)
+- Unit toggle (`mm | cm` buttons)
+- No-spinner class for number inputs
+
+**Tool CSS should only contain:**
+- Level badge colors (`data-level` attributes)
+- Tool-specific section/card styles
+- Decision-tree step styles (if applicable)
+- Ancillary feature grid styles (if applicable)
+
+---
+
+## 9. Reference Images (point-based tools only)
 
 - Place SVGs in `public/images/{toolId}/`
 - Use 200x150 viewBox, transparent background
-- Dark theme friendly: use `#3a4a5a` for tissue, `#60a5fa` for outlines
-- Filename format: `{section}-{option}.svg` (e.g., `composition-solid.svg`)
-- Cards without images get an empty placeholder automatically (same background color)
-- Images hidden in compact mode via `.view-toggle-link`
+- Dark theme: `#3a4a5a` for tissue, `#60a5fa` for outlines
+- Cards without images get an empty placeholder (same background)
+- Show/Hide images toggle renders automatically if any option has an `image`
+- Decision-tree tools typically don't need images
 
 ---
 
-## 8. Config Updates
+## 10. Config Updates
 
 ### vite.config.js
-Add the new HTML entry point:
 ```js
-rollupOptions: {
-  input: {
-    main: resolve(__dirname, 'index.html'),
-    tirads: resolve(__dirname, 'src/tools/tirads/tirads.html'),
-    newtool: resolve(__dirname, 'src/tools/{toolId}/{toolId}.html'),  // ADD
-  },
-},
+{toolId}: resolve(__dirname, 'src/tools/{toolId}/{toolId}.html'),
 ```
 
-### index.html
-Add a tool card to the landing page grid:
-```html
-<a href="/src/tools/{toolId}/{toolId}.html" class="tool-card">
-  <div class="tool-card__icon">{XX}</div>
-  <div class="tool-card__body">
-    <h2 class="tool-card__title">{Tool Name}</h2>
-    <p class="tool-card__desc">{Description}</p>
-    <span class="tool-card__tag">{Specialty} &bull; {Modality}</span>
-  </div>
-</a>
+### src/data/tools-registry.js
+```js
+{
+  id: '{toolId}',
+  name: '{Tool Name}',
+  description: '...',
+  icon: 'XX',
+  path: '/src/tools/{toolId}/{toolId}.html',
+  status: 'active',
+  bodyParts: ['Liver'],
+  modalities: ['CT', 'MR'],
+  specialties: ['Body Imaging'],
+  cdeSetId: 'RDESXXX',
+}
 ```
+
+Landing page renders automatically from the registry — no HTML edits needed.
 
 ---
 
-## 9. Design Principles
+## 11. Design Principles
 
-- **Efficiency first**: minimize clicks, scrolling, mouse travel (see feedback_radlogic_efficiency.md)
-- **Controls near content**: toggles/links belong next to what they affect
-- **Compact by default**: small cards, tight grids, no wasted whitespace
-- **Show/Hide images**: every tool with image cards gets the inline toggle link
-- **Dark theme**: all colors from CSS variables, dark radiology reading room aesthetic
-- **Font consistency**: section labels, input labels, and additional findings labels should all match
+- **Efficiency first**: minimize clicks, scrolling, mouse mileage
+- **Controls near content**: toggles/links next to what they affect
+- **Tooltips over text**: use hover tooltips (from official lexicons), not inline gray descriptions
+- **No number spinners**: all numeric inputs use `class="no-spinner"`
+- **Unit toggle**: size inputs get mm/cm toggle, preference persists
+- **Compact layout**: small cards, tight grids, inline rows for features
+- **Dark theme**: all colors from CSS variables
+- **Font consistency**: all labels same size/weight per toolui.md
+- **Feature labels**: `text-xs` weight 500, indented under section headers
+- **Buttons aligned**: use `min-width` on labels so Present/Absent buttons align vertically
+- **Always-open sections**: don't use collapsible `<details>` — keep ancillary features visible
+- **Series/Image numbers**: narrow text inputs (70px, no spinner, centered) for reference numbers
 
 ---
 
-## 10. Verification Checklist
+## 12. Verification Checklist
 
-- [ ] All scoring options selectable, score updates live
-- [ ] Score maps to correct risk level/category
-- [ ] Size/measurement affects management recommendation
+- [ ] All options selectable, score/category updates live
+- [ ] Correct risk level/category for all feature combinations
+- [ ] Size affects management recommendation (if applicable)
 - [ ] All 3 report templates generate correct output
 - [ ] Copy button copies plain text
-- [ ] Multi-item (nodule) tabs: add, remove, switch, rename (double-click)
+- [ ] Multi-item tabs: add, remove, switch, rename (double-click)
 - [ ] Each item maintains independent form state
-- [ ] Report shows per-item findings + combined impression
+- [ ] Report: per-item findings + study-level additional findings + combined impression
+- [ ] Item label includes series/image numbers when provided
 - [ ] Paste & parse auto-fills correct options
-- [ ] Unparsed text goes to Additional Findings with semicolon separation
+- [ ] Unparsed text goes to Additional Findings with semicolons
 - [ ] Re-parse replaces (not appends) form state and additional findings
-- [ ] Show/Hide images toggle works
-- [ ] Compact mode hides images, tightens layout
-- [ ] Block editor: toggle fields, reorder, show/hide points
+- [ ] Show/Hide images toggle works (point-based tools)
+- [ ] Compact mode works (point-based tools)
+- [ ] Block editor: toggle fields, reorder, show/hide points, WYSIWYG edit
+- [ ] Section drag-and-drop syncs with report block order (point-based tools)
 - [ ] Template customizations persist in localStorage
+- [ ] Unit toggle (mm/cm) works and persists preference
+- [ ] Hover tooltips on all feature labels
+- [ ] No gray instruction text — tooltips only
 - [ ] Build passes (`npm run build`)
-- [ ] CDE set ID and element IDs are correct per radelement.org
+- [ ] CDE set ID and element IDs correct per radelement.org
+- [ ] Tool registered in `tools-registry.js` with body parts, modalities, specialties
 
 ---
 

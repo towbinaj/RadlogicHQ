@@ -2,6 +2,7 @@ import '../../styles/base.css';
 import '../../styles/forms.css';
 import './lirads.css';
 import '../../components/report-output.js';
+import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { liradsDefinition } from './definition.js';
 import { calculateLirads } from './calculator.js';

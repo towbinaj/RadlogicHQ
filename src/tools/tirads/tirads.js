@@ -2,6 +2,7 @@ import '../../styles/base.css';
 import '../../styles/forms.css';
 import './tirads.css';
 import '../../components/report-output.js';
+import '../../components/auth-ui.js';
 import { renderToolForm } from '../../core/renderer.js';
 import { calculateScore } from '../../core/engine.js';
 import { renderReport, renderBlocks, buildTemplateData } from '../../core/report.js';
