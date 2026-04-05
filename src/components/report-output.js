@@ -2,7 +2,7 @@ import { copyToClipboard } from '../core/clipboard.js';
 import { renderReport, renderBlocks } from '../core/report.js';
 import { getStored, setStored, trackEvent } from '../core/storage.js';
 import { isLoggedIn } from '../core/auth.js';
-import { saveReport, getSavedReports, deleteSavedReport } from '../core/user-data.js';
+import { saveReport, getSavedReports, deleteSavedReport, shareTemplate } from '../core/user-data.js';
 
 /**
  * <report-output> Web Component
@@ -44,10 +44,15 @@ export class ReportOutput extends HTMLElement {
             <label class="edit-bar__points-toggle">
               <input type="checkbox" checked> Show points
             </label>
+            <button class="btn edit-bar__share-btn" style="display:none">Share</button>
             <button class="btn edit-bar__reset-btn">Reset to Default</button>
             <button class="btn btn--primary edit-bar__done-btn">Done</button>
           </div>
           <p class="edit-bar__hint">Click the report text above to edit formatting. Drag ≡ to reorder. Uncheck to hide.</p>
+          <div class="edit-bar__share-result" style="display:none">
+            <input type="text" class="edit-bar__share-url" readonly>
+            <button class="btn edit-bar__share-copy">Copy Link</button>
+          </div>
         </div>
         <div class="report-output__history-panel" style="display:none">
           <div class="history-panel__header">
@@ -76,6 +81,10 @@ export class ReportOutput extends HTMLElement {
       editBar: this.querySelector('.report-output__edit-bar'),
       pointsToggle: this.querySelector('.edit-bar__points-toggle input'),
       resetBtn: this.querySelector('.edit-bar__reset-btn'),
+      shareBtn: this.querySelector('.edit-bar__share-btn'),
+      shareResult: this.querySelector('.edit-bar__share-result'),
+      shareUrl: this.querySelector('.edit-bar__share-url'),
+      shareCopy: this.querySelector('.edit-bar__share-copy'),
       doneBtn: this.querySelector('.edit-bar__done-btn'),
       historyPanel: this.querySelector('.report-output__history-panel'),
       historyList: this.querySelector('.history-panel__list'),
@@ -88,12 +97,13 @@ export class ReportOutput extends HTMLElement {
       toast: this.querySelector('.report-output__toast'),
     };
 
-    // Show Save/History buttons based on auth state
+    // Show Save/History/Share buttons based on auth state
     import('../core/auth.js').then(({ onAuthChange }) => {
       onAuthChange((user) => {
         const show = user ? '' : 'none';
         this._els.saveBtn.style.display = show;
         this._els.historyBtn.style.display = show;
+        this._els.shareBtn.style.display = show;
       });
     });
 
@@ -116,6 +126,13 @@ export class ReportOutput extends HTMLElement {
     // History flow
     this._els.historyBtn.addEventListener('click', () => this._toggleHistory());
     this._els.historyClose.addEventListener('click', () => this._closeHistory());
+
+    // Share flow
+    this._els.shareBtn.addEventListener('click', () => this._shareTemplate());
+    this._els.shareCopy.addEventListener('click', () => {
+      copyToClipboard(this._els.shareUrl.value);
+      this._showToast('Link copied!');
+    });
 
     this._els.pointsToggle.addEventListener('change', () => {
       this._getConfig().showPoints = this._els.pointsToggle.checked;
@@ -532,6 +549,20 @@ export class ReportOutput extends HTMLElement {
 
   _closeHistory() {
     this._els.historyPanel.style.display = 'none';
+  }
+
+  // --- Share template ---
+
+  async _shareTemplate() {
+    const code = await shareTemplate(this._toolId, this._activeTemplate);
+    if (!code) {
+      this._showToast('Save a custom template first');
+      return;
+    }
+    const baseUrl = window.location.origin;
+    const url = `${baseUrl}/?share=${code}`;
+    this._els.shareUrl.value = url;
+    this._els.shareResult.style.display = 'flex';
   }
 
   _showToast(msg = 'Copied!') {

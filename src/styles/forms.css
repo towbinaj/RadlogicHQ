@@ -317,6 +317,27 @@ input.no-spinner[type="number"] {
   font-style: italic;
 }
 
+/* Share result */
+.edit-bar__share-result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.edit-bar__share-url {
+  flex: 1;
+  font-size: var(--text-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+}
+
+.edit-bar__share-copy {
+  font-size: var(--text-xs);
+  padding: var(--space-xs) var(--space-sm);
+}
+
 /* Save prompt */
 .report-output__save-prompt {
   display: flex;
