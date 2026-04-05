@@ -408,21 +408,22 @@ input.no-spinner[type="number"] {
   transition: all var(--transition-fast);
 }
 
-/* Gear icon on pill */
+/* Edit icon on pill */
 .pill::after {
-  content: '\u2699';
+  content: '\270E';
   position: absolute;
-  right: 3px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   opacity: 0;
   cursor: pointer;
   transition: opacity var(--transition-fast);
+  font-family: var(--font-sans);
 }
 
 .pill:hover::after {
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .pill--finding {
@@ -465,13 +466,14 @@ input.no-spinner[type="number"] {
   padding: var(--space-sm);
   box-shadow: var(--shadow-lg);
   z-index: 100;
-  font-size: 0.65rem;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
 }
 
 .pill-popover__btn {
   font-family: var(--font-sans);
-  font-size: 0.6rem;
-  padding: 2px var(--space-xs);
+  font-size: var(--text-xs);
+  padding: 2px var(--space-sm);
   background: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
@@ -504,11 +506,10 @@ input.no-spinner[type="number"] {
 }
 
 .pill-popover__aliases-title {
-  font-size: 0.55rem;
+  font-size: var(--text-xs);
   font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xs);
 }
 
 .pill-popover__alias-row {
@@ -517,9 +518,9 @@ input.no-spinner[type="number"] {
 
 .pill-popover__alias-input {
   width: 100%;
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   font-family: var(--font-sans);
-  padding: 1px var(--space-xs);
+  padding: 2px var(--space-sm);
   background: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
