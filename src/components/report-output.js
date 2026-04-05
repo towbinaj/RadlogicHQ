@@ -1,6 +1,6 @@
 import { copyToClipboard } from '../core/clipboard.js';
 import { renderReport, renderBlocks } from '../core/report.js';
-import { getStored, setStored } from '../core/storage.js';
+import { getStored, setStored, trackEvent } from '../core/storage.js';
 
 /**
  * <report-output> Web Component
@@ -385,11 +385,15 @@ export class ReportOutput extends HTMLElement {
   // --- Actions ---
 
   async _copy() {
-    // Always copy the plain text version
     const config = this._getConfig();
     const text = this._renderFn ? this._renderFn(config, this._templateData) : '';
     const success = await copyToClipboard(text);
-    if (success) this._showToast();
+    if (success) {
+      this._showToast();
+      // Aggregate analytics — no PII, just counters
+      trackEvent(`tool:${this._toolId}:reports`);
+      trackEvent(`template:${this._activeTemplate}:uses`);
+    }
   }
 
   _showToast() {
