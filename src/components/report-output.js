@@ -379,6 +379,10 @@ export class ReportOutput extends HTMLElement {
       html += renderGroup('Findings', findings);
       html += renderGroup('Scores', scores);
       html += renderGroup('Other', meta);
+
+      // Add custom field button
+      html += `<div class="pill-palette__group"><button class="pill-palette__add-field">+ New field</button></div>`;
+
       palette.innerHTML = html;
     }
 
@@ -390,6 +394,35 @@ export class ReportOutput extends HTMLElement {
         e.dataTransfer.effectAllowed = 'copy';
       });
     });
+
+    // Wire new field button
+    const addFieldBtn = palette.querySelector('.pill-palette__add-field');
+    if (addFieldBtn) {
+      addFieldBtn.addEventListener('click', () => {
+        const name = prompt('Field name (e.g., "Vascularity"):');
+        if (!name?.trim()) return;
+
+        const fieldId = `custom_${name.trim().toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
+        const display = `{{${fieldId}}}`;
+
+        // Add to editorContent as a new pill at the end
+        if (!config.editorContent) config.editorContent = [];
+        config.editorContent.push({ type: 'text', value: '\n' + name.trim() + ': ' });
+        config.editorContent.push({ type: 'pill', blockId: fieldId, display });
+
+        // Initialize pill state with one default option
+        if (!config.pillStates[fieldId]) {
+          config.pillStates[fieldId] = {
+            enabled: true,
+            aliases: { 'default': name.trim() },
+            customOptions: [{ id: 'default', label: name.trim() }],
+          };
+        }
+
+        this._saveBlockConfig();
+        this._renderPillEditor();
+      });
+    }
   }
 
   _showPillPopover(pillEl, config) {
@@ -408,17 +441,23 @@ export class ReportOutput extends HTMLElement {
 
     let html = '<div class="pill-popover__content">';
 
+    // Custom options stored per pill
+    const customOptions = config.pillStates[blockId].customOptions || [];
+
     // If this pill maps to a section with options, show alias editor
-    if (section?.options) {
+    if (section?.options || customOptions.length > 0) {
+      const allOptions = [...(section?.options || []), ...customOptions.map((co) => ({ id: co.id, label: co.label, custom: true }))];
       html += '<div class="pill-popover__aliases">';
-      html += `<div class="pill-popover__aliases-title">${section.label} display text</div>`;
-      for (const opt of section.options) {
+      html += `<div class="pill-popover__aliases-title">${section?.label || blockId} display text</div>`;
+      for (const opt of allOptions) {
         const alias = aliases[opt.id] ?? opt.label;
         const escaped = alias.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         html += `<div class="pill-popover__alias-row">
           <textarea class="pill-popover__alias-input" data-option-id="${opt.id}" rows="1" spellcheck="false">${escaped}</textarea>
+          ${opt.custom ? `<button class="pill-popover__btn pill-popover__btn--danger pill-popover__delete-opt" data-custom-id="${opt.id}" title="Remove">&times;</button>` : ''}
         </div>`;
       }
+      html += `<button class="pill-popover__btn pill-popover__add-opt" data-action="add-option">+ Add option</button>`;
       html += '</div>';
     }
 
@@ -443,6 +482,33 @@ export class ReportOutput extends HTMLElement {
         this._saveBlockConfig();
         // Update the pill's display text to reflect the alias for the current value
         this._updatePillDisplay(pillEl, blockId, config);
+      });
+    });
+
+    // Add custom option
+    const addOptBtn = popover.querySelector('[data-action="add-option"]');
+    if (addOptBtn) {
+      addOptBtn.addEventListener('click', () => {
+        if (!config.pillStates[blockId].customOptions) config.pillStates[blockId].customOptions = [];
+        const newId = `custom_${Date.now()}`;
+        config.pillStates[blockId].customOptions.push({ id: newId, label: 'New option' });
+        if (!config.pillStates[blockId].aliases) config.pillStates[blockId].aliases = {};
+        config.pillStates[blockId].aliases[newId] = 'New option';
+        this._saveBlockConfig();
+        // Re-open popover to show new option
+        this._showPillPopover(pillEl, config);
+      });
+    }
+
+    // Delete custom option
+    popover.querySelectorAll('.pill-popover__delete-opt').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const customId = btn.dataset.customId;
+        const opts = config.pillStates[blockId].customOptions || [];
+        config.pillStates[blockId].customOptions = opts.filter((o) => o.id !== customId);
+        if (config.pillStates[blockId].aliases) delete config.pillStates[blockId].aliases[customId];
+        this._saveBlockConfig();
+        this._showPillPopover(pillEl, config);
       });
     });
 

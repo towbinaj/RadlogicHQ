@@ -536,9 +536,47 @@ input.no-spinner[type="number"] {
   outline: none;
 }
 
+.pill-popover__add-opt {
+  margin-top: var(--space-xs);
+  width: 100%;
+  text-align: center;
+  border-style: dashed;
+  color: var(--text-accent);
+}
+
+.pill-popover__alias-row {
+  display: flex;
+  align-items: start;
+  gap: 2px;
+}
+
+.pill-popover__alias-row .pill-popover__delete-opt {
+  padding: 2px 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .pill-popover__actions {
   display: flex;
   gap: var(--space-xs);
+}
+
+/* New field button in palette */
+.pill-palette__add-field {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--text-accent);
+  background: none;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pill-palette__add-field:hover {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
 }
 
 /* Pill palette */
