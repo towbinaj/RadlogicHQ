@@ -18,8 +18,13 @@ export const liradsTemplates = {
   ps360: {
     label: 'PowerScribe 360',
     blocks: FINDINGS_BLOCKS.map((b) => ({ ...b })),
+    sectionHeaders: {
+      findings: 'FINDINGS:',
+      additionalFindings: 'ADDITIONAL FINDINGS:',
+      impression: 'IMPRESSION:',
+    },
     impression: {
-      template: 'IMPRESSION:\n{{impressionSummary}}',
+      template: '{{impressionSummary}}',
       enabled: true,
     },
     showPoints: false,
@@ -28,8 +33,13 @@ export const liradsTemplates = {
   ps1: {
     label: 'PowerScribe One',
     blocks: FINDINGS_BLOCKS.map((b) => ({ ...b })),
+    sectionHeaders: {
+      findings: 'FINDINGS:',
+      additionalFindings: 'ADDITIONAL FINDINGS:',
+      impression: 'IMPRESSION:',
+    },
     impression: {
-      template: 'IMPRESSION:\n{{impressionSummary}}',
+      template: '{{impressionSummary}}',
       enabled: true,
     },
     showPoints: false,
@@ -48,8 +58,13 @@ export const liradsTemplates = {
       { id: 'category', label: 'Category', template: 'LI-RADS_Category: {{category}}\nLI-RADS_Label: {{categoryLabel}}', enabled: true },
       { id: 'ancillary', label: 'Ancillary', template: 'Ancillary_Adjustment: {{adjustmentNote}}', enabled: true, condition: 'hasAdjustment' },
     ],
+    sectionHeaders: {
+      findings: '[STRUCTURED REPORT]',
+      additionalFindings: '[ADDITIONAL FINDINGS]',
+      impression: '[IMPRESSION]',
+    },
     impression: {
-      template: '[IMPRESSION]\n{{impressionSummary}}\n[END STRUCTURED REPORT]',
+      template: '{{impressionSummary}}\n[END STRUCTURED REPORT]',
       enabled: true,
     },
     showPoints: false,

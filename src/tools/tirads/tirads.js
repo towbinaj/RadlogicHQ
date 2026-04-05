@@ -256,29 +256,37 @@ function init() {
     reportEl.renderFn = (config, _data) => {
       const blocks = config.blocks || [];
       const showPoints = config.showPoints ?? true;
+      const headers = config.sectionHeaders || {};
       const sections = [];
 
       // FINDINGS
       const findingsBlocks = allNoduleData.map((data) =>
         renderBlocks(blocks, data, showPoints)
       );
+      const findingsHeader = headers.findings ?? 'FINDINGS:';
       sections.push(
-        'FINDINGS:\n' + (nodules.length === 1
+        findingsHeader + '\n' + (nodules.length === 1
           ? findingsBlocks[0]
           : findingsBlocks.join('\n\n'))
       );
 
-      // ADDITIONAL FINDINGS — study-level, applies to whole exam
+      // Custom text blocks
+      const customBlocks = config.customBlocks || [];
+      if (customBlocks.length > 0) {
+        sections.push(customBlocks.map((cb) => cb.text).join('\n'));
+      }
+
+      // ADDITIONAL FINDINGS
       if (studyAdditionalFindings.trim()) {
-        sections.push('ADDITIONAL FINDINGS:\n' + studyAdditionalFindings.trim());
+        const addlHeader = headers.additionalFindings ?? 'ADDITIONAL FINDINGS:';
+        sections.push(addlHeader + '\n' + studyAdditionalFindings.trim());
       }
 
       // IMPRESSION
       if (config.impression?.enabled && config.impression?.template) {
-        const impressionData = {
-          noduleSummaries: summaryLines.join('\n'),
-        };
-        sections.push(renderReport(config.impression.template, impressionData));
+        const impHeader = headers.impression ?? 'IMPRESSION:';
+        const impressionData = { noduleSummaries: summaryLines.join('\n') };
+        sections.push(impHeader + '\n' + renderReport(config.impression.template, impressionData));
       }
 
       return sections.join('\n\n');

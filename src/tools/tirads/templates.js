@@ -1,6 +1,6 @@
 /**
  * Default report templates for TI-RADS output.
- * Block-based: each block is a draggable, toggleable report field.
+ * Block-based with editable section headers.
  */
 
 const FINDINGS_BLOCKS = [
@@ -19,8 +19,13 @@ export const tiradsTemplates = {
   ps360: {
     label: 'PowerScribe 360',
     blocks: FINDINGS_BLOCKS.map((b) => ({ ...b })),
+    sectionHeaders: {
+      findings: 'FINDINGS:',
+      additionalFindings: 'ADDITIONAL FINDINGS:',
+      impression: 'IMPRESSION:',
+    },
     impression: {
-      template: 'IMPRESSION:\n{{noduleSummaries}}',
+      template: '{{noduleSummaries}}',
       enabled: true,
     },
     showPoints: true,
@@ -29,8 +34,13 @@ export const tiradsTemplates = {
   ps1: {
     label: 'PowerScribe One',
     blocks: FINDINGS_BLOCKS.map((b) => ({ ...b })),
+    sectionHeaders: {
+      findings: 'FINDINGS:',
+      additionalFindings: 'ADDITIONAL FINDINGS:',
+      impression: 'IMPRESSION:',
+    },
     impression: {
-      template: 'IMPRESSION:\n{{noduleSummaries}}',
+      template: '{{noduleSummaries}}',
       enabled: true,
     },
     showPoints: true,
@@ -49,8 +59,13 @@ export const tiradsTemplates = {
       { id: 'echogenicFoci', label: 'Echogenic Foci', template: 'Echogenic_Foci: {{echogenicFoci}}', pointsTemplate: ' | Points: {{echogenicFociPoints}}', enabled: true, showPoints: true },
       { id: 'totalScore', label: 'Total Score', template: 'Total_Score: {{totalScore}}\nTI-RADS_Level: {{tiradsName}}\nTI-RADS_Category: {{tiradsLabel}}', enabled: true },
     ],
+    sectionHeaders: {
+      findings: '[STRUCTURED REPORT]',
+      additionalFindings: '[ADDITIONAL FINDINGS]',
+      impression: '[IMPRESSION]',
+    },
     impression: {
-      template: '[IMPRESSION]\n{{noduleSummaries}}\n[END STRUCTURED REPORT]',
+      template: '{{noduleSummaries}}\n[END STRUCTURED REPORT]',
       enabled: true,
     },
     showPoints: true,

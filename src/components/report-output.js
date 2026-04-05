@@ -31,7 +31,6 @@ export class ReportOutput extends HTMLElement {
           <div class="report-output__controls">
             <select class="report-output__selector" aria-label="Report template"></select>
             <button class="btn report-output__edit-btn">Edit</button>
-            <button class="btn report-output__save-btn" style="display:none" title="Save report to history">Save</button>
             <button class="btn report-output__history-btn" style="display:none" title="View saved reports">History</button>
             <button class="btn btn--primary report-output__copy-btn">Copy</button>
           </div>
@@ -44,6 +43,7 @@ export class ReportOutput extends HTMLElement {
             <label class="edit-bar__points-toggle">
               <input type="checkbox" checked> Show points
             </label>
+            <button class="btn edit-bar__save-btn" style="display:none">Save Report</button>
             <button class="btn edit-bar__share-btn" style="display:none">Share</button>
             <button class="btn edit-bar__reset-btn">Reset to Default</button>
             <button class="btn btn--primary edit-bar__done-btn">Done</button>
@@ -76,7 +76,7 @@ export class ReportOutput extends HTMLElement {
       text: this.querySelector('.report-output__text'),
       copyBtn: this.querySelector('.report-output__copy-btn'),
       editBtn: this.querySelector('.report-output__edit-btn'),
-      saveBtn: this.querySelector('.report-output__save-btn'),
+      saveBtn: this.querySelector('.edit-bar__save-btn'),
       historyBtn: this.querySelector('.report-output__history-btn'),
       editBar: this.querySelector('.report-output__edit-bar'),
       pointsToggle: this.querySelector('.edit-bar__points-toggle input'),
@@ -97,12 +97,12 @@ export class ReportOutput extends HTMLElement {
       toast: this.querySelector('.report-output__toast'),
     };
 
-    // Show Save/History/Share buttons based on auth state
+    // Show auth-dependent buttons based on login state
     import('../core/auth.js').then(({ onAuthChange }) => {
       onAuthChange((user) => {
         const show = user ? '' : 'none';
-        this._els.saveBtn.style.display = show;
         this._els.historyBtn.style.display = show;
+        this._els.saveBtn.style.display = show;
         this._els.shareBtn.style.display = show;
       });
     });
@@ -174,11 +174,13 @@ export class ReportOutput extends HTMLElement {
 
   _getDefaultConfig() {
     const tmpl = this._templates[this._activeTemplate];
-    if (!tmpl) return { blocks: [], showPoints: true, impression: null };
+    if (!tmpl) return { blocks: [], showPoints: true, impression: null, sectionHeaders: {}, customBlocks: [] };
     return {
       blocks: tmpl.blocks.map((b) => ({ ...b })),
       showPoints: tmpl.showPoints ?? true,
       impression: tmpl.impression ? { ...tmpl.impression } : null,
+      sectionHeaders: { ...(tmpl.sectionHeaders || { findings: 'FINDINGS:', additionalFindings: 'ADDITIONAL FINDINGS:', impression: 'IMPRESSION:' }) },
+      customBlocks: [],
     };
   }
 
@@ -211,6 +213,8 @@ export class ReportOutput extends HTMLElement {
         blocks: merged,
         showPoints: saved.showPoints ?? defaults.showPoints,
         impression: defaults.impression,
+        sectionHeaders: saved.sectionHeaders ?? defaults.sectionHeaders,
+        customBlocks: saved.customBlocks ?? [],
       };
     } else {
       this._blockConfig = this._getDefaultConfig();
@@ -229,6 +233,8 @@ export class ReportOutput extends HTMLElement {
         pointsTemplate: b.pointsTemplate,
       })),
       showPoints: config.showPoints,
+      sectionHeaders: config.sectionHeaders,
+      customBlocks: config.customBlocks,
     });
   }
 
@@ -257,110 +263,181 @@ export class ReportOutput extends HTMLElement {
 
     const config = this._getConfig();
     const showPoints = config.showPoints;
+    const headers = config.sectionHeaders || {};
 
-    // Render each block as an editable line
-    config.blocks.forEach((block, index) => {
+    // Helper: create an editable header line
+    const addHeaderLine = (key, defaultText) => {
       const line = document.createElement('div');
-      line.className = `editable-line ${block.enabled ? '' : 'editable-line--disabled'}`;
-      line.dataset.blockIndex = index;
-
-      // Drag handle
-      const handle = document.createElement('span');
-      handle.className = 'editable-line__handle';
-      handle.textContent = '\u2261';
-      handle.title = 'Drag to reorder';
-      line.appendChild(handle);
-
-      // Toggle checkbox
-      const toggle = document.createElement('input');
-      toggle.type = 'checkbox';
-      toggle.checked = block.enabled;
-      toggle.disabled = !!block.locked;
-      toggle.className = 'editable-line__toggle';
-      toggle.addEventListener('change', () => {
-        block.enabled = toggle.checked;
-        line.classList.toggle('editable-line--disabled', !block.enabled);
+      line.className = 'editable-line editable-line--header';
+      const textSpan = document.createElement('span');
+      textSpan.className = 'editable-line__text editable-line__text--header';
+      textSpan.contentEditable = 'true';
+      textSpan.spellcheck = false;
+      textSpan.textContent = headers[key] || defaultText;
+      textSpan.addEventListener('blur', () => {
+        config.sectionHeaders[key] = textSpan.textContent;
         this._saveBlockConfig();
-        // Re-render the non-editing report for the renderFn
-        this._renderFn && this._renderFn(config, this._templateData);
       });
-      line.appendChild(toggle);
+      line.appendChild(textSpan);
+      pre.appendChild(line);
+    };
 
-      // Editable text span
+    // FINDINGS header
+    addHeaderLine('findings', 'FINDINGS:');
+
+    // Findings blocks
+    config.blocks.forEach((block, index) => {
+      const line = this._createEditableLine(block, index, config, showPoints, pre);
+      pre.appendChild(line);
+    });
+
+    // Custom blocks (user-added text)
+    config.customBlocks.forEach((cb, i) => {
+      const line = document.createElement('div');
+      line.className = 'editable-line';
       const textSpan = document.createElement('span');
       textSpan.className = 'editable-line__text';
       textSpan.contentEditable = 'true';
       textSpan.spellcheck = false;
-
-      // Render the current value
-      let rendered = renderReport(block.template, this._templateData);
-      if (block.pointsTemplate && block.showPoints && showPoints) {
-        rendered += renderReport(block.pointsTemplate, this._templateData);
-      }
-
-      // If condition not met, show the template pattern dimmed
-      if (block.condition && !this._templateData[block.condition]) {
-        textSpan.textContent = block.label + ': (no data)';
-        textSpan.classList.add('editable-line__text--empty');
-      } else {
-        textSpan.textContent = rendered || block.label;
-      }
-
-      // On blur, parse the edited text back into a template
+      textSpan.textContent = cb.text;
       textSpan.addEventListener('blur', () => {
-        const editedText = textSpan.textContent;
-        const newTemplate = this._reverseTemplate(block, editedText, showPoints);
-        if (newTemplate !== null) {
-          block.template = newTemplate.template;
-          if (newTemplate.pointsTemplate !== undefined) {
-            block.pointsTemplate = newTemplate.pointsTemplate;
-          }
-          this._saveBlockConfig();
-        }
+        cb.text = textSpan.textContent;
+        this._saveBlockConfig();
       });
-
+      // Delete button
+      const delBtn = document.createElement('button');
+      delBtn.className = 'editable-line__delete';
+      delBtn.textContent = '\u00d7';
+      delBtn.title = 'Remove';
+      delBtn.addEventListener('click', () => {
+        config.customBlocks.splice(i, 1);
+        this._saveBlockConfig();
+        this._renderEditableReport();
+      });
       line.appendChild(textSpan);
-
-      // Drag handlers
-      if (!block.locked) {
-        line.draggable = true;
-        line.addEventListener('dragstart', (e) => {
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', String(index));
-          line.classList.add('editable-line--dragging');
-        });
-        line.addEventListener('dragend', () => {
-          line.classList.remove('editable-line--dragging');
-          pre.querySelectorAll('.editable-line--dragover').forEach((l) => l.classList.remove('editable-line--dragover'));
-        });
-        line.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          line.classList.add('editable-line--dragover');
-        });
-        line.addEventListener('dragleave', () => {
-          line.classList.remove('editable-line--dragover');
-        });
-        line.addEventListener('drop', (e) => {
-          e.preventDefault();
-          line.classList.remove('editable-line--dragover');
-          const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
-          const to = index;
-          if (from !== to) {
-            const [moved] = config.blocks.splice(from, 1);
-            config.blocks.splice(to, 0, moved);
-            this._saveBlockConfig();
-            this._renderEditableReport();
-            // Notify parent of new block order (for syncing form sections)
-            if (this._onBlockReorder) {
-              const sectionIds = config.blocks.map((b) => b.id);
-              this._onBlockReorder(sectionIds);
-            }
-          }
-        });
-      }
-
+      line.appendChild(delBtn);
       pre.appendChild(line);
     });
+
+    // Add text button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'editable-line__add-btn';
+    addBtn.textContent = '+ Add text';
+    addBtn.addEventListener('click', () => {
+      config.customBlocks.push({ text: 'New text' });
+      this._saveBlockConfig();
+      this._renderEditableReport();
+    });
+    pre.appendChild(addBtn);
+
+    // Spacer
+    pre.appendChild(document.createElement('br'));
+
+    // IMPRESSION header
+    addHeaderLine('impression', 'IMPRESSION:');
+
+    // Impression content (read-only preview)
+    if (config.impression?.enabled) {
+      const impLine = document.createElement('div');
+      impLine.className = 'editable-line editable-line--preview';
+      const impText = document.createElement('span');
+      impText.className = 'editable-line__text editable-line__text--empty';
+      impText.textContent = '(auto-generated from selections)';
+      impLine.appendChild(impText);
+      pre.appendChild(impLine);
+    }
+  }
+
+  _createEditableLine(block, index, config, showPoints, container) {
+    const line = document.createElement('div');
+    line.className = `editable-line ${block.enabled ? '' : 'editable-line--disabled'}`;
+    line.dataset.blockIndex = index;
+
+    const handle = document.createElement('span');
+    handle.className = 'editable-line__handle';
+    handle.textContent = '\u2261';
+    handle.title = 'Drag to reorder';
+    line.appendChild(handle);
+
+    const toggle = document.createElement('input');
+    toggle.type = 'checkbox';
+    toggle.checked = block.enabled;
+    toggle.disabled = !!block.locked;
+    toggle.className = 'editable-line__toggle';
+    toggle.addEventListener('change', () => {
+      block.enabled = toggle.checked;
+      line.classList.toggle('editable-line--disabled', !block.enabled);
+      this._saveBlockConfig();
+    });
+    line.appendChild(toggle);
+
+    const textSpan = document.createElement('span');
+    textSpan.className = 'editable-line__text';
+    textSpan.contentEditable = 'true';
+    textSpan.spellcheck = false;
+
+    let rendered = renderReport(block.template, this._templateData);
+    if (block.pointsTemplate && block.showPoints && showPoints) {
+      rendered += renderReport(block.pointsTemplate, this._templateData);
+    }
+
+    if (block.condition && !this._templateData[block.condition]) {
+      textSpan.textContent = block.label + ': (no data)';
+      textSpan.classList.add('editable-line__text--empty');
+    } else {
+      textSpan.textContent = rendered || block.label;
+    }
+
+    textSpan.addEventListener('blur', () => {
+      const editedText = textSpan.textContent;
+      const newTemplate = this._reverseTemplate(block, editedText, showPoints);
+      if (newTemplate !== null) {
+        block.template = newTemplate.template;
+        if (newTemplate.pointsTemplate !== undefined) {
+          block.pointsTemplate = newTemplate.pointsTemplate;
+        }
+        this._saveBlockConfig();
+      }
+    });
+
+    line.appendChild(textSpan);
+
+    if (!block.locked) {
+      line.draggable = true;
+      line.addEventListener('dragstart', (e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(index));
+        line.classList.add('editable-line--dragging');
+      });
+      line.addEventListener('dragend', () => {
+        line.classList.remove('editable-line--dragging');
+        container.querySelectorAll('.editable-line--dragover').forEach((l) => l.classList.remove('editable-line--dragover'));
+      });
+      line.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        line.classList.add('editable-line--dragover');
+      });
+      line.addEventListener('dragleave', () => {
+        line.classList.remove('editable-line--dragover');
+      });
+      line.addEventListener('drop', (e) => {
+        e.preventDefault();
+        line.classList.remove('editable-line--dragover');
+        const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+        const to = index;
+        if (from !== to) {
+          const [moved] = config.blocks.splice(from, 1);
+          config.blocks.splice(to, 0, moved);
+          this._saveBlockConfig();
+          this._renderEditableReport();
+          if (this._onBlockReorder) {
+            this._onBlockReorder(config.blocks.map((b) => b.id));
+          }
+        }
+      });
+    }
+
+    return line;
   }
 
   /**

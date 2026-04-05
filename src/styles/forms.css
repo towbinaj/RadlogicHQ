@@ -317,6 +317,58 @@ input.no-spinner[type="number"] {
   font-style: italic;
 }
 
+/* Header lines (FINDINGS:, IMPRESSION:) */
+.editable-line--header {
+  padding: var(--space-xs) 0;
+}
+
+.editable-line__text--header {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Delete button for custom blocks */
+.editable-line__delete {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: var(--text-base);
+  cursor: pointer;
+  padding: 0 4px;
+  opacity: 0.5;
+  transition: opacity var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.editable-line__delete:hover {
+  opacity: 1;
+}
+
+/* Add text button */
+.editable-line__add-btn {
+  display: block;
+  background: none;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  padding: var(--space-xs) var(--space-sm);
+  margin-top: var(--space-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.editable-line__add-btn:hover {
+  color: var(--text-accent);
+  border-color: var(--accent);
+}
+
+/* Preview line (auto-generated) */
+.editable-line--preview {
+  opacity: 0.5;
+}
+
 /* Share result */
 .edit-bar__share-result {
   display: flex;

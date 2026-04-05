@@ -73,22 +73,46 @@ function init() {
         <h3>Preferences</h3>
         <div class="profile-prefs">
           <div class="profile-pref">
-            <span class="profile-pref__label">Compact mode</span>
-            <span class="profile-pref__value">${localStorage.getItem('radtools:compact') === '1' ? 'On' : 'Off'}</span>
+            <span class="profile-pref__label">Compact mode (TI-RADS)</span>
+            <label class="profile-pref__toggle">
+              <input type="checkbox" id="pref-compact" ${localStorage.getItem('radtools:compact') === '1' ? 'checked' : ''}>
+              <span>${localStorage.getItem('radtools:compact') === '1' ? 'On' : 'Off'}</span>
+            </label>
           </div>
           <div class="profile-pref">
             <span class="profile-pref__label">TI-RADS size unit</span>
-            <span class="profile-pref__value">${localStorage.getItem('radtools:sizeUnit:nodule-size') || 'cm'}</span>
+            <select id="pref-tirads-unit" class="profile-pref__select">
+              <option value="cm" ${(localStorage.getItem('radtools:sizeUnit:nodule-size') || 'cm') === 'cm' ? 'selected' : ''}>cm</option>
+              <option value="mm" ${localStorage.getItem('radtools:sizeUnit:nodule-size') === 'mm' ? 'selected' : ''}>mm</option>
+            </select>
           </div>
           <div class="profile-pref">
             <span class="profile-pref__label">LI-RADS size unit</span>
-            <span class="profile-pref__value">${localStorage.getItem('radtools:sizeUnit:lirads') || 'mm'}</span>
+            <select id="pref-lirads-unit" class="profile-pref__select">
+              <option value="mm" ${(localStorage.getItem('radtools:sizeUnit:lirads') || 'mm') === 'mm' ? 'selected' : ''}>mm</option>
+              <option value="cm" ${localStorage.getItem('radtools:sizeUnit:lirads') === 'cm' ? 'selected' : ''}>cm</option>
+            </select>
           </div>
         </div>
       </div>
     `;
 
     page.querySelector('#profile-signout').addEventListener('click', () => signOut());
+
+    // Wire preference controls
+    const compactToggle = page.querySelector('#pref-compact');
+    compactToggle.addEventListener('change', () => {
+      localStorage.setItem('radtools:compact', compactToggle.checked ? '1' : '0');
+      compactToggle.nextElementSibling.textContent = compactToggle.checked ? 'On' : 'Off';
+    });
+
+    page.querySelector('#pref-tirads-unit').addEventListener('change', (e) => {
+      localStorage.setItem('radtools:sizeUnit:nodule-size', e.target.value);
+    });
+
+    page.querySelector('#pref-lirads-unit').addEventListener('change', (e) => {
+      localStorage.setItem('radtools:sizeUnit:lirads', e.target.value);
+    });
   });
 }
 

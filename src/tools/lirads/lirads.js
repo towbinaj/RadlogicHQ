@@ -335,14 +335,29 @@ function init() {
 
     reportEl.renderFn = (config, _data) => {
       const blocks = config.blocks || [];
+      const headers = config.sectionHeaders || {};
       const sections = [];
+
+      const findingsHeader = headers.findings ?? 'FINDINGS:';
       const findingsBlocks = allObsData.map((data) => renderBlocks(blocks, data, false));
-      sections.push('FINDINGS:\n' + (observations.length === 1
+      sections.push(findingsHeader + '\n' + (observations.length === 1
         ? findingsBlocks[0] : findingsBlocks.join('\n\n')));
-      if (studyAdditionalFindings.trim())
-        sections.push('ADDITIONAL FINDINGS:\n' + studyAdditionalFindings.trim());
-      if (config.impression?.enabled && config.impression?.template)
-        sections.push(renderReport(config.impression.template, { impressionSummary: summaryLines.join('\n') }));
+
+      const customBlocks = config.customBlocks || [];
+      if (customBlocks.length > 0) {
+        sections.push(customBlocks.map((cb) => cb.text).join('\n'));
+      }
+
+      if (studyAdditionalFindings.trim()) {
+        const addlHeader = headers.additionalFindings ?? 'ADDITIONAL FINDINGS:';
+        sections.push(addlHeader + '\n' + studyAdditionalFindings.trim());
+      }
+
+      if (config.impression?.enabled && config.impression?.template) {
+        const impHeader = headers.impression ?? 'IMPRESSION:';
+        sections.push(impHeader + '\n' + renderReport(config.impression.template, { impressionSummary: summaryLines.join('\n') }));
+      }
+
       return sections.join('\n\n');
     };
     reportEl.updateReport(allObsData[activeObsIndex]);
