@@ -1,50 +1,4 @@
-/* LI-RADS tool-specific styles — follows toolui.md */
-
-/* Hero (per toolui.md) */
-.tool-hero {
-  padding: var(--space-md) 0 var(--space-sm);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-md);
-}
-
-.tool-hero__text h1 {
-  font-size: var(--text-xl);
-  margin-bottom: 2px;
-}
-
-.tool-hero__ref {
-  font-size: var(--text-xs);
-  font-weight: 400;
-  color: var(--text-accent);
-  vertical-align: super;
-}
-
-.summary-badge {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: var(--space-xs) var(--space-md);
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.summary-badge__label {
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.summary-badge__value {
-  font-size: var(--text-lg);
-  font-weight: 700;
-  color: var(--text-primary);
-}
+/* LI-RADS tool-specific styles (shared styles in forms.css) */
 
 /* Category badge colors */
 #lirads-category[data-level="1"] { color: var(--success); }
@@ -55,19 +9,18 @@
 #lirads-category[data-level="6"] { color: var(--danger); }
 #lirads-category[data-level="7"] { color: var(--danger); }
 
-/* Step container — matches #tool-input gap from toolui.md */
+/* Step container */
 #step-container {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
 }
 
-/* Step card — matches .score-section padding from toolui.md */
+/* Step card */
 .step-card {
   padding: var(--space-sm) var(--space-md);
 }
 
-/* Disabled steps: dim but KEEP in layout — no height changes */
 .step-card--disabled {
   opacity: 0.25;
   pointer-events: none;
@@ -77,21 +30,18 @@
   border-color: var(--accent);
 }
 
-/* Question label — matches section title from toolui.md */
 .step-card__question {
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--text-primary);
 }
 
-/* Hint — matches description from toolui.md */
 .step-card__hint {
   font-size: var(--text-xs);
   color: var(--text-muted);
   line-height: 1.4;
 }
 
-/* Segment label — matches primary input label from toolui.md */
 .step-card__label {
   font-size: var(--text-sm);
   font-weight: 600;
@@ -103,7 +53,7 @@
   font-size: var(--text-sm);
 }
 
-/* Result badge — ALWAYS takes space, visibility toggled via opacity */
+/* Result badge — always takes space, opacity toggled */
 .step-card__result {
   font-size: var(--text-sm);
   font-weight: 700;
@@ -153,33 +103,61 @@
   cursor: not-allowed;
 }
 
+/* Benign choice buttons — compact row with hover tooltips */
+.benign-choices {
+  display: flex;
+  gap: 4px;
+  margin-top: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.benign-choice {
+  padding: var(--space-xs) var(--space-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.benign-choice:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.benign-choice--active {
+  color: white;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 /* Major features card */
 .step-card--major {
   padding: var(--space-sm) var(--space-md);
 }
 
 .major-feature {
-  margin-bottom: var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 3px 0 3px var(--space-md);
 }
 
-.major-feature:last-child {
-  margin-bottom: 0;
-}
-
-/* Matches primary input label from toolui.md */
 .major-feature__label {
-  display: block;
-  font-size: var(--text-sm);
-  font-weight: 600;
+  font-size: var(--text-xs);
+  font-weight: 500;
   color: var(--text-primary);
-  margin-bottom: 2px;
+  cursor: help;
+  min-width: 200px;
 }
 
-.major-feature__desc {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  display: block;
-  margin-bottom: var(--space-xs);
+.major-feature .step-card__buttons {
+  margin-top: 0;
+  flex-shrink: 0;
 }
 
 .major-feature .input-with-unit input {
@@ -187,7 +165,7 @@
   max-width: 120px;
 }
 
-/* Ancillary features */
+/* Ancillary features — compact card grid like TI-RADS */
 .step-card--ancillary {
   padding: var(--space-sm) var(--space-md);
 }
@@ -197,9 +175,7 @@
   list-style: none;
 }
 
-.ancillary-details summary::-webkit-details-marker {
-  display: none;
-}
+.ancillary-details summary::-webkit-details-marker { display: none; }
 
 .ancillary-details summary::before {
   content: '\25B6';
@@ -214,8 +190,11 @@
 }
 
 .ancillary-group {
+  margin-top: var(--space-md);
+}
+
+.ancillary-group:first-child {
   margin-top: var(--space-sm);
-  padding-left: var(--space-sm);
 }
 
 .ancillary-group__title {
@@ -225,117 +204,117 @@
   margin-bottom: var(--space-xs);
 }
 
-.ancillary-check {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
+/* Ancillary options as compact selectable cards */
+.ancillary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 3px;
+}
+
+.ancillary-card {
+  padding: 3px var(--space-sm);
+  font-family: var(--font-sans);
   font-size: var(--text-xs);
-  color: var(--text-primary);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  padding: 2px 0;
+  transition: all var(--transition-fast);
+  text-align: left;
+  line-height: 1.2;
 }
 
-.ancillary-check input {
-  margin: 0;
+.ancillary-card:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-color);
 }
 
-/* Study findings — matches toolui.md */
-.study-findings {
-  padding: var(--space-sm) var(--space-md);
+.ancillary-card.selected {
+  color: white;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
-.study-findings label {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.study-findings textarea {
-  margin-top: 2px;
-}
-
-/* Parse panel — matches toolui.md */
-.parse-panel {
-  margin-top: var(--space-md);
-  padding: var(--space-md);
-}
-
-.parse-panel label {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.parse-panel textarea {
-  font-size: var(--text-sm);
-  margin-top: 4px;
-}
-
-.parse-panel__actions {
+/* Observation tabs */
+.observation-tabs-bar {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  margin-top: var(--space-sm);
+  gap: 4px;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--space-sm);
 }
 
-.parse-panel__btn {
-  font-size: var(--text-xs);
+.obs-tab {
   padding: var(--space-xs) var(--space-md);
-}
-
-.parse-panel__status {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-}
-
-.parse-panel__status--success {
-  color: var(--success);
-}
-
-/* Report output — matches toolui.md specs */
-.report-output {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-.report-output__header {
+.obs-tab:hover { background: var(--bg-elevated); }
+.obs-tab.active { color: white; background: var(--accent); border-color: var(--accent); }
+
+.obs-tab--add, .obs-tab--remove {
+  padding: var(--space-xs) var(--space-sm);
+  font-weight: 700;
+  min-width: 28px;
+  text-align: center;
+}
+
+.obs-tab--add { color: var(--success); border-style: dashed; }
+.obs-tab--remove { color: var(--danger); border-style: dashed; margin-left: auto; }
+
+/* Primary inputs — same as TI-RADS */
+.primary-inputs {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  gap: var(--space-md);
+  align-items: end;
   flex-wrap: wrap;
-  gap: var(--space-xs);
+}
+
+.primary-inputs.card {
   padding: var(--space-sm) var(--space-md);
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
 }
 
-.report-output__header h3 {
-  font-size: var(--text-base);
-  font-weight: 600;
+.primary-input-item {
+  flex: 1;
+  min-width: 120px;
 }
 
-.report-output__text-wrap {
-  padding: var(--space-sm) var(--space-md);
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.report-output__text {
-  font-family: var(--font-mono);
+.primary-input-item label {
+  margin-bottom: 2px;
   font-size: var(--text-sm);
+  font-weight: 600;
   color: var(--text-primary);
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  line-height: 1.6;
-  margin: 0;
+}
+
+.primary-input-item select,
+.primary-input-item input {
+  font-size: var(--text-sm);
+}
+
+.primary-input-item--narrow {
+  flex: 0 0 70px;
+  min-width: 70px;
+}
+
+.primary-input-item--narrow input {
+  width: 100%;
+  text-align: center;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .step-card__buttons {
-    flex-wrap: wrap;
-  }
+  .step-card__buttons { flex-wrap: wrap; }
+  .benign-choices { grid-template-columns: 1fr; }
+  .ancillary-grid { grid-template-columns: 1fr 1fr; }
 }

@@ -4,13 +4,13 @@
  */
 
 const CATEGORY_INFO = {
-  'LR-1':   { level: 1, label: 'Definitely Benign',        management: 'Continue routine surveillance.' },
-  'LR-2':   { level: 2, label: 'Probably Benign',           management: 'Continue routine surveillance.' },
-  'LR-3':   { level: 3, label: 'Intermediate Probability',  management: 'Variable management depending on clinical context. Consider follow-up in 3-6 months or multiphase CT/MRI.' },
-  'LR-4':   { level: 4, label: 'Probably HCC',              management: 'Consider biopsy or additional imaging. Multidisciplinary discussion recommended.' },
-  'LR-5':   { level: 5, label: 'Definitely HCC',            management: 'Treat as HCC. Staging and multidisciplinary treatment planning.' },
-  'LR-M':   { level: 6, label: 'Probably or Definitely Malignant, Not HCC Specific', management: 'Biopsy recommended to determine malignancy type. Consider non-HCC-directed treatment.' },
-  'LR-TIV': { level: 7, label: 'Tumor in Vein',             management: 'Stage and treat. Indicates advanced disease with vascular invasion.' },
+  'LR-1':   { level: 1, label: 'Definitely Benign',        management: 'Continue routine surveillance as needed.' },
+  'LR-2':   { level: 2, label: 'Probably Benign',           management: 'Continue routine surveillance as needed.' },
+  'LR-3':   { level: 3, label: 'Intermediate Probability for HCC', management: '' },
+  'LR-4':   { level: 4, label: 'Probably HCC',              management: 'Consider biopsy or additional imaging.' },
+  'LR-5':   { level: 5, label: 'Definitely HCC',            management: '' },
+  'LR-M':   { level: 6, label: 'Probably or Definitely Malignant, Not HCC Specific', management: 'Biopsy recommended to determine malignancy type.' },
+  'LR-TIV': { level: 7, label: 'Tumor in Vein',             management: 'Indicates advanced disease with vascular invasion.' },
 };
 
 // Categorization tables: [sizeGroup][featureCount]

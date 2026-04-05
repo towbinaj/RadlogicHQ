@@ -309,20 +309,66 @@ function createAdditionalInput(input, onChange) {
     const row = document.createElement('div');
     row.className = 'input-with-unit';
 
+    // Unit toggle support
+    const defaultUnit = input.unit || '';
+    const altUnit = defaultUnit === 'cm' ? 'mm' : defaultUnit === 'mm' ? 'cm' : '';
+    const storageKey = `radtools:sizeUnit:${input.id}`;
+    let currentUnit = input.unitToggle ? (localStorage.getItem(storageKey) || defaultUnit) : defaultUnit;
+
     const el = document.createElement('input');
     el.type = 'number';
+    el.className = 'no-spinner';
     el.id = `input-${input.id}`;
-    el.min = input.min ?? '';
-    el.max = input.max ?? '';
-    el.step = input.step ?? (input.inputType === 'float' ? '0.1' : '1');
-    el.placeholder = input.placeholder || '';
+
+    function updateInputAttrs() {
+      if (currentUnit === 'mm') {
+        el.min = '1'; el.max = '999'; el.step = '1'; el.placeholder = 'e.g., 25';
+      } else {
+        el.min = input.min ?? ''; el.max = input.max ?? ''; el.step = input.step ?? '0.1';
+        el.placeholder = input.placeholder || '';
+      }
+    }
+    updateInputAttrs();
+
     el.addEventListener('input', () => {
-      const val = el.value !== '' ? parseFloat(el.value) : null;
-      onChange(input.id, val);
+      const raw = el.value !== '' ? parseFloat(el.value) : null;
+      // Convert to the tool's native unit if toggled
+      if (raw != null && input.unitToggle && currentUnit !== defaultUnit) {
+        onChange(input.id, defaultUnit === 'cm' ? raw / 10 : raw * 10);
+      } else {
+        onChange(input.id, raw);
+      }
     });
     row.appendChild(el);
 
-    if (input.unit) {
+    if (input.unitToggle && altUnit) {
+      const toggle = document.createElement('div');
+      toggle.className = 'unit-toggle';
+      toggle.innerHTML = `
+        <button class="unit-toggle__btn ${currentUnit === defaultUnit ? 'active' : ''}" data-unit="${defaultUnit}">${defaultUnit}</button>
+        <button class="unit-toggle__btn ${currentUnit === altUnit ? 'active' : ''}" data-unit="${altUnit}">${altUnit}</button>
+      `;
+      toggle.querySelectorAll('.unit-toggle__btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (btn.dataset.unit === currentUnit) return;
+          // Convert current value
+          const raw = el.value !== '' ? parseFloat(el.value) : null;
+          currentUnit = btn.dataset.unit;
+          localStorage.setItem(storageKey, currentUnit);
+          updateInputAttrs();
+          // Convert displayed value
+          if (raw != null) {
+            el.value = currentUnit === 'mm' && defaultUnit === 'cm' ? Math.round(raw * 10)
+              : currentUnit === 'cm' && defaultUnit === 'mm' ? (raw / 10).toFixed(1)
+              : currentUnit === 'cm' && defaultUnit === 'cm' ? raw
+              : currentUnit === 'mm' && defaultUnit === 'mm' ? raw : raw;
+          }
+          toggle.querySelectorAll('.unit-toggle__btn').forEach((b) =>
+            b.classList.toggle('active', b.dataset.unit === currentUnit));
+        });
+      });
+      row.appendChild(toggle);
+    } else if (input.unit) {
       const unit = document.createElement('span');
       unit.className = 'unit-label';
       unit.textContent = input.unit;

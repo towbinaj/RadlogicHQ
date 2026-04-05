@@ -3,6 +3,7 @@
  */
 
 const FINDINGS_BLOCKS = [
+  { id: 'obsLabel', label: 'Observation Label', template: '{{obsLabel}}:', enabled: true, locked: true },
   { id: 'location', label: 'Location', template: 'Location: {{location}}', enabled: true, condition: 'locationProvided' },
   { id: 'size', label: 'Size', template: 'Size: {{sizeMm}} mm ({{sizeCm}} cm)', enabled: true, condition: 'sizeProvided' },
   { id: 'aphe', label: 'APHE', template: 'Arterial phase hyperenhancement: {{apheLabel}}', enabled: true },
@@ -37,6 +38,7 @@ export const liradsTemplates = {
   radai: {
     label: 'RadAI Omni',
     blocks: [
+      { id: 'obsLabel', label: 'Observation Label', template: '[{{obsLabel}}]', enabled: true, locked: true },
       { id: 'location', label: 'Location', template: 'Location: {{location}}', enabled: true, condition: 'locationProvided' },
       { id: 'size', label: 'Size', template: 'Size_mm: {{sizeMm}}', enabled: true, condition: 'sizeProvided' },
       { id: 'aphe', label: 'APHE', template: 'APHE: {{apheLabel}}', enabled: true },
