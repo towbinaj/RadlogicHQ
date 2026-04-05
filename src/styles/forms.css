@@ -408,7 +408,7 @@ input.no-spinner[type="number"] {
   transition: all var(--transition-fast);
 }
 
-/* Edit icon on pill */
+/* Edit icon on pill — always visible */
 .pill::after {
   content: '\270E';
   position: absolute;
@@ -416,14 +416,13 @@ input.no-spinner[type="number"] {
   top: 50%;
   transform: translateY(-50%);
   font-size: var(--text-xs);
-  opacity: 0;
+  opacity: 0.35;
   cursor: pointer;
-  transition: opacity var(--transition-fast);
   font-family: var(--font-sans);
 }
 
 .pill:hover::after {
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 .pill--finding {
@@ -516,7 +515,7 @@ input.no-spinner[type="number"] {
   display: flex;
 }
 
-.pill-popover__alias-input {
+.pill-popover .pill-popover__alias-input {
   width: 100%;
   font-size: var(--text-xs);
   font-family: var(--font-sans);
@@ -527,7 +526,7 @@ input.no-spinner[type="number"] {
   color: var(--text-primary);
 }
 
-.pill-popover__alias-input:focus {
+.pill-popover .pill-popover__alias-input:focus {
   border-color: var(--accent);
   outline: none;
 }
