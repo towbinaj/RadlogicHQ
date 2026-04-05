@@ -3,14 +3,14 @@ import { renderReport, renderBlocks } from '../core/report.js';
 import { getStored, setStored, trackEvent } from '../core/storage.js';
 import { isLoggedIn } from '../core/auth.js';
 import { saveReport, getSavedReports, deleteSavedReport, shareTemplate } from '../core/user-data.js';
+import {
+  blocksToEditorContent, renderEditorContent, serializeDOM,
+  deserializeToDOM, createPillSpan, getAvailablePills, normalizeContent,
+} from '../core/pill-editor.js';
 
 /**
  * <report-output> Web Component
- * Displays generated report with:
- * - Editable report text (WYSIWYG — click to edit formatting directly)
- * - Template selector (PS360 / PS1 / RadAI)
- * - Copy to clipboard
- * - Block reorder + toggle panel
+ * Report display with pill-based WYSIWYG editor.
  */
 export class ReportOutput extends HTMLElement {
   constructor() {
@@ -21,6 +21,7 @@ export class ReportOutput extends HTMLElement {
     this._templateData = {};
     this._renderFn = null;
     this._editing = false;
+    this._popover = null;
   }
 
   connectedCallback() {
@@ -31,24 +32,24 @@ export class ReportOutput extends HTMLElement {
           <div class="report-output__controls">
             <select class="report-output__selector" aria-label="Report template"></select>
             <button class="btn report-output__edit-btn">Edit</button>
-            <button class="btn report-output__history-btn" style="display:none" title="View saved reports">History</button>
+            <button class="btn report-output__history-btn" style="display:none">History</button>
             <button class="btn btn--primary report-output__copy-btn">Copy</button>
           </div>
         </div>
         <div class="report-output__text-wrap">
           <pre class="report-output__text"></pre>
         </div>
-        <div class="report-output__edit-bar" hidden>
+        <div class="report-output__pill-palette" style="display:none"></div>
+        <div class="report-output__edit-bar" style="display:none">
           <div class="edit-bar__row">
             <label class="edit-bar__points-toggle">
               <input type="checkbox" checked> Show points
             </label>
-            <button class="btn edit-bar__save-btn" style="display:none">Save Report</button>
+            <button class="btn edit-bar__save-btn" style="display:none">Save</button>
             <button class="btn edit-bar__share-btn" style="display:none">Share</button>
-            <button class="btn edit-bar__reset-btn">Reset to Default</button>
+            <button class="btn edit-bar__reset-btn">Reset</button>
             <button class="btn btn--primary edit-bar__done-btn">Done</button>
           </div>
-          <p class="edit-bar__hint">Click the report text above to edit formatting. Drag ≡ to reorder. Uncheck to hide.</p>
           <div class="edit-bar__share-result" style="display:none">
             <input type="text" class="edit-bar__share-url" readonly>
             <button class="btn edit-bar__share-copy">Copy Link</button>
@@ -76,15 +77,16 @@ export class ReportOutput extends HTMLElement {
       text: this.querySelector('.report-output__text'),
       copyBtn: this.querySelector('.report-output__copy-btn'),
       editBtn: this.querySelector('.report-output__edit-btn'),
-      saveBtn: this.querySelector('.edit-bar__save-btn'),
       historyBtn: this.querySelector('.report-output__history-btn'),
+      palette: this.querySelector('.report-output__pill-palette'),
       editBar: this.querySelector('.report-output__edit-bar'),
       pointsToggle: this.querySelector('.edit-bar__points-toggle input'),
-      resetBtn: this.querySelector('.edit-bar__reset-btn'),
+      saveBtn: this.querySelector('.edit-bar__save-btn'),
       shareBtn: this.querySelector('.edit-bar__share-btn'),
       shareResult: this.querySelector('.edit-bar__share-result'),
       shareUrl: this.querySelector('.edit-bar__share-url'),
       shareCopy: this.querySelector('.edit-bar__share-copy'),
+      resetBtn: this.querySelector('.edit-bar__reset-btn'),
       doneBtn: this.querySelector('.edit-bar__done-btn'),
       historyPanel: this.querySelector('.report-output__history-panel'),
       historyList: this.querySelector('.history-panel__list'),
@@ -97,7 +99,7 @@ export class ReportOutput extends HTMLElement {
       toast: this.querySelector('.report-output__toast'),
     };
 
-    // Show auth-dependent buttons based on login state
+    // Auth-dependent buttons
     import('../core/auth.js').then(({ onAuthChange }) => {
       onAuthChange((user) => {
         const show = user ? '' : 'none';
@@ -107,27 +109,23 @@ export class ReportOutput extends HTMLElement {
       });
     });
 
+    // Template selector
     this._els.selector.addEventListener('change', () => {
       this._activeTemplate = this._els.selector.value;
       this._loadBlockConfig();
       this._render();
     });
 
+    // Buttons
     this._els.copyBtn.addEventListener('click', () => this._copy());
     this._els.editBtn.addEventListener('click', () => this._toggleEdit());
     this._els.doneBtn.addEventListener('click', () => this._toggleEdit());
     this._els.resetBtn.addEventListener('click', () => this._resetTemplate());
-
-    // Save flow
     this._els.saveBtn.addEventListener('click', () => this._showSavePrompt());
     this._els.saveCancel.addEventListener('click', () => this._hideSavePrompt());
     this._els.saveConfirm.addEventListener('click', () => this._saveToHistory());
-
-    // History flow
     this._els.historyBtn.addEventListener('click', () => this._toggleHistory());
     this._els.historyClose.addEventListener('click', () => this._closeHistory());
-
-    // Share flow
     this._els.shareBtn.addEventListener('click', () => this._shareTemplate());
     this._els.shareCopy.addEventListener('click', () => {
       copyToClipboard(this._els.shareUrl.value);
@@ -150,17 +148,14 @@ export class ReportOutput extends HTMLElement {
     this._templates = templates;
     const selector = this._els?.selector;
     if (!selector) return;
-
     selector.innerHTML = '';
-    const ids = Object.keys(templates);
-    for (const id of ids) {
+    for (const [id, tmpl] of Object.entries(templates)) {
       const opt = document.createElement('option');
       opt.value = id;
-      opt.textContent = templates[id].label;
+      opt.textContent = tmpl.label;
       selector.appendChild(opt);
     }
-
-    this._activeTemplate = ids[0] || '';
+    this._activeTemplate = Object.keys(templates)[0] || '';
     this._loadBlockConfig();
     this._render();
   }
@@ -170,17 +165,19 @@ export class ReportOutput extends HTMLElement {
     this._render();
   }
 
-  // --- Block config ---
+  // ===== Config Management =====
 
   _getDefaultConfig() {
     const tmpl = this._templates[this._activeTemplate];
-    if (!tmpl) return { blocks: [], showPoints: true, impression: null, sectionHeaders: {}, customBlocks: [] };
+    if (!tmpl) return { blocks: [], showPoints: true, impression: null, sectionHeaders: {}, customBlocks: [], editorContent: null, pillStates: {} };
     return {
       blocks: tmpl.blocks.map((b) => ({ ...b })),
       showPoints: tmpl.showPoints ?? true,
       impression: tmpl.impression ? { ...tmpl.impression } : null,
-      sectionHeaders: { ...(tmpl.sectionHeaders || { findings: 'FINDINGS:', additionalFindings: 'ADDITIONAL FINDINGS:', impression: 'IMPRESSION:' }) },
+      sectionHeaders: { ...(tmpl.sectionHeaders || {}) },
       customBlocks: [],
+      editorContent: null,
+      pillStates: {},
     };
   }
 
@@ -194,17 +191,11 @@ export class ReportOutput extends HTMLElement {
     const saved = getStored(key);
     if (saved) {
       const defaults = this._getDefaultConfig();
-      const savedIds = new Set(saved.blocks.map((b) => b.id));
-      const merged = saved.blocks.map((sb) => {
+      const savedIds = new Set((saved.blocks || []).map((b) => b.id));
+      const merged = (saved.blocks || []).map((sb) => {
         const def = defaults.blocks.find((d) => d.id === sb.id);
         if (!def) return sb;
-        return {
-          ...def,
-          enabled: sb.enabled,
-          showPoints: sb.showPoints ?? def.showPoints,
-          template: sb.template ?? def.template,
-          pointsTemplate: sb.pointsTemplate !== undefined ? sb.pointsTemplate : def.pointsTemplate,
-        };
+        return { ...def, enabled: sb.enabled, showPoints: sb.showPoints ?? def.showPoints, template: sb.template ?? def.template, pointsTemplate: sb.pointsTemplate !== undefined ? sb.pointsTemplate : def.pointsTemplate };
       });
       for (const db of defaults.blocks) {
         if (!savedIds.has(db.id)) merged.push({ ...db });
@@ -215,6 +206,8 @@ export class ReportOutput extends HTMLElement {
         impression: defaults.impression,
         sectionHeaders: saved.sectionHeaders ?? defaults.sectionHeaders,
         customBlocks: saved.customBlocks ?? [],
+        editorContent: saved.editorContent ?? null,
+        pillStates: saved.pillStates ?? {},
       };
     } else {
       this._blockConfig = this._getDefaultConfig();
@@ -223,22 +216,18 @@ export class ReportOutput extends HTMLElement {
 
   _saveBlockConfig() {
     const key = `blockConfig:${this._toolId}:${this._activeTemplate}`;
-    const config = this._getConfig();
+    const c = this._getConfig();
     setStored(key, {
-      blocks: config.blocks.map((b) => ({
-        id: b.id,
-        enabled: b.enabled,
-        showPoints: b.showPoints,
-        template: b.template,
-        pointsTemplate: b.pointsTemplate,
-      })),
-      showPoints: config.showPoints,
-      sectionHeaders: config.sectionHeaders,
-      customBlocks: config.customBlocks,
+      blocks: c.blocks.map((b) => ({ id: b.id, enabled: b.enabled, showPoints: b.showPoints, template: b.template, pointsTemplate: b.pointsTemplate })),
+      showPoints: c.showPoints,
+      sectionHeaders: c.sectionHeaders,
+      customBlocks: c.customBlocks,
+      editorContent: c.editorContent,
+      pillStates: c.pillStates,
     });
   }
 
-  // --- Rendering ---
+  // ===== Rendering =====
 
   _render() {
     if (!this._renderFn) {
@@ -247,294 +236,259 @@ export class ReportOutput extends HTMLElement {
     }
 
     if (this._editing) {
-      this._renderEditableReport();
+      this._renderPillEditor();
     } else {
       const config = this._getConfig();
       const text = this._renderFn(config, this._templateData);
       this._els.text.textContent = text;
       this._els.text.contentEditable = 'false';
+      this._els.text.className = 'report-output__text';
     }
   }
 
-  _renderEditableReport() {
+  // ===== Pill Editor =====
+
+  _renderPillEditor() {
     const pre = this._els.text;
-    pre.innerHTML = '';
-    pre.contentEditable = 'false';
-
     const config = this._getConfig();
-    const showPoints = config.showPoints;
-    const headers = config.sectionHeaders || {};
 
-    // Helper: create an editable header line
-    const addHeaderLine = (key, defaultText) => {
-      const line = document.createElement('div');
-      line.className = 'editable-line editable-line--header';
-      const textSpan = document.createElement('span');
-      textSpan.className = 'editable-line__text editable-line__text--header';
-      textSpan.contentEditable = 'true';
-      textSpan.spellcheck = false;
-      textSpan.textContent = headers[key] || defaultText;
-      textSpan.addEventListener('blur', () => {
-        config.sectionHeaders[key] = textSpan.textContent;
-        this._saveBlockConfig();
-      });
-      line.appendChild(textSpan);
-      pre.appendChild(line);
-    };
-
-    // FINDINGS header
-    addHeaderLine('findings', 'FINDINGS:');
-
-    // Findings blocks
-    config.blocks.forEach((block, index) => {
-      const line = this._createEditableLine(block, index, config, showPoints, pre);
-      pre.appendChild(line);
-    });
-
-    // Custom blocks (user-added text)
-    config.customBlocks.forEach((cb, i) => {
-      const line = document.createElement('div');
-      line.className = 'editable-line';
-      const textSpan = document.createElement('span');
-      textSpan.className = 'editable-line__text';
-      textSpan.contentEditable = 'true';
-      textSpan.spellcheck = false;
-      textSpan.textContent = cb.text;
-      textSpan.addEventListener('blur', () => {
-        cb.text = textSpan.textContent;
-        this._saveBlockConfig();
-      });
-      // Delete button
-      const delBtn = document.createElement('button');
-      delBtn.className = 'editable-line__delete';
-      delBtn.textContent = '\u00d7';
-      delBtn.title = 'Remove';
-      delBtn.addEventListener('click', () => {
-        config.customBlocks.splice(i, 1);
-        this._saveBlockConfig();
-        this._renderEditableReport();
-      });
-      line.appendChild(textSpan);
-      line.appendChild(delBtn);
-      pre.appendChild(line);
-    });
-
-    // Add text button
-    const addBtn = document.createElement('button');
-    addBtn.className = 'editable-line__add-btn';
-    addBtn.textContent = '+ Add text';
-    addBtn.addEventListener('click', () => {
-      config.customBlocks.push({ text: 'New text' });
+    // Migrate if no editorContent yet
+    if (!config.editorContent) {
+      config.editorContent = blocksToEditorContent(config);
       this._saveBlockConfig();
-      this._renderEditableReport();
-    });
-    pre.appendChild(addBtn);
-
-    // Spacer
-    pre.appendChild(document.createElement('br'));
-
-    // IMPRESSION header
-    addHeaderLine('impression', 'IMPRESSION:');
-
-    // Impression content (read-only preview)
-    if (config.impression?.enabled) {
-      const impLine = document.createElement('div');
-      impLine.className = 'editable-line editable-line--preview';
-      const impText = document.createElement('span');
-      impText.className = 'editable-line__text editable-line__text--empty';
-      impText.textContent = '(auto-generated from selections)';
-      impLine.appendChild(impText);
-      pre.appendChild(impLine);
     }
+
+    // Render as pill editor
+    pre.innerHTML = '';
+    pre.className = 'report-output__text pill-editor';
+    pre.contentEditable = 'true';
+    pre.spellcheck = false;
+
+    const fragment = deserializeToDOM(config.editorContent, config.pillStates, this._templateData);
+    pre.appendChild(fragment);
+
+    // Debounced save on input
+    let saveTimer;
+    pre.addEventListener('input', () => {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        config.editorContent = serializeDOM(pre);
+        this._saveBlockConfig();
+      }, 500);
+    });
+
+    // Pill click → popover
+    pre.addEventListener('click', (e) => {
+      const pill = e.target.closest('.pill');
+      if (pill) {
+        e.preventDefault();
+        this._showPillPopover(pill, config);
+      }
+    });
+
+    // Drop from palette
+    pre.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    pre.addEventListener('drop', (e) => {
+      const blockId = e.dataTransfer.getData('application/pill-block-id');
+      if (!blockId) return;
+      e.preventDefault();
+
+      // Insert pill at drop position
+      let range;
+      if (document.caretRangeFromPoint) {
+        range = document.caretRangeFromPoint(e.clientX, e.clientY);
+      } else if (document.caretPositionFromPoint) {
+        const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+        range = document.createRange();
+        range.setStart(pos.offsetNode, pos.offset);
+      }
+
+      if (range) {
+        const display = e.dataTransfer.getData('application/pill-display') || `{{${blockId}}}`;
+        const pill = createPillSpan(blockId, display, this._templateData, false);
+        const zws = document.createTextNode('\u200B');
+        range.insertNode(zws);
+        range.insertNode(pill);
+        range.insertNode(document.createTextNode('\u200B'));
+
+        // Serialize and save
+        config.editorContent = serializeDOM(pre);
+        this._saveBlockConfig();
+        this._renderPalette(config);
+      }
+    });
+
+    // Render palette
+    this._renderPalette(config);
   }
 
-  _createEditableLine(block, index, config, showPoints, container) {
-    const line = document.createElement('div');
-    line.className = `editable-line ${block.enabled ? '' : 'editable-line--disabled'}`;
-    line.dataset.blockIndex = index;
+  _renderPalette(config) {
+    const palette = this._els.palette;
+    const available = getAvailablePills(config.blocks, config.editorContent || []);
 
-    const handle = document.createElement('span');
-    handle.className = 'editable-line__handle';
-    handle.textContent = '\u2261';
-    handle.title = 'Drag to reorder';
-    line.appendChild(handle);
+    // Also add impression/summary pills
+    const allAvailable = [...available];
+    const placedIds = new Set((config.editorContent || []).filter((n) => n.type === 'pill').map((n) => n.blockId));
 
-    const toggle = document.createElement('input');
-    toggle.type = 'checkbox';
-    toggle.checked = block.enabled;
-    toggle.disabled = !!block.locked;
-    toggle.className = 'editable-line__toggle';
-    toggle.addEventListener('change', () => {
-      block.enabled = toggle.checked;
-      line.classList.toggle('editable-line--disabled', !block.enabled);
-      this._saveBlockConfig();
-    });
-    line.appendChild(toggle);
-
-    const textSpan = document.createElement('span');
-    textSpan.className = 'editable-line__text';
-    textSpan.contentEditable = 'true';
-    textSpan.spellcheck = false;
-
-    let rendered = renderReport(block.template, this._templateData);
-    if (block.pointsTemplate && block.showPoints && showPoints) {
-      rendered += renderReport(block.pointsTemplate, this._templateData);
+    // Add impression variables if not placed
+    if (config.impression?.template) {
+      const impVars = config.impression.template.match(/\{\{(\w+)\}\}/g) || [];
+      for (const v of impVars) {
+        const id = v.replace(/\{\{|\}\}/g, '');
+        if (!placedIds.has(id) && !allAvailable.find((a) => a.blockId === id)) {
+          allAvailable.push({ blockId: id, label: id, display: v, category: 'meta' });
+        }
+      }
     }
 
-    if (block.condition && !this._templateData[block.condition]) {
-      textSpan.textContent = block.label + ': (no data)';
-      textSpan.classList.add('editable-line__text--empty');
+    if (allAvailable.length === 0 && placedIds.size > 0) {
+      palette.innerHTML = '<div class="pill-palette__title">All fields placed</div>';
     } else {
-      textSpan.textContent = rendered || block.label;
+      const findings = allAvailable.filter((p) => p.category === 'finding');
+      const scores = allAvailable.filter((p) => p.category === 'score');
+      const meta = allAvailable.filter((p) => p.category === 'meta');
+
+      let html = '<div class="pill-palette__title">Drag fields into the report</div>';
+
+      const renderGroup = (title, items) => {
+        if (items.length === 0) return '';
+        let h = `<div class="pill-palette__group"><div class="pill-palette__group-title">${title}</div><div class="pill-palette__items">`;
+        for (const item of items) {
+          const value = this._templateData ? renderReport(item.display, this._templateData) : '';
+          const truncValue = value.length > 20 ? value.substring(0, 17) + '...' : value;
+          h += `<div class="pill-palette__item" draggable="true" data-block-id="${item.blockId}" data-display="${item.display}">
+            <span class="pill-palette__item-label">${item.label}</span>
+            ${truncValue ? `<span class="pill-palette__item-value">${truncValue}</span>` : ''}
+          </div>`;
+        }
+        h += '</div></div>';
+        return h;
+      };
+
+      html += renderGroup('Findings', findings);
+      html += renderGroup('Scores', scores);
+      html += renderGroup('Other', meta);
+      palette.innerHTML = html;
     }
 
-    textSpan.addEventListener('blur', () => {
-      const editedText = textSpan.textContent;
-      const newTemplate = this._reverseTemplate(block, editedText, showPoints);
-      if (newTemplate !== null) {
-        block.template = newTemplate.template;
-        if (newTemplate.pointsTemplate !== undefined) {
-          block.pointsTemplate = newTemplate.pointsTemplate;
-        }
-        this._saveBlockConfig();
-      }
+    // Wire palette drag
+    palette.querySelectorAll('.pill-palette__item').forEach((item) => {
+      item.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('application/pill-block-id', item.dataset.blockId);
+        e.dataTransfer.setData('application/pill-display', item.dataset.display);
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+    });
+  }
+
+  _showPillPopover(pillEl, config) {
+    this._closePillPopover();
+
+    const popover = document.createElement('div');
+    popover.className = 'pill-popover';
+
+    const blockId = pillEl.dataset.blockId;
+    const isDisabled = config.pillStates[blockId]?.enabled === false;
+
+    popover.innerHTML = `
+      <button class="pill-popover__btn" data-action="toggle">${isDisabled ? 'Enable' : 'Disable'}</button>
+      <button class="pill-popover__btn pill-popover__btn--danger" data-action="remove">Remove</button>
+    `;
+
+    // Position near the pill
+    const rect = pillEl.getBoundingClientRect();
+    const containerRect = this._els.text.getBoundingClientRect();
+    popover.style.left = `${rect.left - containerRect.left}px`;
+    popover.style.top = `${rect.bottom - containerRect.top + 4}px`;
+
+    popover.querySelector('[data-action="toggle"]').addEventListener('click', () => {
+      if (!config.pillStates[blockId]) config.pillStates[blockId] = {};
+      config.pillStates[blockId].enabled = isDisabled;
+      pillEl.classList.toggle('pill--disabled', !isDisabled);
+      this._saveBlockConfig();
+      this._closePillPopover();
     });
 
-    line.appendChild(textSpan);
+    popover.querySelector('[data-action="remove"]').addEventListener('click', () => {
+      pillEl.remove();
+      config.editorContent = serializeDOM(this._els.text);
+      this._saveBlockConfig();
+      this._renderPalette(config);
+      this._closePillPopover();
+    });
 
-    if (!block.locked) {
-      line.draggable = true;
-      line.addEventListener('dragstart', (e) => {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', String(index));
-        line.classList.add('editable-line--dragging');
-      });
-      line.addEventListener('dragend', () => {
-        line.classList.remove('editable-line--dragging');
-        container.querySelectorAll('.editable-line--dragover').forEach((l) => l.classList.remove('editable-line--dragover'));
-      });
-      line.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        line.classList.add('editable-line--dragover');
-      });
-      line.addEventListener('dragleave', () => {
-        line.classList.remove('editable-line--dragover');
-      });
-      line.addEventListener('drop', (e) => {
-        e.preventDefault();
-        line.classList.remove('editable-line--dragover');
-        const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
-        const to = index;
-        if (from !== to) {
-          const [moved] = config.blocks.splice(from, 1);
-          config.blocks.splice(to, 0, moved);
-          this._saveBlockConfig();
-          this._renderEditableReport();
-          if (this._onBlockReorder) {
-            this._onBlockReorder(config.blocks.map((b) => b.id));
-          }
-        }
-      });
-    }
+    this._els.text.style.position = 'relative';
+    this._els.text.appendChild(popover);
+    this._popover = popover;
 
-    return line;
+    // Close on click outside
+    const closeHandler = (e) => {
+      if (!popover.contains(e.target) && e.target !== pillEl) {
+        this._closePillPopover();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 10);
   }
 
-  /**
-   * Reverse-engineer edited text back into a template.
-   * Replaces the dynamic values with their {{variable}} placeholders.
-   */
-  _reverseTemplate(block, editedText, showPoints) {
-    // Get the current data values to find what to replace
-    const data = this._templateData;
-    let template = editedText;
-    let pointsTemplate = block.pointsTemplate;
-
-    // Replace known data values with their template variables
-    // Order matters: replace longer values first to avoid partial matches
-    const replacements = this._getReplacements(data);
-    for (const [value, variable] of replacements) {
-      if (value && template.includes(value)) {
-        template = template.replace(value, variable);
-      }
+  _closePillPopover() {
+    if (this._popover) {
+      this._popover.remove();
+      this._popover = null;
     }
-
-    // Try to split out points portion if it exists
-    if (block.pointsTemplate && showPoints) {
-      const renderedPoints = renderReport(block.pointsTemplate, data);
-      if (renderedPoints && editedText.endsWith(renderedPoints)) {
-        // Points part is at the end — check if user modified it
-        const mainPart = editedText.slice(0, -renderedPoints.length);
-        let pTemplate = editedText.slice(mainPart.length);
-        for (const [value, variable] of replacements) {
-          if (value && pTemplate.includes(value)) {
-            pTemplate = pTemplate.replace(value, variable);
-          }
-        }
-        template = mainPart;
-        for (const [value, variable] of replacements) {
-          if (value && template.includes(value)) {
-            template = template.replace(value, variable);
-          }
-        }
-        pointsTemplate = pTemplate;
-      }
-    }
-
-    return { template, pointsTemplate };
   }
 
-  _getReplacements(data) {
-    // Build value→variable pairs, sorted by value length (longest first)
-    const pairs = [];
-    const varNames = [
-      'noduleLabel', 'noduleLocation', 'noduleSize',
-      'composition', 'compositionPoints',
-      'echogenicity', 'echogenicityPoints',
-      'shape', 'shapePoints',
-      'margin', 'marginPoints',
-      'echogenicFoci', 'echogenicFociPoints',
-      'totalScore', 'tiradsFullLabel', 'tiradsName', 'tiradsLabel',
-      'recommendation',
-    ];
-    for (const name of varNames) {
-      const val = data[name];
-      if (val != null && String(val) !== '') {
-        pairs.push([String(val), `{{${name}}}`]);
-      }
-    }
-    pairs.sort((a, b) => b[0].length - a[0].length);
-    return pairs;
-  }
-
-  // --- Edit mode ---
+  // ===== Edit Mode Toggle =====
 
   _toggleEdit() {
     this._editing = !this._editing;
-    this._els.editBar.hidden = !this._editing;
+    this._els.editBar.style.display = this._editing ? '' : 'none';
+    this._els.palette.style.display = this._editing ? '' : 'none';
     this._els.editBtn.textContent = this._editing ? 'Cancel' : 'Edit';
 
     if (this._editing) {
       this._els.pointsToggle.checked = this._getConfig().showPoints;
+    } else {
+      // Leaving edit mode — serialize final state
+      const config = this._getConfig();
+      if (config.editorContent) {
+        config.editorContent = serializeDOM(this._els.text);
+        this._saveBlockConfig();
+      }
+      this._closePillPopover();
     }
 
     this._render();
   }
 
-  // --- Actions ---
+  // ===== Copy =====
 
   async _copy() {
     const config = this._getConfig();
-    const text = this._renderFn ? this._renderFn(config, this._templateData) : '';
+    let text;
+
+    if (config.editorContent) {
+      // Use editorContent for plain text rendering
+      text = renderEditorContent(config.editorContent, config.pillStates, this._templateData);
+    } else if (this._renderFn) {
+      text = this._renderFn(config, this._templateData);
+    } else {
+      text = '';
+    }
+
     const success = await copyToClipboard(text);
     if (success) {
       this._showToast();
-      // Aggregate analytics — no PII, just counters
       trackEvent(`tool:${this._toolId}:reports`);
       trackEvent(`template:${this._activeTemplate}:uses`);
     }
   }
 
+  // ===== Reset =====
 
   _resetTemplate() {
     const key = `blockConfig:${this._toolId}:${this._activeTemplate}`;
@@ -546,7 +500,7 @@ export class ReportOutput extends HTMLElement {
     if (this._onReset) this._onReset();
   }
 
-  // --- Save to history ---
+  // ===== Save to History =====
 
   _showSavePrompt() {
     this._els.savePrompt.style.display = 'flex';
@@ -554,47 +508,35 @@ export class ReportOutput extends HTMLElement {
     this._els.saveLabelInput.focus();
   }
 
-  _hideSavePrompt() {
-    this._els.savePrompt.style.display = 'none';
-  }
+  _hideSavePrompt() { this._els.savePrompt.style.display = 'none'; }
 
   async _saveToHistory() {
     const config = this._getConfig();
-    const text = this._renderFn ? this._renderFn(config, this._templateData) : '';
+    const text = config.editorContent
+      ? renderEditorContent(config.editorContent, config.pillStates, this._templateData)
+      : (this._renderFn ? this._renderFn(config, this._templateData) : '');
     if (!text) return;
-
     const label = this._els.saveLabelInput.value.trim() || `${this._toolId} report`;
     await saveReport(this._toolId, text, label);
     this._hideSavePrompt();
     this._showToast('Saved!');
   }
 
-  // --- History ---
+  // ===== History =====
 
   async _toggleHistory() {
     const panel = this._els.historyPanel;
-    if (panel.style.display !== 'none') {
-      this._closeHistory();
-      return;
-    }
-
+    if (panel.style.display !== 'none') { this._closeHistory(); return; }
     panel.style.display = '';
     this._els.historyList.innerHTML = '<div style="padding:8px;color:var(--text-muted);font-size:0.75rem;">Loading...</div>';
     this._els.historyEmpty.style.display = 'none';
-
     const reports = await getSavedReports(this._toolId);
-
     this._els.historyList.innerHTML = '';
-    if (reports.length === 0) {
-      this._els.historyEmpty.style.display = '';
-      return;
-    }
-
+    if (reports.length === 0) { this._els.historyEmpty.style.display = ''; return; }
     this._els.historyEmpty.style.display = 'none';
     for (const report of reports) {
       const row = document.createElement('div');
       row.className = 'history-item';
-
       const preview = report.reportText.substring(0, 80).replace(/\n/g, ' ');
       row.innerHTML = `
         <div class="history-item__info">
@@ -602,55 +544,41 @@ export class ReportOutput extends HTMLElement {
           <span class="history-item__preview">${preview}...</span>
         </div>
         <div class="history-item__actions">
-          <button class="btn history-item__load" title="Load into report">Load</button>
-          <button class="btn history-item__delete" title="Delete">&times;</button>
-        </div>
-      `;
-
+          <button class="btn history-item__load">Load</button>
+          <button class="btn history-item__delete">&times;</button>
+        </div>`;
       row.querySelector('.history-item__load').addEventListener('click', () => {
         this._els.text.textContent = report.reportText;
         this._closeHistory();
       });
-
       row.querySelector('.history-item__delete').addEventListener('click', async () => {
         await deleteSavedReport(report.id);
         row.remove();
-        if (this._els.historyList.children.length === 0) {
-          this._els.historyEmpty.style.display = '';
-        }
+        if (this._els.historyList.children.length === 0) this._els.historyEmpty.style.display = '';
       });
-
       this._els.historyList.appendChild(row);
     }
   }
 
-  _closeHistory() {
-    this._els.historyPanel.style.display = 'none';
-  }
+  _closeHistory() { this._els.historyPanel.style.display = 'none'; }
 
-  // --- Share template ---
+  // ===== Share =====
 
   async _shareTemplate() {
     const code = await shareTemplate(this._toolId, this._activeTemplate);
-    if (!code) {
-      this._showToast('Save a custom template first');
-      return;
-    }
-    const baseUrl = window.location.origin;
-    const url = `${baseUrl}/?share=${code}`;
-    this._els.shareUrl.value = url;
+    if (!code) { this._showToast('Save a custom template first'); return; }
+    this._els.shareUrl.value = `${window.location.origin}/?share=${code}`;
     this._els.shareResult.style.display = 'flex';
   }
+
+  // ===== Toast =====
 
   _showToast(msg = 'Copied!') {
     const toast = this._els.toast;
     toast.textContent = msg;
     toast.hidden = false;
     toast.classList.add('show');
-    setTimeout(() => {
-      toast.classList.remove('show');
-      toast.hidden = true;
-    }, 1500);
+    setTimeout(() => { toast.classList.remove('show'); toast.hidden = true; }, 1500);
   }
 }
 

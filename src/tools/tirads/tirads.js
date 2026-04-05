@@ -6,6 +6,7 @@ import '../../components/auth-ui.js';
 import { renderToolForm } from '../../core/renderer.js';
 import { calculateScore } from '../../core/engine.js';
 import { renderReport, renderBlocks, buildTemplateData } from '../../core/report.js';
+import { renderEditorContent } from '../../core/pill-editor.js';
 import { tiradsDefinition } from './definition.js';
 import { calculateTirads } from './calculator.js';
 import { tiradsTemplates } from './templates.js';
@@ -252,41 +253,47 @@ function init() {
       return `${data.noduleLabel}: ${loc}${size}${data.tiradsFullLabel}. ${data.recommendation}.`;
     });
 
-    // Render: findings per-nodule, additional findings section, then impression
+    // Render report text from config
     reportEl.renderFn = (config, _data) => {
+      // If pill editor content exists, use it for the active nodule
+      // For multi-nodule: render editorContent per nodule with different data
+      if (config.editorContent) {
+        if (nodules.length === 1) {
+          const merged = { ...allNoduleData[0], noduleSummaries: summaryLines.join('\n') };
+          let text = renderEditorContent(config.editorContent, config.pillStates, merged);
+          if (studyAdditionalFindings.trim()) {
+            text += '\n\nADDITIONAL FINDINGS:\n' + studyAdditionalFindings.trim();
+          }
+          return text;
+        } else {
+          // Multi-nodule: render editorContent for each, then combine
+          const parts = allNoduleData.map((data) =>
+            renderEditorContent(config.editorContent, config.pillStates, data)
+          );
+          let text = parts.join('\n\n');
+          if (studyAdditionalFindings.trim()) {
+            text += '\n\nADDITIONAL FINDINGS:\n' + studyAdditionalFindings.trim();
+          }
+          // Add impression separately since it spans all nodules
+          const impData = { noduleSummaries: summaryLines.join('\n') };
+          text += '\n\nIMPRESSION:\n' + renderReport('{{noduleSummaries}}', impData);
+          return text;
+        }
+      }
+
+      // Fallback: block-based rendering
       const blocks = config.blocks || [];
       const showPoints = config.showPoints ?? true;
       const headers = config.sectionHeaders || {};
       const sections = [];
 
-      // FINDINGS
-      const findingsBlocks = allNoduleData.map((data) =>
-        renderBlocks(blocks, data, showPoints)
-      );
-      const findingsHeader = headers.findings ?? 'FINDINGS:';
-      sections.push(
-        findingsHeader + '\n' + (nodules.length === 1
-          ? findingsBlocks[0]
-          : findingsBlocks.join('\n\n'))
-      );
+      const findingsBlocks = allNoduleData.map((data) => renderBlocks(blocks, data, showPoints));
+      sections.push((headers.findings ?? 'FINDINGS:') + '\n' + (nodules.length === 1 ? findingsBlocks[0] : findingsBlocks.join('\n\n')));
 
-      // Custom text blocks
-      const customBlocks = config.customBlocks || [];
-      if (customBlocks.length > 0) {
-        sections.push(customBlocks.map((cb) => cb.text).join('\n'));
-      }
-
-      // ADDITIONAL FINDINGS
-      if (studyAdditionalFindings.trim()) {
-        const addlHeader = headers.additionalFindings ?? 'ADDITIONAL FINDINGS:';
-        sections.push(addlHeader + '\n' + studyAdditionalFindings.trim());
-      }
-
-      // IMPRESSION
+      if ((config.customBlocks || []).length > 0) sections.push(config.customBlocks.map((cb) => cb.text).join('\n'));
+      if (studyAdditionalFindings.trim()) sections.push((headers.additionalFindings ?? 'ADDITIONAL FINDINGS:') + '\n' + studyAdditionalFindings.trim());
       if (config.impression?.enabled && config.impression?.template) {
-        const impHeader = headers.impression ?? 'IMPRESSION:';
-        const impressionData = { noduleSummaries: summaryLines.join('\n') };
-        sections.push(impHeader + '\n' + renderReport(config.impression.template, impressionData));
+        sections.push((headers.impression ?? 'IMPRESSION:') + '\n' + renderReport(config.impression.template, { noduleSummaries: summaryLines.join('\n') }));
       }
 
       return sections.join('\n\n');

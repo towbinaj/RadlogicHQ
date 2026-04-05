@@ -4,6 +4,7 @@ import './lirads.css';
 import '../../components/report-output.js';
 import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
+import { renderEditorContent } from '../../core/pill-editor.js';
 import { liradsDefinition } from './definition.js';
 import { calculateLirads } from './calculator.js';
 import { liradsTemplates } from './templates.js';
@@ -334,28 +335,35 @@ function init() {
     });
 
     reportEl.renderFn = (config, _data) => {
+      // Pill editor content path
+      if (config.editorContent) {
+        if (observations.length === 1) {
+          const merged = { ...allObsData[0], impressionSummary: summaryLines.join('\n') };
+          let text = renderEditorContent(config.editorContent, config.pillStates, merged);
+          if (studyAdditionalFindings.trim()) text += '\n\nADDITIONAL FINDINGS:\n' + studyAdditionalFindings.trim();
+          return text;
+        } else {
+          const parts = allObsData.map((data) => renderEditorContent(config.editorContent, config.pillStates, data));
+          let text = parts.join('\n\n');
+          if (studyAdditionalFindings.trim()) text += '\n\nADDITIONAL FINDINGS:\n' + studyAdditionalFindings.trim();
+          text += '\n\nIMPRESSION:\n' + summaryLines.join('\n');
+          return text;
+        }
+      }
+
+      // Fallback: block-based rendering
       const blocks = config.blocks || [];
       const headers = config.sectionHeaders || {};
       const sections = [];
 
-      const findingsHeader = headers.findings ?? 'FINDINGS:';
-      const findingsBlocks = allObsData.map((data) => renderBlocks(blocks, data, false));
-      sections.push(findingsHeader + '\n' + (observations.length === 1
-        ? findingsBlocks[0] : findingsBlocks.join('\n\n')));
+      sections.push((headers.findings ?? 'FINDINGS:') + '\n' + (observations.length === 1
+        ? renderBlocks(blocks, allObsData[0], false)
+        : allObsData.map((d) => renderBlocks(blocks, d, false)).join('\n\n')));
 
-      const customBlocks = config.customBlocks || [];
-      if (customBlocks.length > 0) {
-        sections.push(customBlocks.map((cb) => cb.text).join('\n'));
-      }
-
-      if (studyAdditionalFindings.trim()) {
-        const addlHeader = headers.additionalFindings ?? 'ADDITIONAL FINDINGS:';
-        sections.push(addlHeader + '\n' + studyAdditionalFindings.trim());
-      }
-
+      if ((config.customBlocks || []).length > 0) sections.push(config.customBlocks.map((cb) => cb.text).join('\n'));
+      if (studyAdditionalFindings.trim()) sections.push((headers.additionalFindings ?? 'ADDITIONAL FINDINGS:') + '\n' + studyAdditionalFindings.trim());
       if (config.impression?.enabled && config.impression?.template) {
-        const impHeader = headers.impression ?? 'IMPRESSION:';
-        sections.push(impHeader + '\n' + renderReport(config.impression.template, { impressionSummary: summaryLines.join('\n') }));
+        sections.push((headers.impression ?? 'IMPRESSION:') + '\n' + renderReport(config.impression.template, { impressionSummary: summaryLines.join('\n') }));
       }
 
       return sections.join('\n\n');
