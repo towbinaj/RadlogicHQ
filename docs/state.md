@@ -1,23 +1,38 @@
-# RadlogicHQ v1.0 — Project State
+# RadioLogicHQ v1.0 — Project State
 
-*Last updated: 2026-04-04*
+*Last updated: 2026-04-05*
 
 ## Current Version
 
-**v1.0** — Initial build, not yet deployed.
+**v1.0** — Deployed to Netlify. Firebase auth + Firestore.
 
 ## What's Shipped
 
 ### Core Framework
 - Generic point-based scoring engine (`engine.js`)
-- Form renderer that builds DOM from declarative tool definitions (`renderer.js`)
-- Template engine with `{{variable}}` and `{{#if}}` conditional support (`report.js`)
+- Decision-tree calculator pattern (LI-RADS)
+- Form renderer with drag-and-drop section reorder (`renderer.js`)
+- Block-based report template system with WYSIWYG editor (`report.js`)
+- Text parser engine with per-tool keyword rules (`parser.js`)
 - CDE mapping registry for RadElement Common Data Elements (`cde.js`)
 - Copy-to-clipboard utility with fallback (`clipboard.js`)
-- localStorage wrapper for template persistence (`storage.js`)
+- Smart storage layer — localStorage + Firestore sync (`storage.js`)
+- Central tools registry with labels (`tools-registry.js`)
+
+### Authentication & User Data
+- Firebase Auth: email/password + Google OAuth + forgot password
+- `<auth-ui>` modal component on all pages
+- User profiles in Firestore
+- Preferences sync (compact mode, section order, unit toggles)
+- Custom template configs sync to Firestore
+- Saved report history (Save + History buttons, text only, no PHI)
+- Template sharing via link/code with import dialog
+- Aggregate analytics (tool usage + template popularity counters, no PII)
+- User profile page with account info + data summary
 
 ### Web Components
-- `<report-output>` — report display with template selector, copy button, template editor, reset-to-default
+- `<report-output>` — report display with template selector, WYSIWYG block editor, copy, save, history
+- `<auth-ui>` — sign in/up modal with Google OAuth and forgot password
 
 ### Tools
 - **ACR TI-RADS Calculator** — Thyroid nodule risk stratification
@@ -54,34 +69,41 @@
 
 ## Infrastructure
 
-- **Hosting**: Not yet deployed
-- **Backend**: None (pure static site)
+- **Hosting**: Netlify (auto-deploy on git push to main)
+- **Live URL**: radiologichq.netlify.app
+- **Backend**: Firebase (Firestore + Auth) — free Spark plan
+- **Auth**: Email/password + Google OAuth + forgot password
+- **Database**: Firestore (profiles, preferences, templates, saved reports, analytics)
 - **Repo**: `github.com/towbinaj/RadlogicHQ` (public, branch `main`)
 - **Build**: Vite 8 MPA, `npm run build` → `dist/`
+- **HIPAA**: No PHI in database. No individual timestamps. No IP addresses. Analytics are aggregate counters only.
 
 ## Feature Backlog
 
 ### Database / Backend
-- [ ] **Backend database** — replace `src/data/tools-registry.js` with a real database (Supabase or similar). Currently the tools registry, labels, and metadata are hardcoded in a JS file acting as a local DB. When migrated, update the landing page and any search/filter to fetch from API instead of importing the static file.
-- [ ] **Label management UI** — admin interface to add/edit/remove body parts, modalities, and specialties labels. Currently labels are defined as arrays in `tools-registry.js` (`BODY_PARTS`, `MODALITIES`, `SPECIALTIES`). New labels must be added manually to those arrays. Need a UI or at minimum a config file that's easier to edit than code.
-- [ ] **Tool metadata CRUD** — ability to add/edit tool registry entries (name, description, labels, status) without editing code
+- [ ] **Label management UI** — admin interface to add/edit/remove body parts, modalities, and specialties labels
+- [ ] **Tool metadata CRUD** — ability to add/edit tool registry entries without editing code
+- [ ] **Hospital SSO** — SAML/OIDC via Firebase Identity Platform (paid, future)
+- [ ] **Organization/team template management** — team admins set default templates
+- [ ] **Admin analytics dashboard** — view aggregate usage data
 
 ### Tools to Build
 - [ ] Bone Age Calculator (Greulich & Pyle) — date inputs, atlas image browser, statistical analysis
-- [ ] LI-RADS (Liver) — CT/MR hepatocellular carcinoma assessment
+- [x] ~~LI-RADS (Liver) — CT/MR hepatocellular carcinoma assessment~~ SHIPPED
 - [ ] BI-RADS (Breast) — breast imaging risk stratification
 - [ ] Bosniak Classification — renal cyst characterization
 - [ ] Adrenal Nodule Washout Calculator — CT attenuation measurements
+- [ ] Fleischner Criteria — pulmonary nodule follow-up
 
 ### Framework Enhancements
 - [ ] `<image-browser>` component — atlas-style image viewer with prev/next navigation and click-to-zoom
 - [ ] `<toggle-group>` component — binary toggle buttons (Male/Female)
 - [ ] `<date-input>` component — date picker with label
-- [ ] Computed field support in engine — auto-calculate values from other inputs (e.g., chronologic age from DOB + study date)
+- [ ] Computed field support in engine — auto-calculate values from other inputs
 - [ ] Landing page search/filter/sort by labels (body part, modality, specialty)
-- [ ] Template import/export as JSON for sharing between colleagues
 - [ ] Print stylesheet for report output
 - [ ] Dark/light mode toggle (currently dark-only)
+- [ ] Custom domain (radiologichq.com)
 
 ### Polish
 - [ ] Keyboard accessibility (arrow keys to navigate options, Enter to select)

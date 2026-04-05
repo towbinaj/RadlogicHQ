@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile | RadioLogicHQ</title>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-header__logo">RadioLogicHQ</a>
+      <nav class="site-header__nav">
+        <a href="/">All Tools</a>
+        <auth-ui></auth-ui>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="profile-page" id="profile-page">
+      <div class="profile-page__loading">Loading...</div>
+    </div>
+    <div class="profile-page__login-prompt" id="login-prompt" style="display:none">
+      <p>Sign in to view your profile and saved data.</p>
+    </div>
+  </main>
+
+  <script type="module" src="./profile.js"></script>
+</body>
+</html>

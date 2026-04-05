@@ -96,7 +96,11 @@ export class AuthUI extends HTMLElement {
     onAuthChange((user) => this._updateUI(user));
 
     this._els.btn.addEventListener('click', () => {
-      if (getUser()) { signOut(); } else { this._openModal(); }
+      if (getUser()) {
+        window.location.href = '/src/pages/profile.html';
+      } else {
+        this._openModal();
+      }
     });
 
     this._els.overlay.addEventListener('click', (e) => {
@@ -146,8 +150,9 @@ export class AuthUI extends HTMLElement {
 
   _updateUI(user) {
     if (user) {
-      this._els.btn.textContent = 'Sign Out';
-      this._els.btn.title = user.displayName || user.email;
+      const name = user.displayName || user.email.split('@')[0];
+      this._els.btn.textContent = name;
+      this._els.btn.title = 'View profile';
       this._els.btn.classList.add('auth-trigger__btn--user');
     } else {
       this._els.btn.textContent = 'Sign In';
