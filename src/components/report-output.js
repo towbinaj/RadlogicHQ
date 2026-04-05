@@ -1,6 +1,8 @@
 import { copyToClipboard } from '../core/clipboard.js';
 import { renderReport, renderBlocks } from '../core/report.js';
 import { getStored, setStored, trackEvent } from '../core/storage.js';
+import { isLoggedIn } from '../core/auth.js';
+import { saveReport, getSavedReports, deleteSavedReport } from '../core/user-data.js';
 
 /**
  * <report-output> Web Component
@@ -29,6 +31,8 @@ export class ReportOutput extends HTMLElement {
           <div class="report-output__controls">
             <select class="report-output__selector" aria-label="Report template"></select>
             <button class="btn report-output__edit-btn">Edit</button>
+            <button class="btn report-output__save-btn" style="display:none" title="Save report to history">Save</button>
+            <button class="btn report-output__history-btn" style="display:none" title="View saved reports">History</button>
             <button class="btn btn--primary report-output__copy-btn">Copy</button>
           </div>
         </div>
@@ -45,6 +49,19 @@ export class ReportOutput extends HTMLElement {
           </div>
           <p class="edit-bar__hint">Click the report text above to edit formatting. Drag ≡ to reorder. Uncheck to hide.</p>
         </div>
+        <div class="report-output__history-panel" style="display:none">
+          <div class="history-panel__header">
+            <span class="history-panel__title">Saved Reports</span>
+            <button class="history-panel__close">&times;</button>
+          </div>
+          <div class="history-panel__list"></div>
+          <div class="history-panel__empty">No saved reports yet.</div>
+        </div>
+        <div class="report-output__save-prompt" style="display:none">
+          <input type="text" class="save-prompt__label" placeholder="Report label (optional)">
+          <button class="btn btn--primary save-prompt__confirm">Save</button>
+          <button class="btn save-prompt__cancel">Cancel</button>
+        </div>
         <div class="report-output__toast" hidden>Copied!</div>
       </div>
     `;
@@ -54,12 +71,31 @@ export class ReportOutput extends HTMLElement {
       text: this.querySelector('.report-output__text'),
       copyBtn: this.querySelector('.report-output__copy-btn'),
       editBtn: this.querySelector('.report-output__edit-btn'),
+      saveBtn: this.querySelector('.report-output__save-btn'),
+      historyBtn: this.querySelector('.report-output__history-btn'),
       editBar: this.querySelector('.report-output__edit-bar'),
       pointsToggle: this.querySelector('.edit-bar__points-toggle input'),
       resetBtn: this.querySelector('.edit-bar__reset-btn'),
       doneBtn: this.querySelector('.edit-bar__done-btn'),
+      historyPanel: this.querySelector('.report-output__history-panel'),
+      historyList: this.querySelector('.history-panel__list'),
+      historyEmpty: this.querySelector('.history-panel__empty'),
+      historyClose: this.querySelector('.history-panel__close'),
+      savePrompt: this.querySelector('.report-output__save-prompt'),
+      saveLabelInput: this.querySelector('.save-prompt__label'),
+      saveConfirm: this.querySelector('.save-prompt__confirm'),
+      saveCancel: this.querySelector('.save-prompt__cancel'),
       toast: this.querySelector('.report-output__toast'),
     };
+
+    // Show Save/History buttons based on auth state
+    import('../core/auth.js').then(({ onAuthChange }) => {
+      onAuthChange((user) => {
+        const show = user ? '' : 'none';
+        this._els.saveBtn.style.display = show;
+        this._els.historyBtn.style.display = show;
+      });
+    });
 
     this._els.selector.addEventListener('change', () => {
       this._activeTemplate = this._els.selector.value;
@@ -71,6 +107,15 @@ export class ReportOutput extends HTMLElement {
     this._els.editBtn.addEventListener('click', () => this._toggleEdit());
     this._els.doneBtn.addEventListener('click', () => this._toggleEdit());
     this._els.resetBtn.addEventListener('click', () => this._resetTemplate());
+
+    // Save flow
+    this._els.saveBtn.addEventListener('click', () => this._showSavePrompt());
+    this._els.saveCancel.addEventListener('click', () => this._hideSavePrompt());
+    this._els.saveConfirm.addEventListener('click', () => this._saveToHistory());
+
+    // History flow
+    this._els.historyBtn.addEventListener('click', () => this._toggleHistory());
+    this._els.historyClose.addEventListener('click', () => this._closeHistory());
 
     this._els.pointsToggle.addEventListener('change', () => {
       this._getConfig().showPoints = this._els.pointsToggle.checked;
@@ -396,15 +441,6 @@ export class ReportOutput extends HTMLElement {
     }
   }
 
-  _showToast() {
-    const toast = this._els.toast;
-    toast.hidden = false;
-    toast.classList.add('show');
-    setTimeout(() => {
-      toast.classList.remove('show');
-      toast.hidden = true;
-    }, 1500);
-  }
 
   _resetTemplate() {
     const key = `blockConfig:${this._toolId}:${this._activeTemplate}`;
@@ -413,8 +449,100 @@ export class ReportOutput extends HTMLElement {
     this._loadBlockConfig();
     this._els.pointsToggle.checked = this._getConfig().showPoints;
     this._render();
-    // Notify parent to reset section order
     if (this._onReset) this._onReset();
+  }
+
+  // --- Save to history ---
+
+  _showSavePrompt() {
+    this._els.savePrompt.style.display = 'flex';
+    this._els.saveLabelInput.value = '';
+    this._els.saveLabelInput.focus();
+  }
+
+  _hideSavePrompt() {
+    this._els.savePrompt.style.display = 'none';
+  }
+
+  async _saveToHistory() {
+    const config = this._getConfig();
+    const text = this._renderFn ? this._renderFn(config, this._templateData) : '';
+    if (!text) return;
+
+    const label = this._els.saveLabelInput.value.trim() || `${this._toolId} report`;
+    await saveReport(this._toolId, text, label);
+    this._hideSavePrompt();
+    this._showToast('Saved!');
+  }
+
+  // --- History ---
+
+  async _toggleHistory() {
+    const panel = this._els.historyPanel;
+    if (panel.style.display !== 'none') {
+      this._closeHistory();
+      return;
+    }
+
+    panel.style.display = '';
+    this._els.historyList.innerHTML = '<div style="padding:8px;color:var(--text-muted);font-size:0.75rem;">Loading...</div>';
+    this._els.historyEmpty.style.display = 'none';
+
+    const reports = await getSavedReports(this._toolId);
+
+    this._els.historyList.innerHTML = '';
+    if (reports.length === 0) {
+      this._els.historyEmpty.style.display = '';
+      return;
+    }
+
+    this._els.historyEmpty.style.display = 'none';
+    for (const report of reports) {
+      const row = document.createElement('div');
+      row.className = 'history-item';
+
+      const preview = report.reportText.substring(0, 80).replace(/\n/g, ' ');
+      row.innerHTML = `
+        <div class="history-item__info">
+          <span class="history-item__label">${report.label}</span>
+          <span class="history-item__preview">${preview}...</span>
+        </div>
+        <div class="history-item__actions">
+          <button class="btn history-item__load" title="Load into report">Load</button>
+          <button class="btn history-item__delete" title="Delete">&times;</button>
+        </div>
+      `;
+
+      row.querySelector('.history-item__load').addEventListener('click', () => {
+        this._els.text.textContent = report.reportText;
+        this._closeHistory();
+      });
+
+      row.querySelector('.history-item__delete').addEventListener('click', async () => {
+        await deleteSavedReport(report.id);
+        row.remove();
+        if (this._els.historyList.children.length === 0) {
+          this._els.historyEmpty.style.display = '';
+        }
+      });
+
+      this._els.historyList.appendChild(row);
+    }
+  }
+
+  _closeHistory() {
+    this._els.historyPanel.style.display = 'none';
+  }
+
+  _showToast(msg = 'Copied!') {
+    const toast = this._els.toast;
+    toast.textContent = msg;
+    toast.hidden = false;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+      toast.hidden = true;
+    }, 1500);
   }
 }
 

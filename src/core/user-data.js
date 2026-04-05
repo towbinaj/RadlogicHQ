@@ -2,7 +2,7 @@
  * User data layer — preferences, templates, analytics.
  * Uses Firestore when logged in, localStorage as fallback/cache.
  */
-import { doc, getDoc, setDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, deleteDoc, orderBy, limit as fbLimit } from 'firebase/firestore';
 import { db } from './firebase.js';
 import { isLoggedIn, getUser } from './auth.js';
 
@@ -136,6 +136,57 @@ export async function loadSharedTemplate(shareCode) {
   if (snap.empty) return null;
   const data = snap.docs[0].data();
   return { toolId: data.toolId, templateId: data.templateId, config: data.config };
+}
+
+// ==========================================
+// SAVED REPORTS (text only — no PHI, no timestamps)
+// ==========================================
+
+/**
+ * Save a report to history. Requires login.
+ * @param {string} toolId
+ * @param {string} reportText
+ * @param {string} label - User-visible label
+ * @returns {Promise<string|null>} Document ID if saved
+ */
+export async function saveReport(toolId, reportText, label) {
+  if (!isLoggedIn()) return null;
+
+  const uid = getUser().uid;
+  const id = crypto.randomUUID();
+  const ref = doc(db, 'saved_reports', id);
+  await setDoc(ref, {
+    userId: uid,
+    toolId,
+    reportText,
+    label: label || `${toolId} report`,
+  });
+  return id;
+}
+
+/**
+ * Get all saved reports for the current user, optionally filtered by tool.
+ * @param {string} [toolId] - Filter by tool (optional)
+ * @returns {Promise<Array>}
+ */
+export async function getSavedReports(toolId) {
+  if (!isLoggedIn()) return [];
+
+  const uid = getUser().uid;
+  const constraints = [where('userId', '==', uid)];
+  if (toolId) constraints.push(where('toolId', '==', toolId));
+
+  const q = query(collection(db, 'saved_reports'), ...constraints);
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Delete a saved report.
+ */
+export async function deleteSavedReport(reportId) {
+  if (!isLoggedIn()) return;
+  await deleteDoc(doc(db, 'saved_reports', reportId));
 }
 
 // ==========================================
