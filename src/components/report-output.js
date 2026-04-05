@@ -278,12 +278,18 @@ export class ReportOutput extends HTMLElement {
       }, 500);
     });
 
-    // Pill click → popover
+    // Pill gear click → popover (only on right side of pill where gear icon is)
     pre.addEventListener('click', (e) => {
       const pill = e.target.closest('.pill');
       if (pill) {
-        e.preventDefault();
-        this._showPillPopover(pill, config);
+        const rect = pill.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        // Only open popover if clicking on the right 20px (gear area)
+        if (clickX > rect.width - 20) {
+          e.preventDefault();
+          e.stopPropagation();
+          this._showPillPopover(pill, config);
+        }
       }
     });
 
