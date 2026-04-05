@@ -33,6 +33,7 @@ function init() {
   const additionalFindingsEl = document.getElementById('additional-findings');
 
   reportEl.toolId = tiradsDefinition.id;
+  reportEl.definition = tiradsDefinition;
   reportEl.setTemplates(tiradsTemplates);
 
   // Sync: report editor reset → reset form section order

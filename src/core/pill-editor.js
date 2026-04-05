@@ -70,8 +70,13 @@ export function blocksToEditorContent(config) {
 
 /**
  * Render editorContent to plain text by substituting pill values.
+ * Applies display aliases from pillStates when available.
+ * @param {Array} content - editorContent array
+ * @param {Object} pillStates - per-pill state including aliases
+ * @param {Object} templateData - current template data with values
+ * @param {Object} [definition] - tool definition for alias resolution
  */
-export function renderEditorContent(content, pillStates, templateData) {
+export function renderEditorContent(content, pillStates, templateData, definition) {
   let result = '';
   for (const node of content) {
     if (node.type === 'text') {
@@ -79,7 +84,14 @@ export function renderEditorContent(content, pillStates, templateData) {
     } else if (node.type === 'pill') {
       const state = pillStates?.[node.blockId];
       if (state?.enabled === false) continue;
-      result += renderReport(node.display, templateData);
+
+      // Check for display alias
+      const aliased = resolveAlias(node.blockId, state, templateData, definition);
+      if (aliased != null) {
+        result += aliased;
+      } else {
+        result += renderReport(node.display, templateData);
+      }
     }
   }
   // Clean up excessive newlines
@@ -253,4 +265,28 @@ function getPillCategory(blockId) {
   if (blockId.includes('Points') || blockId.includes('Score') || blockId === 'totalScore') return 'pill--score';
   if (blockId.includes('Summaries') || blockId.includes('Summary') || blockId.includes('impression')) return 'pill--meta';
   return 'pill--finding';
+}
+
+/**
+ * Resolve a display alias for a pill based on the current value.
+ * Returns the aliased text if found, null otherwise.
+ */
+function resolveAlias(blockId, state, templateData, definition) {
+  if (!state?.aliases || !templateData || !definition) return null;
+
+  const currentValue = templateData[blockId];
+  if (!currentValue) return null;
+
+  // Find the section with options
+  const sections = [...(definition.sections || []), ...(definition.majorFeatures || [])];
+  const section = sections.find((s) => s.id === blockId);
+  if (!section?.options) return null;
+
+  // Match current value to an option
+  const matched = section.options.find((o) => o.label === currentValue || o.id === currentValue);
+  if (matched && state.aliases[matched.id]) {
+    return state.aliases[matched.id];
+  }
+
+  return null;
 }

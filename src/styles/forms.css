@@ -472,6 +472,52 @@ input.no-spinner[type="number"] {
   color: var(--danger);
 }
 
+.pill-popover__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 200px;
+}
+
+.pill-popover__aliases {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pill-popover__aliases-title {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.pill-popover__alias-row {
+  display: flex;
+}
+
+.pill-popover__alias-input {
+  width: 100%;
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  padding: 2px var(--space-xs);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+.pill-popover__alias-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.pill-popover__actions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
 /* Pill palette */
 .pill-palette {
   border-top: 1px solid var(--border-color);

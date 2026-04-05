@@ -36,6 +36,7 @@ function init() {
   const obsTabsEl = document.getElementById('obs-tabs');
 
   reportEl.toolId = liradsDefinition.id;
+  reportEl.definition = liradsDefinition;
   reportEl.setTemplates(liradsTemplates);
 
   let studyAdditionalFindings = '';

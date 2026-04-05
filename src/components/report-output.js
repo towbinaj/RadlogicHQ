@@ -143,6 +143,7 @@ export class ReportOutput extends HTMLElement {
   set renderFn(fn) { this._renderFn = fn; }
   set onReset(fn) { this._onReset = fn; }
   set onBlockReorder(fn) { this._onBlockReorder = fn; }
+  set definition(def) { this._definition = def; }
 
   setTemplates(templates) {
     this._templates = templates;
@@ -394,19 +395,51 @@ export class ReportOutput extends HTMLElement {
     const blockId = pillEl.dataset.blockId;
     const isDisabled = config.pillStates[blockId]?.enabled === false;
 
-    popover.innerHTML = `
+    // Find the section/block that this pill belongs to for value aliases
+    const section = this._findSectionForPill(blockId);
+    if (!config.pillStates[blockId]) config.pillStates[blockId] = {};
+    const aliases = config.pillStates[blockId].aliases || {};
+
+    let html = '<div class="pill-popover__content">';
+
+    // If this pill maps to a section with options, show alias editor
+    if (section?.options) {
+      html += '<div class="pill-popover__aliases">';
+      html += `<div class="pill-popover__aliases-title">${section.label} display text</div>`;
+      for (const opt of section.options) {
+        const alias = aliases[opt.id] ?? opt.label;
+        html += `<div class="pill-popover__alias-row">
+          <input type="text" class="pill-popover__alias-input" data-option-id="${opt.id}" value="${alias.replace(/"/g, '&quot;')}" spellcheck="false">
+        </div>`;
+      }
+      html += '</div>';
+    }
+
+    html += `<div class="pill-popover__actions">
       <button class="pill-popover__btn" data-action="toggle">${isDisabled ? 'Enable' : 'Disable'}</button>
       <button class="pill-popover__btn pill-popover__btn--danger" data-action="remove">Remove</button>
-    `;
+    </div></div>`;
+
+    popover.innerHTML = html;
 
     // Position near the pill
     const rect = pillEl.getBoundingClientRect();
     const containerRect = this._els.text.getBoundingClientRect();
-    popover.style.left = `${rect.left - containerRect.left}px`;
+    popover.style.left = `${Math.max(0, rect.left - containerRect.left)}px`;
     popover.style.top = `${rect.bottom - containerRect.top + 4}px`;
 
+    // Alias input handlers
+    popover.querySelectorAll('.pill-popover__alias-input').forEach((input) => {
+      input.addEventListener('input', () => {
+        if (!config.pillStates[blockId].aliases) config.pillStates[blockId].aliases = {};
+        config.pillStates[blockId].aliases[input.dataset.optionId] = input.value;
+        this._saveBlockConfig();
+        // Update the pill's display text to reflect the alias for the current value
+        this._updatePillDisplay(pillEl, blockId, config);
+      });
+    });
+
     popover.querySelector('[data-action="toggle"]').addEventListener('click', () => {
-      if (!config.pillStates[blockId]) config.pillStates[blockId] = {};
       config.pillStates[blockId].enabled = isDisabled;
       pillEl.classList.toggle('pill--disabled', !isDisabled);
       this._saveBlockConfig();
@@ -439,6 +472,38 @@ export class ReportOutput extends HTMLElement {
     if (this._popover) {
       this._popover.remove();
       this._popover = null;
+    }
+  }
+
+  _findSectionForPill(blockId) {
+    if (!this._definition) return null;
+    // Check scored sections
+    const sections = this._definition.sections || [];
+    for (const s of sections) {
+      if (s.id === blockId) return s;
+    }
+    // Check major features (LI-RADS)
+    for (const f of this._definition.majorFeatures || []) {
+      if (f.id === blockId) return f;
+    }
+    return null;
+  }
+
+  _updatePillDisplay(pillEl, blockId, config) {
+    const aliases = config.pillStates[blockId]?.aliases;
+    if (!aliases || !this._templateData) return;
+
+    // Find the current value from templateData
+    const currentValue = this._templateData[blockId];
+    if (!currentValue) return;
+
+    // Find which option matches the current value
+    const section = this._findSectionForPill(blockId);
+    if (!section?.options) return;
+
+    const matchedOpt = section.options.find((o) => o.label === currentValue || o.id === currentValue);
+    if (matchedOpt && aliases[matchedOpt.id]) {
+      pillEl.textContent = aliases[matchedOpt.id];
     }
   }
 
