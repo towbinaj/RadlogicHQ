@@ -570,6 +570,7 @@ input.no-spinner[type="number"] {
   border: 1px dashed var(--border-color);
   border-radius: var(--radius-sm);
   padding: var(--space-xs) var(--space-sm);
+  margin-left: var(--space-md);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
@@ -591,6 +592,7 @@ input.no-spinner[type="number"] {
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: var(--space-xs);
+  padding-left: var(--space-md);
 }
 
 .pill-palette__group {
