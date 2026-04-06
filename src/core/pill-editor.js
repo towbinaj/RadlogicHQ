@@ -109,6 +109,8 @@ export function serializeDOM(container) {
       const text = node.textContent.replace(/\u200B/g, ''); // strip ZWS
       if (text) content.push({ type: 'text', value: text });
     } else if (node.nodeType === Node.ELEMENT_NODE) {
+      // Skip popover and other non-content elements
+      if (node.classList?.contains('pill-popover')) return;
       if (node.classList?.contains('pill')) {
         content.push({
           type: 'pill',

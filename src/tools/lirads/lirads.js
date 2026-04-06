@@ -20,7 +20,7 @@ function createObsState(num) {
 
 // Convert internal mm value to display value based on current unit
 function displaySize(sizeMm) {
-  if (sizeMm == null) return '';
+  if (sizeMm == null || isNaN(sizeMm)) return '';
   return sizeUnit === 'cm' ? (sizeMm / 10).toFixed(1) : sizeMm;
 }
 

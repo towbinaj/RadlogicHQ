@@ -13,7 +13,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
-import { migrateLocalStorageToCloud } from './user-data.js';
+import { migrateLocalStorageToCloud, clearUserDataCache } from './user-data.js';
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -25,10 +25,10 @@ const listeners = [];
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   if (user) {
-    // Ensure profile document exists
     await ensureProfile(user);
-    // Migrate localStorage prefs on first login
     await migrateLocalStorageToCloud(user.uid);
+  } else {
+    clearUserDataCache();
   }
   listeners.forEach((fn) => fn(user));
 });

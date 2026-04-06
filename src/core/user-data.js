@@ -2,7 +2,7 @@
  * User data layer — preferences, templates, analytics.
  * Uses Firestore when logged in, localStorage as fallback/cache.
  */
-import { doc, getDoc, setDoc, collection, query, where, getDocs, deleteDoc, orderBy, limit as fbLimit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, deleteDoc, increment } from 'firebase/firestore';
 import { db } from './firebase.js';
 import { isLoggedIn, getUser } from './auth.js';
 
@@ -11,6 +11,13 @@ import { isLoggedIn, getUser } from './auth.js';
 // ==========================================
 
 let prefsCache = null;
+
+/**
+ * Clear caches on sign-out. Called from auth.js.
+ */
+export function clearUserDataCache() {
+  prefsCache = null;
+}
 
 /**
  * Get all user preferences.
@@ -200,9 +207,7 @@ export async function deleteSavedReport(reportId) {
 export async function incrementCounter(counterId) {
   try {
     const ref = doc(db, 'analytics_aggregate', counterId);
-    const snap = await getDoc(ref);
-    const current = snap.exists() ? snap.data().count || 0 : 0;
-    await setDoc(ref, { count: current + 1 });
+    await setDoc(ref, { count: increment(1) }, { merge: true });
   } catch {
     // Analytics failure is silent — never block the user
   }

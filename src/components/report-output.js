@@ -259,6 +259,11 @@ export class ReportOutput extends HTMLElement {
       this._saveBlockConfig();
     }
 
+    // Tear down previous listeners
+    if (this._editorAbort) this._editorAbort.abort();
+    this._editorAbort = new AbortController();
+    const signal = this._editorAbort.signal;
+
     // Render as pill editor
     pre.innerHTML = '';
     pre.className = 'report-output__text pill-editor';
@@ -276,7 +281,7 @@ export class ReportOutput extends HTMLElement {
         config.editorContent = serializeDOM(pre);
         this._saveBlockConfig();
       }, 500);
-    });
+    }, { signal });
 
     // Pill gear click → popover (only on right side of pill where gear icon is)
     pre.addEventListener('click', (e) => {
@@ -291,13 +296,13 @@ export class ReportOutput extends HTMLElement {
           this._showPillPopover(pill, config);
         }
       }
-    });
+    }, { signal });
 
     // Drop from palette
     pre.addEventListener('dragover', (e) => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
-    });
+    }, { signal });
 
     pre.addEventListener('drop', (e) => {
       const blockId = e.dataTransfer.getData('application/pill-block-id');
@@ -327,7 +332,7 @@ export class ReportOutput extends HTMLElement {
         this._saveBlockConfig();
         this._renderPalette(config);
       }
-    });
+    }, { signal });
 
     // Render palette
     this._renderPalette(config);
@@ -649,7 +654,7 @@ export class ReportOutput extends HTMLElement {
 
   _resetTemplate() {
     const key = `blockConfig:${this._toolId}:${this._activeTemplate}`;
-    localStorage.removeItem(`radtools:${key}`);
+    import('../core/storage.js').then(({ removeStored }) => removeStored(key));
     this._blockConfig = null;
     this._loadBlockConfig();
     this._els.pointsToggle.checked = this._getConfig().showPoints;
