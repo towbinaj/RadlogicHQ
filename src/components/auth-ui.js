@@ -42,6 +42,10 @@ export class AuthUI extends HTMLElement {
                   <label for="auth-password">Password</label>
                   <input type="password" id="auth-password" placeholder="Enter your password" required autocomplete="current-password" minlength="6">
                 </div>
+                <label class="auth-modal__consent" id="auth-consent" style="display:none">
+                  <input type="checkbox" id="auth-consent-check">
+                  <span>I agree to the <a href="/src/pages/privacy.html" target="_blank">Privacy Policy</a></span>
+                </label>
                 <button type="submit" class="auth-modal__primary-btn" id="auth-submit">Sign In</button>
               </form>
 
@@ -125,6 +129,16 @@ export class AuthUI extends HTMLElement {
     this._els.form.addEventListener('submit', async (e) => {
       e.preventDefault();
       this._clearMessages();
+
+      // Consent required for signup
+      if (this._mode === 'signup') {
+        const consent = this.querySelector('#auth-consent-check');
+        if (!consent.checked) {
+          this._showError('Please agree to the Privacy Policy to create an account.');
+          return;
+        }
+      }
+
       const email = this._els.email.value;
       const password = this._els.password.value;
       const { error } = this._mode === 'signin'
@@ -189,6 +203,7 @@ export class AuthUI extends HTMLElement {
       this._els.toggle.textContent = isSignIn ? 'Sign Up' : 'Sign In';
       this._els.password.autocomplete = isSignIn ? 'current-password' : 'new-password';
       this._els.forgot.style.display = isSignIn ? '' : 'none';
+      this.querySelector('#auth-consent').style.display = isSignIn ? 'none' : '';
     }
   }
 

@@ -9,6 +9,7 @@ import {
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
+  deleteUser,
   onAuthStateChanged,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -96,6 +97,12 @@ export async function signOut() {
   } catch (error) {
     return { error: error.message };
   }
+}
+
+export async function deleteAccount() {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not signed in');
+  await deleteUser(user);
 }
 
 // --- Profile ---

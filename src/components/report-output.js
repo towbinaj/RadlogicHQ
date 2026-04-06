@@ -68,6 +68,7 @@ export class ReportOutput extends HTMLElement {
           <button class="btn btn--primary save-prompt__confirm">Save</button>
           <button class="btn save-prompt__cancel">Cancel</button>
         </div>
+        <div class="report-output__phi-notice">Do not include patient-identifying information in reports.</div>
         <div class="report-output__toast" hidden>Copied!</div>
       </div>
     `;

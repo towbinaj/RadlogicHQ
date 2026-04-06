@@ -214,6 +214,67 @@ export async function incrementCounter(counterId) {
 }
 
 // ==========================================
+// GDPR: DATA EXPORT + DELETION
+// ==========================================
+
+/**
+ * Export all user data as a JSON object.
+ */
+export async function exportAllUserData() {
+  if (!isLoggedIn()) return {};
+  const uid = getUser().uid;
+
+  const profile = await getDoc(doc(db, 'profiles', uid));
+  const prefs = await getDoc(doc(db, 'user_preferences', uid));
+
+  const templatesQ = query(collection(db, 'user_templates'), where('userId', '==', uid));
+  const templatesSnap = await getDocs(templatesQ);
+  const templates = templatesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+  const reportsQ = query(collection(db, 'saved_reports'), where('userId', '==', uid));
+  const reportsSnap = await getDocs(reportsQ);
+  const reports = reportsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+  return {
+    profile: profile.exists() ? profile.data() : null,
+    preferences: prefs.exists() ? prefs.data() : null,
+    templates,
+    savedReports: reports,
+    exportedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Delete all user data from Firestore (GDPR right to erasure).
+ */
+export async function deleteAllUserData() {
+  if (!isLoggedIn()) return;
+  const uid = getUser().uid;
+
+  // Delete profile
+  await deleteDoc(doc(db, 'profiles', uid));
+
+  // Delete preferences
+  await deleteDoc(doc(db, 'user_preferences', uid));
+
+  // Delete all templates
+  const templatesQ = query(collection(db, 'user_templates'), where('userId', '==', uid));
+  const templatesSnap = await getDocs(templatesQ);
+  for (const d of templatesSnap.docs) await deleteDoc(d.ref);
+
+  // Delete all saved reports
+  const reportsQ = query(collection(db, 'saved_reports'), where('userId', '==', uid));
+  const reportsSnap = await getDocs(reportsQ);
+  for (const d of reportsSnap.docs) await deleteDoc(d.ref);
+
+  // Clear local storage
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const key = localStorage.key(i);
+    if (key?.startsWith('radtools:')) localStorage.removeItem(key);
+  }
+}
+
+// ==========================================
 // MIGRATION: localStorage → Firestore
 // ==========================================
 

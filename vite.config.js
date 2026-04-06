@@ -12,6 +12,7 @@ export default defineConfig({
         tirads: resolve(__dirname, 'src/tools/tirads/tirads.html'),
         lirads: resolve(__dirname, 'src/tools/lirads/lirads.html'),
         profile: resolve(__dirname, 'src/pages/profile.html'),
+        privacy: resolve(__dirname, 'src/pages/privacy.html'),
       },
     },
   },

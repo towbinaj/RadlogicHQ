@@ -2,8 +2,8 @@ import '../styles/base.css';
 import '../styles/forms.css';
 import './profile.css';
 import '../components/auth-ui.js';
-import { onAuthChange, getUser, signOut } from '../core/auth.js';
-import { getSavedReports } from '../core/user-data.js';
+import { onAuthChange, getUser, signOut, deleteAccount } from '../core/auth.js';
+import { getSavedReports, getPreferences, exportAllUserData, deleteAllUserData } from '../core/user-data.js';
 
 function init() {
   const page = document.getElementById('profile-page');
@@ -95,6 +95,19 @@ function init() {
           </div>
         </div>
       </div>
+
+      <div class="profile-section card">
+        <h3>Data Management</h3>
+        <div class="profile-data-actions">
+          <button class="btn" id="export-data">Export My Data</button>
+          <button class="btn" id="delete-account" style="color:var(--danger);border-color:var(--danger)">Delete Account</button>
+        </div>
+        <p class="profile-data-hint">Export downloads all your data as JSON. Delete permanently removes your account and all associated data.</p>
+      </div>
+
+      <div class="profile-section" style="text-align:center;padding:var(--space-md)">
+        <a href="/src/pages/privacy.html" style="font-size:var(--text-xs);color:var(--text-muted)">Privacy Policy</a>
+      </div>
     `;
 
     page.querySelector('#profile-signout').addEventListener('click', () => signOut());
@@ -112,6 +125,38 @@ function init() {
 
     page.querySelector('#pref-lirads-unit').addEventListener('change', (e) => {
       localStorage.setItem('radtools:sizeUnit:lirads', e.target.value);
+    });
+
+    // Export data
+    page.querySelector('#export-data').addEventListener('click', async () => {
+      try {
+        const data = await exportAllUserData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `radiologichq-data-${user.email.split('@')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert('Export failed: ' + err.message);
+      }
+    });
+
+    // Delete account
+    page.querySelector('#delete-account').addEventListener('click', async () => {
+      const confirmed = confirm('Are you sure you want to permanently delete your account and all data? This cannot be undone.');
+      if (!confirmed) return;
+      const doubleConfirm = confirm('This will permanently delete your profile, preferences, templates, and saved reports. Continue?');
+      if (!doubleConfirm) return;
+
+      try {
+        await deleteAllUserData();
+        await deleteAccount();
+        window.location.href = '/';
+      } catch (err) {
+        alert('Deletion failed: ' + err.message + '. You may need to sign in again recently.');
+      }
     });
   });
 }
