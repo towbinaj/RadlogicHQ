@@ -4,7 +4,7 @@ import './lirads.css';
 import '../../components/report-output.js';
 import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
-import { renderEditorContent } from '../../core/pill-editor.js';
+import { renderEditorContent, splitEditorContent } from '../../core/pill-editor.js';
 import { liradsDefinition } from './definition.js';
 import { calculateLirads } from './calculator.js';
 import { liradsTemplates } from './templates.js';
@@ -338,16 +338,25 @@ function init() {
     reportEl.renderFn = (config, _data) => {
       // Pill editor content path
       if (config.editorContent) {
+        const impData = { impressionSummary: summaryLines.join('\n') };
+
         if (observations.length === 1) {
-          const merged = { ...allObsData[0], impressionSummary: summaryLines.join('\n') };
+          const merged = { ...allObsData[0], ...impData };
           let text = renderEditorContent(config.editorContent, config.pillStates, merged);
           if (studyAdditionalFindings.trim()) text += '\n\nADDITIONAL FINDINGS:\n' + studyAdditionalFindings.trim();
           return text;
         } else {
-          const parts = allObsData.map((data) => renderEditorContent(config.editorContent, config.pillStates, data));
+          const { findings, impression } = splitEditorContent(config.editorContent);
+
+          const parts = allObsData.map((data) =>
+            renderEditorContent(findings, config.pillStates, data)
+          );
           let text = parts.join('\n\n');
           if (studyAdditionalFindings.trim()) text += '\n\nADDITIONAL FINDINGS:\n' + studyAdditionalFindings.trim();
-          text += '\n\nIMPRESSION:\n' + summaryLines.join('\n');
+
+          if (impression.length > 0) {
+            text += '\n\n' + renderEditorContent(impression, config.pillStates, impData);
+          }
           return text;
         }
       }

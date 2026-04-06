@@ -6,7 +6,7 @@ import '../../components/auth-ui.js';
 import { renderToolForm } from '../../core/renderer.js';
 import { calculateScore } from '../../core/engine.js';
 import { renderReport, renderBlocks, buildTemplateData } from '../../core/report.js';
-import { renderEditorContent } from '../../core/pill-editor.js';
+import { renderEditorContent, splitEditorContent } from '../../core/pill-editor.js';
 import { tiradsDefinition } from './definition.js';
 import { calculateTirads } from './calculator.js';
 import { tiradsTemplates } from './templates.js';
@@ -259,25 +259,33 @@ function init() {
       // If pill editor content exists, use it for the active nodule
       // For multi-nodule: render editorContent per nodule with different data
       if (config.editorContent) {
+        const impData = { noduleSummaries: summaryLines.join('\n') };
+
         if (nodules.length === 1) {
-          const merged = { ...allNoduleData[0], noduleSummaries: summaryLines.join('\n') };
+          const merged = { ...allNoduleData[0], ...impData };
           let text = renderEditorContent(config.editorContent, config.pillStates, merged);
           if (studyAdditionalFindings.trim()) {
             text += '\n\nADDITIONAL FINDINGS:\n' + studyAdditionalFindings.trim();
           }
           return text;
         } else {
-          // Multi-nodule: render editorContent for each, then combine
+          // Multi-nodule: split into findings + impression, render findings per nodule
+          const { findings, impression } = splitEditorContent(config.editorContent);
+
           const parts = allNoduleData.map((data) =>
-            renderEditorContent(config.editorContent, config.pillStates, data)
+            renderEditorContent(findings, config.pillStates, data)
           );
           let text = parts.join('\n\n');
+
           if (studyAdditionalFindings.trim()) {
             text += '\n\nADDITIONAL FINDINGS:\n' + studyAdditionalFindings.trim();
           }
-          // Add impression separately since it spans all nodules
-          const impData = { noduleSummaries: summaryLines.join('\n') };
-          text += '\n\nIMPRESSION:\n' + renderReport('{{noduleSummaries}}', impData);
+
+          // Render impression once with combined summaries
+          if (impression.length > 0) {
+            text += '\n\n' + renderEditorContent(impression, config.pillStates, impData);
+          }
+
           return text;
         }
       }

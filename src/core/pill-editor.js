@@ -69,6 +69,33 @@ export function blocksToEditorContent(config) {
 }
 
 /**
+ * Split editorContent into findings and impression portions.
+ * Finds the impression boundary (text containing "IMPRESSION" or pill with Summaries/impression).
+ * Returns { findings: [...], impression: [...] }
+ */
+export function splitEditorContent(content) {
+  // Find the index where impression starts
+  let splitIdx = content.length;
+  for (let i = 0; i < content.length; i++) {
+    const node = content[i];
+    if (node.type === 'text' && /IMPRESSION/i.test(node.value)) {
+      splitIdx = i;
+      break;
+    }
+    if (node.type === 'pill' && (node.blockId.includes('Summaries') || node.blockId.includes('Summary') || node.blockId.includes('impression'))) {
+      // Back up to the text node before this pill (likely the header)
+      splitIdx = i > 0 && content[i - 1].type === 'text' ? i - 1 : i;
+      break;
+    }
+  }
+
+  return {
+    findings: content.slice(0, splitIdx),
+    impression: content.slice(splitIdx),
+  };
+}
+
+/**
  * Render editorContent to plain text by substituting pill values.
  * Applies display aliases from pillStates when available.
  * @param {Array} content - editorContent array
