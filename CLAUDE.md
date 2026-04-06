@@ -1,4 +1,4 @@
-# RadlogicHQ v1.0
+# RadioLogicHQ v1.1
 
 ## Commands
 npm run dev       # Vite dev server
@@ -7,56 +7,75 @@ npm run preview   # Preview production build
 
 ## Architecture
 - Vanilla ES6+ modules, no framework — multi-page app (MPA) via Vite
-- No backend — pure static site, all logic runs client-side
-- CDE data bundled locally in src/data/cde-sets/
+- Firebase backend: Auth (email + Google OAuth), Firestore (preferences, templates, reports, analytics)
+- Deployed to Netlify (auto-deploy on git push to main)
+- Live: radiologichq.netlify.app
 - Dark radiology reading room theme by default
 
 ## Key Directories
-- `src/core/` — Shared framework (engine, renderer, report template engine, clipboard, storage, CDE mapping)
-- `src/components/` — Reusable Web Components (report-output, etc.)
-- `src/tools/{toolId}/` — One directory per calculator tool
-- `src/styles/` — CSS custom properties in variables.css, global styles in base.css
-- `src/data/cde-sets/` — Bundled RadElement CDE JSON data
-- `public/images/{toolId}/` — Reference images per tool
-- `docs/` — architecture.md and state.md (read these for deep context)
+- `src/core/` — Shared framework (engine, renderer, report/pill-editor, auth, storage, parser, Firebase client)
+- `src/components/` — Web Components (report-output with pill editor, auth-ui modal)
+- `src/tools/{toolId}/` — One directory per calculator tool (TI-RADS, LI-RADS)
+- `src/pages/` — Non-tool pages (profile, privacy)
+- `src/styles/` — CSS: variables.css, base.css, forms.css (shared styles)
+- `src/data/` — Tools registry, CDE sets
+- `src/assets/fonts/` — Self-hosted Inter font (GDPR: no Google Fonts CDN)
+- `public/images/{toolId}/` — Reference SVG images per tool
+- `docs/` — architecture.md, state.md, newtool.md, toolui.md, compliance.md
 
-## Tool Structure (each tool has 6 files)
-- `definition.js` — Declarative config: sections, options, point values, input types
-- `calculator.js` — Pure functions: scoring logic, risk levels, management recommendations
-- `templates.js` — Report templates for PowerScribe 360, PowerScribe One, RadAI Omni
-- `{toolId}.html` — MPA entry point
-- `{toolId}.js` — Page controller wiring definition → engine → report output
-- `{toolId}.css` — Tool-specific styles
+## Tools
+- **TI-RADS** — point-based thyroid nodule risk calculator (CDE: RDES152)
+- **LI-RADS** — decision-tree liver HCC categorization (CDE: RDES5)
+
+## Tool Types
+- **Point-based** (TI-RADS): scored sections with option card grids, `renderToolForm()`, `calculateScore()`
+- **Decision-tree** (LI-RADS): step-by-step wizard, custom DOM, custom calculator
+
+## Authentication
+- Firebase Auth: email/password + Google OAuth + forgot password
+- `<auth-ui>` modal on all pages — AcademiQR-inspired design
+- Signup requires privacy policy consent checkbox
+- Header shows username when logged in, links to profile
+- Anonymous users can use all tools (auth required only for saving)
+
+## Data Flow
+- **Logged out**: localStorage only (current behavior)
+- **Logged in**: localStorage + background Firestore sync
+- storage.js is the gateway — checks auth status, routes to Firestore or localStorage
+- On login: Firestore prefs pulled into localStorage; on write: saves both places
+- prefsCache cleared on sign-out (prevents user data bleed)
+
+## Report Editor (Pill-based)
+- contentEditable div with inline colored pill spans
+- Pills = structured data fields (values from calculator)
+- Free text typed around pills (labels, headings, custom text)
+- Palette panel: drag pills from palette into editor
+- Pill popover (pencil icon): edit display aliases per value, toggle, remove, add custom options
+- Custom fields: "+ New field" in palette creates new pill types
+- editorContent serialized as array of text/pill nodes
+- Backward compatible: falls back to block-based rendering if no editorContent
+
+## Compliance
+- **HIPAA**: No PHI stored. PHI disclaimer on reports. No individual timestamps. Aggregate-only analytics.
+- **GDPR**: Self-hosted fonts. Privacy policy page. Account deletion + data export. Consent at signup.
+- See `docs/compliance.md` for full details
 
 ## Conventions
-- Tool definitions are declarative config objects, calculation logic is pure functions
-- Report templates use `{{variable}}` and `{{#if key}}...{{/if}}` syntax
-- All user-facing text lives in report templates — no hardcoded report strings in JS
-- CDE element IDs link tool inputs to radelement.org standards
-- Use CSS custom properties from src/styles/variables.css — never hardcode colors
-- Images are schematic SVG diagrams per tool in public/images/{toolId}/
-- Web Components use `customElements.define()` — no Shadow DOM
+- Dark theme by default (all colors from CSS variables)
+- Shared styles in `forms.css` — tool CSS is minimal overrides only
+- Tooltips (hover `title`) instead of inline gray text
+- No number spinners (`class="no-spinner"`)
+- Efficiency first: minimize clicks, scrolling, mouse mileage
+- All labels same size/weight per `docs/toolui.md`
 
 ## Adding a New Tool
-1. Create `src/tools/{toolId}/` with the 6 files above
-2. Add HTML entry to `vite.config.js` rollupOptions.input
-3. Add tool card to `index.html`
-4. Add reference images to `public/images/{toolId}/`
-5. Optionally bundle CDE set JSON in `src/data/cde-sets/`
-
-## Input Types Supported
-- `single-select` — radio-style options with images + point values
-- `multi-select` — checkbox-style (multiple selections, points summed)
-- `float` / `integer` — numeric input with min/max/step/unit
-- `text` — free-text entry for findings/comments
-- `single-select` (dropdown) — select menu with options array
-- `toggle` — binary toggle buttons (e.g., Male/Female)
-- `date` — date picker
-- `computed` — auto-calculated from other inputs
+See `docs/newtool.md` for the complete checklist.
 
 ## Watch Out For
-- Option cards use `exclusive: true` flag for mutual exclusion in multi-select (e.g., "None" deselects others)
-- Template customizations are saved to localStorage — users can reset to defaults
-- The report-output component uses a custom `renderFn` callback — must be set before calling updateReport()
-- SVG images use transparent backgrounds (page bg is dark already)
-- Vite config uses MPA entry points — update rollupOptions.input when adding tools
+- Pill editor creates editorContent on first edit — reset clears it
+- Hyphenated section IDs need camelCase mapping for template variables (e.g., `echogenic-foci` → `echogenicFoci`)
+- Multi-nodule editorContent: split at IMPRESSION boundary, render findings per nodule
+- AbortController on pill editor prevents event listener leaks
+- Firebase config is in `.env.local` (gitignored) — must be set in Netlify env vars too
+- Firestore security rules in `firestore.rules` — deploy via Firebase Console
+- `removeStored()` handles both localStorage and Firestore deletion — don't use `localStorage.removeItem` directly
