@@ -114,18 +114,6 @@ export const toolsRegistry = [
     cdeSetId: null,
   },
   {
-    id: 'bone-age',
-    name: 'Bone Age',
-    description: 'Greulich & Pyle bone age assessment with statistical analysis.',
-    icon: 'BA',
-    path: null,
-    status: 'coming-soon',
-    bodyParts: ['Bone'],
-    modalities: ['XR'],
-    specialties: ['Pediatric Radiology'],
-    cdeSetId: null,
-  },
-  {
     id: 'lirads',
     name: 'LI-RADS',
     description: 'Liver imaging reporting and data system for hepatocellular carcinoma.',
