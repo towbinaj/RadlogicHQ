@@ -21,6 +21,7 @@ export default defineConfig({
         orads: resolve(__dirname, 'src/tools/orads/orads.html'),
         lungrads: resolve(__dirname, 'src/tools/lungrads/lungrads.html'),
         pretext: resolve(__dirname, 'src/tools/pretext/pretext.html'),
+        'adrenal-washout': resolve(__dirname, 'src/tools/adrenal-washout/adrenal-washout.html'),
         privacy: resolve(__dirname, 'src/pages/privacy.html'),
       },
     },

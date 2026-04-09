@@ -102,6 +102,18 @@ export const toolsRegistry = [
     cdeSetId: 'RDES152',
   },
   {
+    id: 'adrenal-washout',
+    name: 'Adrenal Washout',
+    description: 'Absolute and relative washout percentages for adrenal lesion characterization.',
+    icon: 'AW',
+    path: '/src/tools/adrenal-washout/adrenal-washout.html',
+    status: 'active',
+    bodyParts: ['Adrenal'],
+    modalities: ['CT'],
+    specialties: ['Body Imaging'],
+    cdeSetId: null,
+  },
+  {
     id: 'bosniak',
     name: 'Bosniak',
     description: 'Bosniak v2019 classification for cystic renal masses on CT and MRI.',
