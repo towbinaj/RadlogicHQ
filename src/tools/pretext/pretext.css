@@ -1,0 +1,46 @@
+/* PRETEXT tool-specific styles */
+
+#pretext-group[data-level="1"] { color: var(--success); }
+#pretext-group[data-level="2"] { color: var(--accent); }
+#pretext-group[data-level="3"] { color: var(--warning); }
+#pretext-group[data-level="4"] { color: var(--danger); }
+
+#step-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Liver section toggle buttons */
+.pretext-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: var(--space-xs);
+}
+
+.pretext-section-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 80px;
+  text-align: center;
+}
+
+.pretext-section-btn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--text-muted);
+}
+
+.pretext-section-btn--active {
+  color: white;
+  background: var(--danger);
+  border-color: var(--danger);
+}

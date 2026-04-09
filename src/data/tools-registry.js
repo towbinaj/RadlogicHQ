@@ -126,6 +126,18 @@ export const toolsRegistry = [
     cdeSetId: null,
   },
   {
+    id: 'pretext',
+    name: 'PRETEXT',
+    description: 'PRETEXT staging for pediatric hepatoblastoma — liver section involvement and annotation factors.',
+    icon: 'PX',
+    path: '/src/tools/pretext/pretext.html',
+    status: 'active',
+    bodyParts: ['Liver'],
+    modalities: ['CT', 'MR'],
+    specialties: ['Pediatric Radiology', 'Oncologic Imaging', 'Body Imaging'],
+    cdeSetId: 'RDES358',
+  },
+  {
     id: 'reimers',
     name: "Reimers' Index",
     description: "Reimers' migration index — proximal femoral migration percentage for hip surveillance.",

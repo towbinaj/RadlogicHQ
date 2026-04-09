@@ -20,6 +20,7 @@ export default defineConfig({
         pirads: resolve(__dirname, 'src/tools/pirads/pirads.html'),
         orads: resolve(__dirname, 'src/tools/orads/orads.html'),
         lungrads: resolve(__dirname, 'src/tools/lungrads/lungrads.html'),
+        pretext: resolve(__dirname, 'src/tools/pretext/pretext.html'),
         privacy: resolve(__dirname, 'src/pages/privacy.html'),
       },
     },
