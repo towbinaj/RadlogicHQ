@@ -55,6 +55,9 @@ function init() {
 
   function applyTemplates() {
     const tpl = mode === 'segmental' ? segmentalTemplates : leglengthTemplates;
+    // Use different toolId per mode so saved block configs don't collide
+    reportEl.toolId = mode === 'segmental' ? 'leglength-seg' : 'leglength';
+    reportEl.renderFn = null;
     reportEl.setTemplates(tpl);
   }
 
