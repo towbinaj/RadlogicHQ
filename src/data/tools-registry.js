@@ -150,6 +150,18 @@ export const toolsRegistry = [
     cdeSetId: null,
   },
   {
+    id: 'deauville',
+    name: 'Deauville',
+    description: 'Deauville 5-point scale — PET/CT response assessment for FDG-avid lymphoma.',
+    icon: 'DV',
+    path: '/src/tools/deauville/deauville.html',
+    status: 'active',
+    bodyParts: [],
+    modalities: ['PT'],
+    specialties: ['Nuclear Medicine', 'Oncologic Imaging'],
+    cdeSetId: null,
+  },
+  {
     id: 'curie',
     name: 'MIBG Score',
     description: 'Curie and SIOPEN semi-quantitative MIBG scoring for neuroblastoma.',

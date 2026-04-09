@@ -25,6 +25,7 @@ export default defineConfig({
         idrf: resolve(__dirname, 'src/tools/idrf/idrf.html'),
         recist: resolve(__dirname, 'src/tools/recist/recist.html'),
         curie: resolve(__dirname, 'src/tools/curie/curie.html'),
+        deauville: resolve(__dirname, 'src/tools/deauville/deauville.html'),
         privacy: resolve(__dirname, 'src/pages/privacy.html'),
       },
     },
