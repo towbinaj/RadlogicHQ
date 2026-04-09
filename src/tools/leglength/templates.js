@@ -61,7 +61,7 @@ export const leglengthTemplates = {
 
 // --- Segmental mode templates ---
 export const segmentalTemplates = {
-  ps360: { label: 'PowerScribe 360', ...buildTemplateSet(SEGMENTAL_BLOCKS, STANDARD_HEADERS, 'Lower extremity lengths as above.') },
-  ps1: { label: 'PowerScribe One', ...buildTemplateSet(SEGMENTAL_BLOCKS, STANDARD_HEADERS, 'Lower extremity lengths as above.') },
-  radai: { label: 'RadAI Omni', ...buildTemplateSet(SEGMENTAL_BLOCKS, RADAI_HEADERS, 'Lower extremity lengths as above.\n[END STRUCTURED REPORT]') },
+  ps360: { label: 'PowerScribe 360', ...buildTemplateSet(SEGMENTAL_BLOCKS, STANDARD_HEADERS, 'Lower extremity lengths and alignment as described above.') },
+  ps1: { label: 'PowerScribe One', ...buildTemplateSet(SEGMENTAL_BLOCKS, STANDARD_HEADERS, 'Lower extremity lengths and alignment as described above.') },
+  radai: { label: 'RadAI Omni', ...buildTemplateSet(SEGMENTAL_BLOCKS, RADAI_HEADERS, 'Lower extremity lengths and alignment as described above.\n[END STRUCTURED REPORT]') },
 };
