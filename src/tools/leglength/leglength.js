@@ -133,19 +133,19 @@ function init() {
             <td class="ll-table__label">Femur</td>
             <td><input type="number" id="input-right-femur" class="no-spinner ll-table__input" min="0.1" max="100" step="0.1" placeholder="—" value="${pad(fs.rightFemur)}"></td>
             <td><input type="number" id="input-left-femur" class="no-spinner ll-table__input" min="0.1" max="100" step="0.1" placeholder="—" value="${pad(fs.leftFemur)}"></td>
-            <td class="ll-table__computed">${femurDiff != null ? femurDiff : '—'}</td>
+            <td class="ll-table__computed" id="cell-femur-diff">${femurDiff != null ? femurDiff : '—'}</td>
           </tr>
           <tr>
             <td class="ll-table__label">Tibia</td>
             <td><input type="number" id="input-right-tibia" class="no-spinner ll-table__input" min="0.1" max="100" step="0.1" placeholder="—" value="${pad(fs.rightTibia)}"></td>
             <td><input type="number" id="input-left-tibia" class="no-spinner ll-table__input" min="0.1" max="100" step="0.1" placeholder="—" value="${pad(fs.leftTibia)}"></td>
-            <td class="ll-table__computed">${tibiaDiff != null ? tibiaDiff : '—'}</td>
+            <td class="ll-table__computed" id="cell-tibia-diff">${tibiaDiff != null ? tibiaDiff : '—'}</td>
           </tr>
           <tr class="ll-table__total-row">
             <td class="ll-table__label">Total</td>
-            <td class="ll-table__computed">${rightTotal != null ? rightTotal : '—'}</td>
-            <td class="ll-table__computed">${leftTotal != null ? leftTotal : '—'}</td>
-            <td class="ll-table__computed ll-table__computed--bold">${totalDiff != null ? totalDiff : '—'}</td>
+            <td class="ll-table__computed" id="cell-right-total">${rightTotal != null ? rightTotal : '—'}</td>
+            <td class="ll-table__computed" id="cell-left-total">${leftTotal != null ? leftTotal : '—'}</td>
+            <td class="ll-table__computed ll-table__computed--bold" id="cell-total-diff">${totalDiff != null ? totalDiff : '—'}</td>
           </tr>
         </tbody>
       </table>
@@ -155,21 +155,45 @@ function init() {
       </div>
     `;
 
+    const femurDiffCell = tableCard.querySelector('#cell-femur-diff');
+    const tibiaDiffCell = tableCard.querySelector('#cell-tibia-diff');
+    const rightTotalCell = tableCard.querySelector('#cell-right-total');
+    const leftTotalCell = tableCard.querySelector('#cell-left-total');
+    const totalDiffCell = tableCard.querySelector('#cell-total-diff');
+
+    function refreshComputed() {
+      const rF = fs.rightFemur > 0 ? fs.rightFemur : null;
+      const lF = fs.leftFemur > 0 ? fs.leftFemur : null;
+      const rT = fs.rightTibia > 0 ? fs.rightTibia : null;
+      const lT = fs.leftTibia > 0 ? fs.leftTibia : null;
+      const rTot = (rF && rT) ? Math.round((rF + rT) * 10) / 10 : null;
+      const lTot = (lF && lT) ? Math.round((lF + lT) * 10) / 10 : null;
+      const fD = (rF && lF) ? Math.round(Math.abs(rF - lF) * 10) / 10 : null;
+      const tD = (rT && lT) ? Math.round(Math.abs(rT - lT) * 10) / 10 : null;
+      const totD = (rTot != null && lTot != null) ? Math.round(Math.abs(rTot - lTot) * 10) / 10 : null;
+
+      femurDiffCell.textContent = fD != null ? fD : '—';
+      tibiaDiffCell.textContent = tD != null ? tD : '—';
+      rightTotalCell.textContent = rTot != null ? rTot : '—';
+      leftTotalCell.textContent = lTot != null ? lTot : '—';
+      totalDiffCell.textContent = totD != null ? totD : '—';
+    }
+
     tableCard.querySelector('#input-right-femur').addEventListener('input', (e) => {
       fs.rightFemur = e.target.value !== '' ? parseFloat(e.target.value) : null;
-      update(); buildSegmentalUI();
+      refreshComputed(); update();
     });
     tableCard.querySelector('#input-left-femur').addEventListener('input', (e) => {
       fs.leftFemur = e.target.value !== '' ? parseFloat(e.target.value) : null;
-      update(); buildSegmentalUI();
+      refreshComputed(); update();
     });
     tableCard.querySelector('#input-right-tibia').addEventListener('input', (e) => {
       fs.rightTibia = e.target.value !== '' ? parseFloat(e.target.value) : null;
-      update(); buildSegmentalUI();
+      refreshComputed(); update();
     });
     tableCard.querySelector('#input-left-tibia').addEventListener('input', (e) => {
       fs.leftTibia = e.target.value !== '' ? parseFloat(e.target.value) : null;
-      update(); buildSegmentalUI();
+      refreshComputed(); update();
     });
 
     stepContainer.appendChild(tableCard);
