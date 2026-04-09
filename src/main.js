@@ -114,13 +114,12 @@ style.textContent = `
     align-items: center;
     gap: var(--space-sm);
     padding-top: var(--space-xl);
-    flex-wrap: wrap;
   }
 
   .filter-bar__search {
     flex: 1;
-    min-width: 180px;
-    padding: var(--space-sm) var(--space-md);
+    min-width: 0;
+    padding: 6px var(--space-sm);
     font-size: var(--text-sm);
     font-family: var(--font-sans);
     color: var(--text-primary);
@@ -140,17 +139,17 @@ style.textContent = `
   }
 
   .filter-bar__select {
-    padding: var(--space-sm) var(--space-md);
-    font-size: var(--text-sm);
+    padding: 6px var(--space-sm);
+    font-size: var(--text-xs);
     font-family: var(--font-sans);
-    color: var(--text-primary);
+    color: var(--text-secondary);
     background: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     outline: none;
     cursor: pointer;
     transition: border-color var(--transition-fast);
-    min-width: 130px;
+    flex-shrink: 0;
   }
 
   .filter-bar__select:focus {
@@ -164,9 +163,10 @@ style.textContent = `
     border: none;
     cursor: pointer;
     font-family: var(--font-sans);
-    padding: var(--space-sm) var(--space-sm);
+    padding: 6px 4px;
     display: none;
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .filter-bar__clear.visible {
