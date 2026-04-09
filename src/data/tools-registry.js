@@ -150,6 +150,18 @@ export const toolsRegistry = [
     cdeSetId: null,
   },
   {
+    id: 'curie',
+    name: 'MIBG Score',
+    description: 'Curie and SIOPEN semi-quantitative MIBG scoring for neuroblastoma.',
+    icon: 'MB',
+    path: '/src/tools/curie/curie.html',
+    status: 'active',
+    bodyParts: ['Bone'],
+    modalities: ['NM'],
+    specialties: ['Pediatric Radiology', 'Nuclear Medicine', 'Oncologic Imaging'],
+    cdeSetId: null,
+  },
+  {
     id: 'idrf',
     name: 'IDRF',
     description: 'Neuroblastoma Image-Defined Risk Factors — INRG staging (L1 vs L2).',

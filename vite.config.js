@@ -24,6 +24,7 @@ export default defineConfig({
         'adrenal-washout': resolve(__dirname, 'src/tools/adrenal-washout/adrenal-washout.html'),
         idrf: resolve(__dirname, 'src/tools/idrf/idrf.html'),
         recist: resolve(__dirname, 'src/tools/recist/recist.html'),
+        curie: resolve(__dirname, 'src/tools/curie/curie.html'),
         privacy: resolve(__dirname, 'src/pages/privacy.html'),
       },
     },
