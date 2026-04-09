@@ -16,7 +16,9 @@ const TOTAL_BLOCKS = [
 // --- Segmental mode blocks ---
 const SEGMENTAL_BLOCKS = [
   { id: 'table', label: 'Measurements', template: '{{measurementTable}}', enabled: true, condition: 'hasAnySegment' },
-  { id: 'landmarks', label: 'Landmarks', template: 'Femur = from the top of femoral head to the medial femoral condyle\nTibia = from the medial femoral condyle to the center of the tibial plafond\nTotal = femur plus tibia', enabled: true },
+  { id: 'rightAlignment', label: 'Right Alignment', template: 'There is {{rightAlignmentLabel}} alignment of the RIGHT lower extremity at the knee.', enabled: true, condition: 'rightAlignmentProvided' },
+  { id: 'leftAlignment', label: 'Left Alignment', template: 'There is {{leftAlignmentLabel}} alignment of the LEFT lower extremity at the knee.', enabled: true, condition: 'leftAlignmentProvided' },
+  { id: 'physes', label: 'Physes', template: 'The physes are {{physesLabel}}.', enabled: true, condition: 'physesProvided' },
 ];
 
 function buildTemplateSet(blocks, headers, impression) {

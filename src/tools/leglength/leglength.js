@@ -152,10 +152,6 @@ function init() {
           </tr>
         </tbody>
       </table>
-      <div class="ll-landmarks">
-        <span>Femur = top of femoral head to medial femoral condyle</span>
-        <span>Tibia = medial femoral condyle to center of tibial plafond</span>
-      </div>
     `;
 
     const femurDiffCell = tableCard.querySelector('#cell-femur-diff');
@@ -200,6 +196,13 @@ function init() {
     });
 
     stepContainer.appendChild(tableCard);
+
+    // Alignment + Physes (shared with total mode)
+    const def = leglengthDefinition;
+    stepContainer.appendChild(buildChoiceCard('Right Knee Alignment', def.alignmentOptions, 'rightAlignment', fs));
+    stepContainer.appendChild(buildChoiceCard('Left Knee Alignment', def.alignmentOptions, 'leftAlignment', fs));
+    stepContainer.appendChild(buildChoiceCard('Physes', def.physesOptions, 'physes', fs));
+
     update();
   }
 
@@ -322,16 +325,9 @@ function init() {
       `Total        ${col(rTotal, 13)}${col(lTotal, 14)}${totDiff}`,
     ].join('\n');
 
-    const landmarks = [
-      'Femur = from the top of femoral head to the medial femoral condyle',
-      'Tibia = from the medial femoral condyle to the center of the tibial plafond',
-      'Total = femur plus tibia',
-    ].join('\n');
-
     const data = {
       ...result,
       measurementTable: table,
-      landmarks,
       hasAnySegment: result.rightFemur != null || result.leftFemur != null || result.rightTibia != null || result.leftTibia != null,
     };
 
@@ -347,8 +343,12 @@ function init() {
       const headers = config.sectionHeaders || {};
       const sections = [];
 
-      // For segmental, render the table directly instead of using block renderer
-      sections.push((headers.findings ?? 'FINDINGS:') + '\n\nThe following measurements were obtained:\n\n' + table + '\n\n' + landmarks);
+      // For segmental, render the table directly then add alignment/physes
+      const findingsLines = ['The following measurements were obtained:\n', table];
+      if (data.rightAlignmentProvided) findingsLines.push(`\nThere is ${data.rightAlignmentLabel} alignment of the RIGHT lower extremity at the knee.`);
+      if (data.leftAlignmentProvided) findingsLines.push(`There is ${data.leftAlignmentLabel} alignment of the LEFT lower extremity at the knee.`);
+      if (data.physesProvided) findingsLines.push(`The physes are ${data.physesLabel}.`);
+      sections.push((headers.findings ?? 'FINDINGS:') + '\n' + findingsLines.join('\n'));
 
       if ((config.customBlocks || []).length > 0) sections.push(config.customBlocks.map((cb) => cb.text).join('\n'));
 

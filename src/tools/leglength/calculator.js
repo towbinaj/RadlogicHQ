@@ -102,5 +102,11 @@ export function calculateSegmental(formState) {
     bothFemur: hasRF && hasLF,
     bothTibia: hasRT && hasLT,
     bothTotal: rightTotal != null && leftTotal != null,
+    rightAlignmentLabel: ALIGNMENT_LABELS[formState.rightAlignment] || '',
+    leftAlignmentLabel: ALIGNMENT_LABELS[formState.leftAlignment] || '',
+    rightAlignmentProvided: !!formState.rightAlignment,
+    leftAlignmentProvided: !!formState.leftAlignment,
+    physesLabel: PHYSES_LABELS[formState.physes] || '',
+    physesProvided: !!formState.physes,
   };
 }
