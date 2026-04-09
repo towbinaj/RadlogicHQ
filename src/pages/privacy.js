@@ -62,7 +62,7 @@ document.getElementById('privacy-content').innerHTML = `
 <p>We do not sell, share, or transfer your data to third parties beyond what is necessary for the service:</p>
 <ul>
   <li><strong>Google Firebase</strong> — authentication and data storage</li>
-  <li><strong>Netlify</strong> — website hosting (no user data stored on Netlify)</li>
+  <li><strong>Cloudflare Pages</strong> — website hosting (no user data stored on Cloudflare)</li>
 </ul>
 <p>No advertising networks, analytics services, or tracking pixels are used. Fonts are self-hosted — no requests to Google Fonts or other CDNs.</p>
 

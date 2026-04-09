@@ -8,8 +8,8 @@ npm run preview   # Preview production build
 ## Architecture
 - Vanilla ES6+ modules, no framework — multi-page app (MPA) via Vite
 - Firebase backend: Auth (email + Google OAuth), Firestore (preferences, templates, reports, analytics)
-- Deployed to Netlify (auto-deploy on git push to main)
-- Live: radiologichq.netlify.app
+- Deployed to Cloudflare Pages (auto-deploy on git push to main)
+- Live: radlogichq.pages.dev
 - Dark radiology reading room theme by default
 
 ## Key Directories
@@ -76,6 +76,6 @@ See `docs/newtool.md` for the complete checklist.
 - Hyphenated section IDs need camelCase mapping for template variables (e.g., `echogenic-foci` → `echogenicFoci`)
 - Multi-nodule editorContent: split at IMPRESSION boundary, render findings per nodule
 - AbortController on pill editor prevents event listener leaks
-- Firebase config is in `.env.local` (gitignored) — must be set in Netlify env vars too
+- Firebase config is in `.env.local` (gitignored) — must be set in Cloudflare Pages env vars too
 - Firestore security rules in `firestore.rules` — deploy via Firebase Console
 - `removeStored()` handles both localStorage and Firestore deletion — don't use `localStorage.removeItem` directly

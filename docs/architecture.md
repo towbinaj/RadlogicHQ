@@ -12,7 +12,7 @@ RadioLogicHQ is a collection of radiology calculators that output structured rep
 | Build | Vite 8 (MPA mode — one HTML entry per tool/page) |
 | Backend | Firebase (Firestore + Auth) |
 | Auth | Email/password + Google OAuth + forgot password |
-| Hosting | Netlify (auto-deploy from GitHub) |
+| Hosting | Cloudflare Pages (auto-deploy from GitHub) |
 | Fonts | Inter (self-hosted woff2 — no CDN) |
 | Data | RadElement CDE sets (bundled JSON) |
 
@@ -30,7 +30,7 @@ Browser
             ├── saved_reports/{id}
             └── analytics_aggregate/{counterId}
 
-Netlify → serves dist/ → auto-deploys on git push
+Cloudflare Pages → serves dist/ → auto-deploys on git push
 ```
 
 ## Project Structure
@@ -70,7 +70,7 @@ RadioLogicHQ/
 │       └── fonts/                     # Self-hosted Inter woff2 (GDPR)
 ├── public/images/{toolId}/            # SVG reference diagrams
 ├── firestore.rules                    # Firestore security rules
-├── netlify.toml                       # Netlify build config
+├── wrangler.jsonc                     # Cloudflare Pages config
 ├── .env.local                         # Firebase config (gitignored)
 └── docs/                              # This documentation
 ```

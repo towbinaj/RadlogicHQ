@@ -4,7 +4,7 @@
 
 ## Current Version
 
-**v1.1** — Live at radiologichq.netlify.app. Firebase auth + Firestore. Netlify auto-deploy.
+**v1.1** — Live at radlogichq.pages.dev. Firebase auth + Firestore. Cloudflare Pages auto-deploy.
 
 ## What's Shipped
 
@@ -97,8 +97,8 @@
 
 ## Infrastructure
 
-- **Hosting**: Netlify (auto-deploy on git push to main)
-- **Live URL**: radiologichq.netlify.app
+- **Hosting**: Cloudflare Pages (auto-deploy on git push to main)
+- **Live URL**: radlogichq.pages.dev
 - **Backend**: Firebase (Firestore + Auth) — free Spark plan
 - **Auth**: Email/password + Google OAuth + forgot password
 - **Database**: Firestore (profiles, preferences, templates, saved reports, analytics)

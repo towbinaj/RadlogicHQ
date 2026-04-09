@@ -63,7 +63,7 @@ No Business Associate Agreement (BAA) is currently in place with Google Cloud. T
 |-------|---------|-----------|
 | Google Firebase (Firestore) | Database | Profiles, preferences, templates, reports, counters |
 | Google Firebase (Auth) | Authentication | Email, password hash, OAuth tokens, sign-in IP |
-| Netlify | Hosting | No user data (static file hosting only) |
+| Cloudflare Pages | Hosting | No user data (static file hosting only) |
 
 ### What We Eliminated
 - **Google Fonts CDN** — fonts self-hosted locally. No user IP sent to Google on page load.
