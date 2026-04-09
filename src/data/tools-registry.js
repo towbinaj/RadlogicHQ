@@ -66,6 +66,18 @@ export const toolsRegistry = [
     cdeSetId: 'RDES152',
   },
   {
+    id: 'bosniak',
+    name: 'Bosniak',
+    description: 'Bosniak v2019 classification for cystic renal masses on CT and MRI.',
+    icon: 'BK',
+    path: '/src/tools/bosniak/bosniak.html',
+    status: 'active',
+    bodyParts: ['Kidney'],
+    modalities: ['CT', 'MR'],
+    specialties: ['Body Imaging'],
+    cdeSetId: null,
+  },
+  {
     id: 'fleischner',
     name: 'Fleischner',
     description: 'Fleischner Society 2017 guidelines for incidental pulmonary nodule management.',

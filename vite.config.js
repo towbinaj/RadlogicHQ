@@ -13,6 +13,7 @@ export default defineConfig({
         tirads: resolve(__dirname, 'src/tools/tirads/tirads.html'),
         lirads: resolve(__dirname, 'src/tools/lirads/lirads.html'),
         profile: resolve(__dirname, 'src/pages/profile.html'),
+        bosniak: resolve(__dirname, 'src/tools/bosniak/bosniak.html'),
         fleischner: resolve(__dirname, 'src/tools/fleischner/fleischner.html'),
         privacy: resolve(__dirname, 'src/pages/privacy.html'),
       },
