@@ -16,6 +16,7 @@ export default defineConfig({
         bosniak: resolve(__dirname, 'src/tools/bosniak/bosniak.html'),
         fleischner: resolve(__dirname, 'src/tools/fleischner/fleischner.html'),
         leglength: resolve(__dirname, 'src/tools/leglength/leglength.html'),
+        reimers: resolve(__dirname, 'src/tools/reimers/reimers.html'),
         privacy: resolve(__dirname, 'src/pages/privacy.html'),
       },
     },

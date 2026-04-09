@@ -90,6 +90,18 @@ export const toolsRegistry = [
     cdeSetId: null,
   },
   {
+    id: 'reimers',
+    name: "Reimers' Index",
+    description: "Reimers' migration index — proximal femoral migration percentage for hip surveillance.",
+    icon: 'RI',
+    path: '/src/tools/reimers/reimers.html',
+    status: 'active',
+    bodyParts: ['Bone'],
+    modalities: ['XR'],
+    specialties: ['Pediatric Radiology', 'Musculoskeletal'],
+    cdeSetId: null,
+  },
+  {
     id: 'leglength',
     name: 'Leg Length',
     description: 'Lower extremity length discrepancy with alignment and physeal status.',
