@@ -66,6 +66,18 @@ export const toolsRegistry = [
     cdeSetId: 'RDES152',
   },
   {
+    id: 'fleischner',
+    name: 'Fleischner',
+    description: 'Fleischner Society 2017 guidelines for incidental pulmonary nodule management.',
+    icon: 'FL',
+    path: '/src/tools/fleischner/fleischner.html',
+    status: 'active',
+    bodyParts: ['Lung'],
+    modalities: ['CT'],
+    specialties: ['Chest Radiology', 'Body Imaging'],
+    cdeSetId: null,
+  },
+  {
     id: 'bone-age',
     name: 'Bone Age',
     description: 'Greulich & Pyle bone age assessment with statistical analysis.',
