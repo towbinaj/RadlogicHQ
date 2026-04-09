@@ -114,12 +114,14 @@ style.textContent = `
     align-items: center;
     gap: var(--space-sm);
     padding-top: var(--space-xl);
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .filter-bar__search {
-    flex: 1;
-    min-width: 0;
-    padding: 6px var(--space-sm);
+    flex: 1 1 auto;
+    min-width: 150px;
+    padding: 6px var(--space-md);
     font-size: var(--text-sm);
     font-family: var(--font-sans);
     color: var(--text-primary);
@@ -149,7 +151,8 @@ style.textContent = `
     outline: none;
     cursor: pointer;
     transition: border-color var(--transition-fast);
-    flex-shrink: 0;
+    flex: 0 0 auto;
+    width: auto;
   }
 
   .filter-bar__select:focus {
@@ -166,7 +169,7 @@ style.textContent = `
     padding: 6px 4px;
     display: none;
     white-space: nowrap;
-    flex-shrink: 0;
+    flex: 0 0 auto;
   }
 
   .filter-bar__clear.visible {
