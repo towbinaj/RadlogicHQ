@@ -15,6 +15,7 @@ export default defineConfig({
         profile: resolve(__dirname, 'src/pages/profile.html'),
         bosniak: resolve(__dirname, 'src/tools/bosniak/bosniak.html'),
         fleischner: resolve(__dirname, 'src/tools/fleischner/fleischner.html'),
+        leglength: resolve(__dirname, 'src/tools/leglength/leglength.html'),
         privacy: resolve(__dirname, 'src/pages/privacy.html'),
       },
     },

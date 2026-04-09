@@ -90,6 +90,18 @@ export const toolsRegistry = [
     cdeSetId: null,
   },
   {
+    id: 'leglength',
+    name: 'Leg Length',
+    description: 'Lower extremity length discrepancy with alignment and physeal status.',
+    icon: 'LL',
+    path: '/src/tools/leglength/leglength.html',
+    status: 'active',
+    bodyParts: ['Bone'],
+    modalities: ['XR'],
+    specialties: ['Pediatric Radiology', 'Musculoskeletal'],
+    cdeSetId: null,
+  },
+  {
     id: 'bone-age',
     name: 'Bone Age',
     description: 'Greulich & Pyle bone age assessment with statistical analysis.',

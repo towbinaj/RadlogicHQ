@@ -1,0 +1,8 @@
+/* Leg Length tool-specific styles (shared styles in forms.css) */
+
+/* Step container */
+#step-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}

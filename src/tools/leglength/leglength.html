@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leg Length Calculator | RadioLogicHQ</title>
+  <meta name="description" content="Lower extremity length discrepancy measurement with alignment and physeal status for structured report output.">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-header__logo">RadioLogicHQ</a>
+      <nav class="site-header__nav">
+        <a href="/">All Tools</a>
+        <auth-ui></auth-ui>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="tool-hero">
+      <div class="tool-hero__text">
+        <h1>Leg Length</h1>
+      </div>
+      <div class="tool-hero__summary">
+        <div class="summary-badge summary-badge--level">
+          <span class="summary-badge__label">Discrepancy</span>
+          <span class="summary-badge__value" id="ll-discrepancy">--</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-layout">
+      <div class="tool-layout__input">
+        <div id="step-container"></div>
+        <div class="study-findings card">
+          <label for="additional-findings">Other Findings</label>
+          <textarea id="additional-findings" rows="2" placeholder="None."></textarea>
+        </div>
+      </div>
+      <div class="tool-layout__output">
+        <report-output></report-output>
+        <div class="parse-panel card">
+          <label for="parse-input">Paste Findings</label>
+          <textarea id="parse-input" rows="3" placeholder="Paste report text to auto-fill..."></textarea>
+          <div class="parse-panel__actions">
+            <button class="btn btn--primary parse-panel__btn" id="parse-btn">Parse</button>
+            <span class="parse-panel__status" id="parse-status"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./leglength.js"></script>
+</body>
+</html>
