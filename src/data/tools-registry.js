@@ -102,6 +102,18 @@ export const toolsRegistry = [
     cdeSetId: 'RDES152',
   },
   {
+    id: 'recist',
+    name: 'RECIST 1.1',
+    description: 'Response evaluation criteria in solid tumors — treatment response assessment.',
+    icon: 'RC',
+    path: '/src/tools/recist/recist.html',
+    status: 'active',
+    bodyParts: [],
+    modalities: ['CT', 'MR'],
+    specialties: ['Oncologic Imaging', 'Body Imaging'],
+    cdeSetId: null,
+  },
+  {
     id: 'adrenal-washout',
     name: 'Adrenal Washout',
     description: 'Absolute and relative washout percentages for adrenal lesion characterization.',

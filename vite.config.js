@@ -23,6 +23,7 @@ export default defineConfig({
         pretext: resolve(__dirname, 'src/tools/pretext/pretext.html'),
         'adrenal-washout': resolve(__dirname, 'src/tools/adrenal-washout/adrenal-washout.html'),
         idrf: resolve(__dirname, 'src/tools/idrf/idrf.html'),
+        recist: resolve(__dirname, 'src/tools/recist/recist.html'),
         privacy: resolve(__dirname, 'src/pages/privacy.html'),
       },
     },
