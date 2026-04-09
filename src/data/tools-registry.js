@@ -138,6 +138,18 @@ export const toolsRegistry = [
     cdeSetId: null,
   },
   {
+    id: 'idrf',
+    name: 'IDRF',
+    description: 'Neuroblastoma Image-Defined Risk Factors — INRG staging (L1 vs L2).',
+    icon: 'NB',
+    path: '/src/tools/idrf/idrf.html',
+    status: 'active',
+    bodyParts: ['Adrenal'],
+    modalities: ['CT', 'MR'],
+    specialties: ['Pediatric Radiology', 'Oncologic Imaging'],
+    cdeSetId: null,
+  },
+  {
     id: 'pretext',
     name: 'PRETEXT',
     description: 'PRETEXT staging for pediatric hepatoblastoma — liver section involvement and annotation factors.',

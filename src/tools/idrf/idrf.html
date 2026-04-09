@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IDRF Calculator | RadioLogicHQ</title>
+  <meta name="description" content="Neuroblastoma Image-Defined Risk Factors (IDRF) calculator — INRG staging system with structured report output.">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-header__logo">RadioLogicHQ</a>
+      <nav class="site-header__nav">
+        <a href="/">All Tools</a>
+        <auth-ui></auth-ui>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="tool-hero">
+      <div class="tool-hero__text">
+        <h1>IDRF <a href="https://doi.org/10.1200/JCO.2008.16.6876" target="_blank" rel="noopener" class="tool-hero__ref" title="Monclair T et al. The International Neuroblastoma Risk Group (INRG) Staging System. J Clin Oncol 2009;27(2):298-303.">Ref</a></h1>
+      </div>
+      <div class="tool-hero__summary">
+        <div class="summary-badge summary-badge--level">
+          <span class="summary-badge__label">Stage</span>
+          <span class="summary-badge__value" id="idrf-stage" data-level="0">--</span>
+        </div>
+        <div class="summary-badge">
+          <span class="summary-badge__label">IDRFs</span>
+          <span class="summary-badge__value" id="idrf-count">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-layout">
+      <div class="tool-layout__input">
+        <div id="step-container"></div>
+        <div class="study-findings card">
+          <label for="additional-findings">Additional Findings</label>
+          <textarea id="additional-findings" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="tool-layout__output">
+        <report-output></report-output>
+        <div class="parse-panel card">
+          <label for="parse-input">Paste Findings</label>
+          <textarea id="parse-input" rows="3" placeholder="Paste report text to auto-fill..."></textarea>
+          <div class="parse-panel__actions">
+            <button class="btn btn--primary parse-panel__btn" id="parse-btn">Parse</button>
+            <span class="parse-panel__status" id="parse-status"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./idrf.js"></script>
+</body>
+</html>

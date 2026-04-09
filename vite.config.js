@@ -22,6 +22,7 @@ export default defineConfig({
         lungrads: resolve(__dirname, 'src/tools/lungrads/lungrads.html'),
         pretext: resolve(__dirname, 'src/tools/pretext/pretext.html'),
         'adrenal-washout': resolve(__dirname, 'src/tools/adrenal-washout/adrenal-washout.html'),
+        idrf: resolve(__dirname, 'src/tools/idrf/idrf.html'),
         privacy: resolve(__dirname, 'src/pages/privacy.html'),
       },
     },
