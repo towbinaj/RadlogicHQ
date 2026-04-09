@@ -1,7 +1,7 @@
 import './styles/base.css';
 import './styles/forms.css';
 import './components/auth-ui.js';
-import { toolsRegistry, getModalityLabel } from './data/tools-registry.js';
+import { toolsRegistry, getModalityLabel, getActiveLabels, MODALITIES } from './data/tools-registry.js';
 import { loadSharedTemplate } from './core/user-data.js';
 import { isLoggedIn } from './core/auth.js';
 import { copyToClipboard } from './core/clipboard.js';
@@ -107,20 +107,189 @@ style.textContent = `
     padding: 2px var(--space-sm);
     border-radius: var(--radius-sm);
   }
+
+  /* --- Filter bar --- */
+  .filter-bar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding-top: var(--space-xl);
+  }
+
+  .filter-bar__search {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--text-sm);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    outline: none;
+    transition: border-color var(--transition-fast);
+  }
+
+  .filter-bar__search:focus {
+    border-color: var(--border-focus);
+  }
+
+  .filter-bar__search::placeholder {
+    color: var(--text-muted);
+  }
+
+  .filter-bar__group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .filter-bar__group-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--text-muted);
+    min-width: 70px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .filter-chip {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: var(--font-sans);
+  }
+
+  .filter-chip:hover {
+    background: var(--bg-elevated);
+  }
+
+  .filter-chip--modality.active {
+    background: rgba(52, 211, 153, 0.15);
+    border-color: rgba(52, 211, 153, 0.5);
+    color: var(--success);
+  }
+
+  .filter-chip--body.active {
+    background: rgba(96, 165, 250, 0.15);
+    border-color: rgba(96, 165, 250, 0.5);
+    color: var(--info);
+  }
+
+  .filter-chip--specialty.active {
+    background: rgba(251, 191, 36, 0.15);
+    border-color: rgba(251, 191, 36, 0.5);
+    color: var(--warning);
+  }
+
+  .filter-bar__clear {
+    font-size: var(--text-xs);
+    color: var(--text-accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    padding: 3px 8px;
+    display: none;
+  }
+
+  .filter-bar__clear.visible {
+    display: inline-block;
+  }
+
+  .filter-bar__clear:hover {
+    text-decoration: underline;
+  }
+
+  .tools-grid__empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: var(--space-2xl) var(--space-md);
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
 `;
 document.head.appendChild(style);
 
-// Render tool cards from registry
+// Build filter bar + tool cards
 const grid = document.getElementById('tools-grid');
 if (grid) {
+  const activeLabels = getActiveLabels();
+
+  // --- Filter bar ---
+  const filterBar = document.createElement('div');
+  filterBar.className = 'filter-bar';
+
+  // Search input
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.className = 'filter-bar__search';
+  searchInput.placeholder = 'Search tools\u2026';
+  filterBar.appendChild(searchInput);
+
+  // Chip rows
+  const activeFilters = { modality: new Set(), body: new Set(), specialty: new Set() };
+
+  function buildChipRow(label, items, category, mapFn) {
+    const row = document.createElement('div');
+    row.className = 'filter-bar__group';
+    row.innerHTML = `<span class="filter-bar__group-label">${label}</span>`;
+    for (const item of items) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = `filter-chip filter-chip--${category}`;
+      chip.textContent = mapFn ? mapFn(item) : item;
+      chip.dataset.value = item;
+      chip.dataset.category = category;
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('active');
+        if (activeFilters[category].has(item)) {
+          activeFilters[category].delete(item);
+        } else {
+          activeFilters[category].add(item);
+        }
+        applyFilters();
+      });
+      row.appendChild(chip);
+    }
+    return row;
+  }
+
+  filterBar.appendChild(buildChipRow('Modality', activeLabels.modalities, 'modality', getModalityLabel));
+  filterBar.appendChild(buildChipRow('Body Part', activeLabels.bodyParts, 'body'));
+  filterBar.appendChild(buildChipRow('Specialty', activeLabels.specialties, 'specialty'));
+
+  // Clear button
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'filter-bar__clear';
+  clearBtn.textContent = 'Clear all filters';
+  clearBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    for (const cat of Object.keys(activeFilters)) activeFilters[cat].clear();
+    filterBar.querySelectorAll('.filter-chip.active').forEach((c) => c.classList.remove('active'));
+    applyFilters();
+  });
+  filterBar.appendChild(clearBtn);
+
+  grid.parentNode.insertBefore(filterBar, grid);
+
+  // --- Render tool cards ---
+  const cards = [];
   for (const tool of toolsRegistry) {
     const isActive = tool.status === 'active' && tool.path;
     const tag = isActive ? 'a' : 'div';
     const card = document.createElement(tag);
     card.className = `tool-card ${!isActive ? 'tool-card--coming-soon' : ''}`;
     if (isActive) card.href = tool.path;
+    card._tool = tool; // attach metadata for filtering
 
-    // Build label tags
     const labels = [];
     for (const bp of tool.bodyParts || []) {
       labels.push(`<span class="tool-card__label tool-card__label--body">${bp}</span>`);
@@ -143,7 +312,61 @@ if (grid) {
     `;
 
     grid.appendChild(card);
+    cards.push(card);
   }
+
+  // Empty-state message (hidden by default)
+  const emptyMsg = document.createElement('div');
+  emptyMsg.className = 'tools-grid__empty';
+  emptyMsg.textContent = 'No tools match your filters.';
+  emptyMsg.style.display = 'none';
+  grid.appendChild(emptyMsg);
+
+  // --- Filter logic ---
+  function applyFilters() {
+    const query = searchInput.value.toLowerCase().trim();
+    const hasAnyFilter =
+      query.length > 0 ||
+      activeFilters.modality.size > 0 ||
+      activeFilters.body.size > 0 ||
+      activeFilters.specialty.size > 0;
+
+    clearBtn.classList.toggle('visible', hasAnyFilter);
+
+    let visibleCount = 0;
+    for (const card of cards) {
+      const tool = card._tool;
+      let visible = true;
+
+      // Text search — match name or description
+      if (query) {
+        const haystack = (tool.name + ' ' + tool.description).toLowerCase();
+        visible = haystack.includes(query);
+      }
+
+      // Modality filter (OR within category)
+      if (visible && activeFilters.modality.size > 0) {
+        visible = (tool.modalities || []).some((m) => activeFilters.modality.has(m));
+      }
+
+      // Body part filter (OR within category)
+      if (visible && activeFilters.body.size > 0) {
+        visible = (tool.bodyParts || []).some((b) => activeFilters.body.has(b));
+      }
+
+      // Specialty filter (OR within category)
+      if (visible && activeFilters.specialty.size > 0) {
+        visible = (tool.specialties || []).some((s) => activeFilters.specialty.has(s));
+      }
+
+      card.style.display = visible ? '' : 'none';
+      if (visible) visibleCount++;
+    }
+
+    emptyMsg.style.display = visibleCount === 0 ? '' : 'none';
+  }
+
+  searchInput.addEventListener('input', applyFilters);
 }
 
 // Handle shared template URLs: ?share=XXXXXXXX
