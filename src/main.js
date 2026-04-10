@@ -312,6 +312,29 @@ if (grid) {
   });
   filterBar.appendChild(clearBtn);
 
+  // "Show hidden" toggle
+  const hiddenToggle = document.createElement('button');
+  hiddenToggle.type = 'button';
+  hiddenToggle.className = 'filter-bar__clear';
+  hiddenToggle.style.display = 'none';
+  hiddenToggle.addEventListener('click', () => {
+    hiddenToggle.classList.toggle('filter-bar__favs-toggle--active');
+    updateHiddenToggle();
+    applyFilters();
+  });
+  filterBar.appendChild(hiddenToggle);
+
+  function updateHiddenToggle() {
+    if (hiddenTools.length > 0) {
+      const showing = hiddenToggle.classList.contains('filter-bar__favs-toggle--active');
+      hiddenToggle.textContent = showing ? 'Hide hidden' : `Show ${hiddenTools.length} hidden`;
+      hiddenToggle.style.display = 'inline-block';
+    } else {
+      hiddenToggle.style.display = 'none';
+      hiddenToggle.classList.remove('filter-bar__favs-toggle--active');
+    }
+  }
+
   grid.parentNode.insertBefore(filterBar, grid);
 
   // --- Favorites & hidden state ---
@@ -332,6 +355,7 @@ if (grid) {
     if (idx >= 0) hiddenTools.splice(idx, 1);
     else hiddenTools.push(toolId);
     setStored('hiddenTools', hiddenTools);
+    updateHiddenToggle();
     applyFilters();
   }
 
@@ -401,7 +425,7 @@ if (grid) {
       });
     }
 
-    // Wire hide button
+    // Wire hide/unhide button
     const hideBtn = card.querySelector('.tool-card__hide');
     if (hideBtn) {
       hideBtn.addEventListener('click', (e) => {
@@ -438,8 +462,9 @@ if (grid) {
       const tool = card._tool;
       let visible = true;
 
-      // Hidden tools always hidden
-      if (hiddenTools.includes(tool.id)) {
+      // Hidden tools — hide unless "Show hidden" is active
+      const showingHidden = hiddenToggle.classList.contains('filter-bar__favs-toggle--active');
+      if (hiddenTools.includes(tool.id) && !showingHidden) {
         visible = false;
       }
 
@@ -480,6 +505,7 @@ if (grid) {
 
   // Initial sort by favorites
   sortCards();
+  updateHiddenToggle();
   applyFilters();
 }
 
