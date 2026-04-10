@@ -220,7 +220,8 @@ style.textContent = `
 
   .tool-card__fav:hover { color: var(--warning); }
   .tool-card__fav--active { color: var(--warning); opacity: 1; }
-  .tool-card__hide:hover { color: var(--danger); }
+  .tool-card__hide:hover { color: var(--text-secondary); }
+  .tool-card__hide svg { display: block; }
 
   .filter-bar__favs-toggle {
     padding: 6px var(--space-sm);
@@ -373,7 +374,7 @@ if (grid) {
     const actionsHtml = isActive ? `
       <div class="tool-card__actions">
         <button class="tool-card__fav ${isFav ? 'tool-card__fav--active' : ''}" data-tool-id="${tool.id}" title="Favorite">${isFav ? '\u2605' : '\u2606'}</button>
-        <button class="tool-card__hide" data-tool-id="${tool.id}" title="Hide tool">\u00d7</button>
+        <button class="tool-card__hide" data-tool-id="${tool.id}" title="Hide tool"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
       </div>
     ` : (!isActive ? '<span class="tool-card__badge">Coming Soon</span>' : '');
 

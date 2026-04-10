@@ -3,21 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VUR Grading (VCUG) | RadioLogicHQ</title>
-  <meta name="description" content="Vesicoureteral reflux grading for fluoroscopic VCUG with structured report output.">
+  <title>Bone Age (Sontag) | RadioLogicHQ</title>
+  <meta name="description" content="Sontag bone age assessment using ossification center count with structured report output.">
 </head>
 <body>
   <header class="site-header"><div class="container"><a href="/" class="site-header__logo">RadioLogicHQ</a><nav class="site-header__nav"><a href="/">All Tools</a><auth-ui></auth-ui></nav></div></header>
   <main class="container">
     <div class="tool-hero">
-      <div class="tool-hero__text"><h1>VUR (VCUG)</h1></div>
-      <div class="tool-hero__summary"><div class="summary-badge summary-badge--level"><span class="summary-badge__label">Grade</span><span class="summary-badge__value" id="badge-grade" data-level="0">--</span></div></div>
+      <div class="tool-hero__text"><h1>Bone Age (Sontag)</h1></div>
+      <div class="tool-hero__summary">
+        <div class="summary-badge"><span class="summary-badge__label">Bone Age</span><span class="summary-badge__value" id="badge-ba">--</span></div>
+        <div class="summary-badge"><span class="summary-badge__label">Difference</span><span class="summary-badge__value" id="badge-diff">--</span></div>
+      </div>
     </div>
     <div class="tool-layout">
       <div class="tool-layout__input"><div id="step-container"></div><div class="study-findings card"><label for="additional-findings">Additional Findings</label><textarea id="additional-findings" rows="2"></textarea></div></div>
       <div class="tool-layout__output"><report-output></report-output><div class="parse-panel card"><label for="parse-input">Paste Findings</label><textarea id="parse-input" rows="3" placeholder="Paste report text to auto-fill..."></textarea><div class="parse-panel__actions"><button class="btn btn--primary parse-panel__btn" id="parse-btn">Parse</button><span class="parse-panel__status" id="parse-status"></span></div></div></div>
     </div>
   </main>
-  <script type="module" src="./vur.js"></script>
+  <script type="module" src="./bone-age-sontag.js"></script>
 </body>
 </html>

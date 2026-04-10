@@ -1,0 +1,12 @@
+/* Pectus — minimal overrides */
+.pectus-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+@media (max-width: 500px) { .pectus-grid { grid-template-columns: 1fr; } }
+.pectus-result {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  padding-top: var(--space-xs);
+}

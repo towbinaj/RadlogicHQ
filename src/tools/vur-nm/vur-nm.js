@@ -1,13 +1,13 @@
 import '../../styles/base.css';
 import '../../styles/forms.css';
-import './vur.css';
+import './vur-nm.css';
 import '../../components/report-output.js';
 import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
-import { vurVcugDefinition } from './definition.js';
-import { calculateVurVcug } from './calculator.js';
-import { vurVcugTemplates } from './templates.js';
+import { vurNmDefinition } from './definition.js';
+import { calculateVurNm } from './calculator.js';
+import { vurNmTemplates } from './templates.js';
 
 function init() {
   const stepContainer = document.getElementById('step-container');
@@ -15,9 +15,9 @@ function init() {
   const badgeGrade = document.getElementById('badge-grade');
   const additionalFindingsEl = document.getElementById('additional-findings');
 
-  reportEl.toolId = vurVcugDefinition.id;
-  reportEl.definition = vurVcugDefinition;
-  reportEl.setTemplates(vurVcugTemplates);
+  reportEl.toolId = vurNmDefinition.id;
+  reportEl.definition = vurNmDefinition;
+  reportEl.setTemplates(vurNmTemplates);
 
   const formState = { grade: null, side: null };
   let studyAdditionalFindings = '';
@@ -28,7 +28,7 @@ function init() {
 
     const sideCard = document.createElement('div');
     sideCard.className = 'card';
-    sideCard.innerHTML = `<div class="input-group"><label>Side</label><div class="toggle-group">${vurVcugDefinition.sideOptions.map((o) => `<button class="toggle-group__btn ${formState.side === o.id ? 'toggle-group__btn--active' : ''}" data-value="${o.id}">${o.label}</button>`).join('')}</div></div>`;
+    sideCard.innerHTML = `<div class="input-group"><label>Side</label><div class="toggle-group">${vurNmDefinition.sideOptions.map((o) => `<button class="toggle-group__btn ${formState.side === o.id ? 'toggle-group__btn--active' : ''}" data-value="${o.id}">${o.label}</button>`).join('')}</div></div>`;
     sideCard.querySelectorAll('.toggle-group__btn').forEach((btn) => {
       btn.addEventListener('click', () => { formState.side = btn.dataset.value; sideCard.querySelectorAll('.toggle-group__btn').forEach((b) => b.classList.toggle('toggle-group__btn--active', b === btn)); update(); });
     });
@@ -36,7 +36,7 @@ function init() {
 
     const gradeCard = document.createElement('div');
     gradeCard.className = 'step-card card';
-    gradeCard.innerHTML = `<div class="step-card__question">VCUG Grade</div><div style="display:flex; flex-direction:column; gap:var(--space-xs);">${vurVcugDefinition.grades.map((g) => `<button class="benign-choice ${formState.grade === g.id ? 'benign-choice--active' : ''}" data-grade="${g.id}" style="text-align:left; justify-content:flex-start;">${g.label} — ${g.description}</button>`).join('')}</div>`;
+    gradeCard.innerHTML = `<div class="step-card__question">Nuclear Medicine Grade</div><div style="display:flex; flex-direction:column; gap:var(--space-xs);">${vurNmDefinition.grades.map((g) => `<button class="benign-choice ${formState.grade === g.id ? 'benign-choice--active' : ''}" data-grade="${g.id}" style="text-align:left; justify-content:flex-start;">${g.label} — ${g.description}</button>`).join('')}</div>`;
     gradeCard.querySelectorAll('.benign-choice').forEach((btn) => {
       btn.addEventListener('click', () => { formState.grade = btn.dataset.grade; gradeCard.querySelectorAll('.benign-choice').forEach((b) => b.classList.toggle('benign-choice--active', b.dataset.grade === formState.grade)); update(); });
     });
@@ -44,10 +44,10 @@ function init() {
     update();
   }
 
-  function update() { const r = calculateVurVcug(formState); badgeGrade.textContent = r.grade; badgeGrade.dataset.level = r.level; updateReport(); }
+  function update() { const r = calculateVurNm(formState); badgeGrade.textContent = r.grade; badgeGrade.dataset.level = r.level; updateReport(); }
 
   function updateReport() {
-    const data = calculateVurVcug(formState);
+    const data = calculateVurNm(formState);
     reportEl.renderFn = (config, _data) => {
       if (config.editorContent) { let text = renderEditorContent(config.editorContent, config.pillStates, data); if (studyAdditionalFindings.trim()) text += '\n\n' + (config.sectionHeaders?.additionalFindings ?? 'Other findings:') + '\n' + studyAdditionalFindings.trim(); return text; }
       const blocks = config.blocks || []; const headers = config.sectionHeaders || {}; const sections = [];

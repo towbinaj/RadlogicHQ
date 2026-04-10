@@ -1,13 +1,13 @@
 import '../../styles/base.css';
 import '../../styles/forms.css';
-import './bone-age.css';
+import './bone-age-sontag.css';
 import '../../components/report-output.js';
 import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
-import { boneAgeGpDefinition } from './definition.js';
-import { calculateBoneAge } from './calculator.js';
-import { boneAgeTemplates } from './templates.js';
+import { boneAgeSontagDefinition } from './definition.js';
+import { calculateBoneAge } from '../bone-age/calculator.js';
+import { boneAgeSontagTemplates } from './templates.js';
 
 function init() {
   const stepContainer = document.getElementById('step-container');
@@ -16,11 +16,11 @@ function init() {
   const badgeDiff = document.getElementById('badge-diff');
   const additionalFindingsEl = document.getElementById('additional-findings');
 
-  reportEl.toolId = boneAgeGpDefinition.id;
-  reportEl.definition = boneAgeGpDefinition;
-  reportEl.setTemplates(boneAgeTemplates);
+  reportEl.toolId = boneAgeSontagDefinition.id;
+  reportEl.definition = boneAgeSontagDefinition;
+  reportEl.setTemplates(boneAgeSontagTemplates);
 
-  const formState = { sex: null, chronoYears: null, chronoMonths: null, boneAgeYears: null, boneAgeMonths: null, method: 'Greulich & Pyle' };
+  const formState = { sex: null, chronoYears: null, chronoMonths: null, boneAgeYears: null, boneAgeMonths: null, ossificationCount: null, method: 'Sontag' };
   let studyAdditionalFindings = '';
   additionalFindingsEl.addEventListener('input', () => { studyAdditionalFindings = additionalFindingsEl.value; updateReport(); });
 
@@ -29,7 +29,7 @@ function init() {
 
     const sexCard = document.createElement('div');
     sexCard.className = 'card';
-    sexCard.innerHTML = `<div class="input-group"><label>Sex</label><div class="toggle-group">${boneAgeGpDefinition.sexOptions.map((o) => `<button class="toggle-group__btn ${formState.sex === o.id ? 'toggle-group__btn--active' : ''}" data-value="${o.id}">${o.label}</button>`).join('')}</div></div>`;
+    sexCard.innerHTML = `<div class="input-group"><label>Sex</label><div class="toggle-group">${boneAgeSontagDefinition.sexOptions.map((o) => `<button class="toggle-group__btn ${formState.sex === o.id ? 'toggle-group__btn--active' : ''}" data-value="${o.id}">${o.label}</button>`).join('')}</div></div>`;
     sexCard.querySelectorAll('.toggle-group__btn').forEach((btn) => {
       btn.addEventListener('click', () => { formState.sex = btn.dataset.value; sexCard.querySelectorAll('.toggle-group__btn').forEach((b) => b.classList.toggle('toggle-group__btn--active', b === btn)); update(); });
     });
@@ -51,12 +51,14 @@ function init() {
     const baCard = document.createElement('div');
     baCard.className = 'card';
     baCard.innerHTML = `
-      <div class="step-card__question">Bone Age (from atlas match)</div>
-      <div style="display:flex; gap:var(--space-sm);">
+      <div class="step-card__question">Bone Age (from ossification center count)</div>
+      <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
+        <div class="input-group" style="max-width:160px;"><label for="ossification">Ossification centers</label><input type="number" id="ossification" class="no-spinner" min="0" max="100" step="1" value="${formState.ossificationCount ?? ''}" placeholder="Count"></div>
         <div class="input-group" style="max-width:120px;"><label for="ba-years">Years</label><input type="number" id="ba-years" class="no-spinner" min="0" max="25" step="1" value="${formState.boneAgeYears ?? ''}" placeholder="Years"></div>
         <div class="input-group" style="max-width:120px;"><label for="ba-months">Months</label><input type="number" id="ba-months" class="no-spinner" min="0" max="11" step="1" value="${formState.boneAgeMonths ?? ''}" placeholder="Months"></div>
       </div>
     `;
+    baCard.querySelector('#ossification').addEventListener('input', (e) => { formState.ossificationCount = e.target.value !== '' ? parseInt(e.target.value) : null; update(); });
     baCard.querySelector('#ba-years').addEventListener('input', (e) => { formState.boneAgeYears = e.target.value !== '' ? parseInt(e.target.value) : null; update(); });
     baCard.querySelector('#ba-months').addEventListener('input', (e) => { formState.boneAgeMonths = e.target.value !== '' ? parseInt(e.target.value) : null; update(); });
     stepContainer.appendChild(baCard);

@@ -11,7 +11,7 @@ const SH = { findings: 'FINDINGS:', additionalFindings: 'Other findings:', impre
 const RH = { findings: '[STRUCTURED REPORT]', additionalFindings: '[OTHER FINDINGS]', impression: '[IMPRESSION]' };
 const IMP = '{{sideLabel}} vesicoureteral reflux, {{gradeLabel}}.';
 
-export const vurVcugTemplates = {
+export const vurNmTemplates = {
   ps360: { label: 'PowerScribe 360', ...bts(FINDINGS_BLOCKS, SH, IMP) },
   ps1: { label: 'PowerScribe One', ...bts(FINDINGS_BLOCKS, SH, IMP) },
   radai: { label: 'RadAI Omni', ...bts([

@@ -1,14 +1,13 @@
 /**
- * Bone Age — Greulich & Pyle + Sontag methods.
+ * Bone Age — Greulich & Pyle method.
  *
- * References:
- *   Greulich WW, Pyle SI. Radiographic Atlas of Skeletal Development of the Hand and Wrist. 2nd ed. 1959.
- *   Sontag LW, Snell D, Anderson M. Rate of appearance of ossification centers. Am J Dis Child 1939.
+ * Reference: Greulich WW, Pyle SI. Radiographic Atlas of Skeletal Development
+ * of the Hand and Wrist. 2nd ed. Stanford University Press, 1959.
  */
 
-export const boneAgeDefinition = {
-  id: 'bone-age',
-  name: 'Bone Age',
+export const boneAgeGpDefinition = {
+  id: 'bone-age-gp',
+  name: 'Bone Age (G&P)',
 
   sexOptions: [
     { id: 'male', label: 'Male' },
