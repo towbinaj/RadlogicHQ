@@ -12,7 +12,7 @@ const PREFIX = 'radtools:';
 
 // --- Sync localStorage → Firestore on write ---
 
-const PREF_KEYS = ['compact', 'sectionOrder:tirads', 'sizeUnit:lirads', 'sizeUnit:nodule-size'];
+const PREF_KEYS = ['compact', 'sectionOrder:tirads', 'sizeUnit:lirads', 'sizeUnit:nodule-size', 'defaultTemplate', 'defaultUnit', 'mode:curie', 'mode:leglength'];
 
 /**
  * Get a value from localStorage (synchronous, instant).
@@ -100,4 +100,11 @@ onAuthChange(async (user) => {
 
 function isPrefKey(key) {
   return PREF_KEYS.includes(key) || key.startsWith('sizeUnit:');
+}
+
+/**
+ * Get size unit preference for a tool, falling back to global default.
+ */
+export function getSizeUnit(toolId) {
+  return getStored(`sizeUnit:${toolId}`) ?? getStored('defaultUnit') ?? 'mm';
 }

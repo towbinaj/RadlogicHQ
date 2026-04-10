@@ -9,10 +9,11 @@ import { lungradsDefinition } from './definition.js';
 import { calculateLungrads } from './calculator.js';
 import { lungradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { getSizeUnit, setStored } from '../../core/storage.js';
 
 let nodules = [createNoduleState(1)];
 let activeNoduleIndex = 0;
-let sizeUnit = localStorage.getItem('radtools:sizeUnit:lungrads') || 'mm';
+let sizeUnit = getSizeUnit('lungrads');
 
 function createNoduleState(num) {
   return { id: num, label: `Nodule ${num}`, formState: {} };
@@ -126,7 +127,7 @@ function init() {
       btn.addEventListener('click', () => {
         if (btn.dataset.unit === sizeUnit) return;
         sizeUnit = btn.dataset.unit;
-        localStorage.setItem('radtools:sizeUnit:lungrads', sizeUnit);
+        setStored('sizeUnit:lungrads', sizeUnit);
         buildUI();
       });
     });

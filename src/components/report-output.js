@@ -157,7 +157,10 @@ export class ReportOutput extends HTMLElement {
       opt.textContent = tmpl.label;
       selector.appendChild(opt);
     }
-    this._activeTemplate = Object.keys(templates)[0] || '';
+    // Apply default template preference if available
+    const defaultTmpl = getStored('defaultTemplate');
+    this._activeTemplate = (defaultTmpl && templates[defaultTmpl]) ? defaultTmpl : (Object.keys(templates)[0] || '');
+    if (selector.value !== this._activeTemplate) selector.value = this._activeTemplate;
     this._loadBlockConfig();
     this._render();
   }

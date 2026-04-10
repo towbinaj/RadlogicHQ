@@ -9,8 +9,9 @@ import { pretextDefinition } from './definition.js';
 import { calculatePretext } from './calculator.js';
 import { pretextTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { getSizeUnit, setStored } from '../../core/storage.js';
 
-let sizeUnit = localStorage.getItem('radtools:sizeUnit:pretext') || 'mm';
+let sizeUnit = getSizeUnit('pretext');
 
 function displaySize(sizeMm) {
   if (sizeMm == null || isNaN(sizeMm)) return '';
@@ -68,7 +69,7 @@ function init() {
       btn.addEventListener('click', () => {
         if (btn.dataset.unit === sizeUnit) return;
         sizeUnit = btn.dataset.unit;
-        localStorage.setItem('radtools:sizeUnit:pretext', sizeUnit);
+        setStored('sizeUnit:pretext', sizeUnit);
         buildUI();
       });
     });

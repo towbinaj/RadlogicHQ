@@ -9,10 +9,11 @@ import { liradsDefinition } from './definition.js';
 import { calculateLirads } from './calculator.js';
 import { liradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { getSizeUnit, setStored } from '../../core/storage.js';
 
 let observations = [createObsState(1)];
 let activeObsIndex = 0;
-let sizeUnit = localStorage.getItem('radtools:sizeUnit:lirads') || 'mm';
+let sizeUnit = getSizeUnit('lirads');
 
 function createObsState(num) {
   return { id: num, label: `Observation ${num}`, formState: {} };
@@ -132,7 +133,7 @@ function init() {
         const newUnit = btn.dataset.unit;
         if (newUnit === sizeUnit) return;
         sizeUnit = newUnit;
-        localStorage.setItem('radtools:sizeUnit:lirads', sizeUnit);
+        setStored('sizeUnit:lirads', sizeUnit);
         // Re-render to update input field with converted value
         buildUI();
       });

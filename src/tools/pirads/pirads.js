@@ -9,10 +9,11 @@ import { piradsDefinition } from './definition.js';
 import { calculatePirads } from './calculator.js';
 import { piradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { getSizeUnit, setStored } from '../../core/storage.js';
 
 let lesions = [createLesionState(1)];
 let activeLesionIndex = 0;
-let sizeUnit = localStorage.getItem('radtools:sizeUnit:pirads') || 'mm';
+let sizeUnit = getSizeUnit('pirads');
 
 function createLesionState(num) {
   return { id: num, label: `Lesion ${num}`, formState: {} };
@@ -126,7 +127,7 @@ function init() {
       btn.addEventListener('click', () => {
         if (btn.dataset.unit === sizeUnit) return;
         sizeUnit = btn.dataset.unit;
-        localStorage.setItem('radtools:sizeUnit:pirads', sizeUnit);
+        setStored('sizeUnit:pirads', sizeUnit);
         buildUI();
       });
     });

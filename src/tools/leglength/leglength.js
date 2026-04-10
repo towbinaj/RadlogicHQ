@@ -9,8 +9,9 @@ import { leglengthDefinition } from './definition.js';
 import { calculateLegLength, calculateSegmental } from './calculator.js';
 import { leglengthTemplates, segmentalTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { getStored, setStored } from '../../core/storage.js';
 
-let mode = localStorage.getItem('radtools:leglength:mode') || 'total';
+let mode = getStored('mode:leglength', 'total');
 const totalState = {};
 const segmentalState = {};
 
@@ -44,7 +45,7 @@ function init() {
       tab.textContent = m.label;
       tab.addEventListener('click', () => {
         mode = m.id;
-        localStorage.setItem('radtools:leglength:mode', mode);
+        setStored('mode:leglength', mode);
         applyTemplates();
         renderModeTabs();
         buildUI();

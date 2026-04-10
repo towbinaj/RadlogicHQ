@@ -9,10 +9,11 @@ import { fleischnerDefinition } from './definition.js';
 import { calculateFleischner } from './calculator.js';
 import { fleischnerTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { getSizeUnit, setStored } from '../../core/storage.js';
 
 let nodules = [createNoduleState(1)];
 let activeNoduleIndex = 0;
-let sizeUnit = localStorage.getItem('radtools:sizeUnit:fleischner') || 'mm';
+let sizeUnit = getSizeUnit('fleischner');
 
 function createNoduleState(num) {
   return { id: num, label: `Nodule ${num}`, formState: {} };
@@ -130,7 +131,7 @@ function init() {
         const newUnit = btn.dataset.unit;
         if (newUnit === sizeUnit) return;
         sizeUnit = newUnit;
-        localStorage.setItem('radtools:sizeUnit:fleischner', sizeUnit);
+        setStored('sizeUnit:fleischner', sizeUnit);
         buildUI();
       });
     });

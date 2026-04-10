@@ -9,10 +9,11 @@ import { bosniakDefinition } from './definition.js';
 import { calculateBosniak } from './calculator.js';
 import { bosniakTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { getSizeUnit, setStored } from '../../core/storage.js';
 
 let cysts = [createCystState(1)];
 let activeCystIndex = 0;
-let sizeUnit = localStorage.getItem('radtools:sizeUnit:bosniak') || 'mm';
+let sizeUnit = getSizeUnit('bosniak');
 
 function createCystState(num) {
   return { id: num, label: `Cyst ${num}`, formState: {} };
@@ -130,7 +131,7 @@ function init() {
         const newUnit = btn.dataset.unit;
         if (newUnit === sizeUnit) return;
         sizeUnit = newUnit;
-        localStorage.setItem('radtools:sizeUnit:bosniak', sizeUnit);
+        setStored('sizeUnit:bosniak', sizeUnit);
         buildUI();
       });
     });

@@ -9,8 +9,9 @@ import { curieDefinition } from './definition.js';
 import { calculateMibg } from './calculator.js';
 import { curieTemplates, siopenTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { getStored, setStored } from '../../core/storage.js';
 
-let mode = localStorage.getItem('radtools:curie:mode') || 'curie';
+let mode = getStored('mode:curie', 'curie');
 const curieScores = {};
 const siopenScores = {};
 
@@ -55,7 +56,7 @@ function init() {
       tab.textContent = m.label;
       tab.addEventListener('click', () => {
         mode = m.id;
-        localStorage.setItem('radtools:curie:mode', mode);
+        setStored('mode:curie', mode);
         applyTemplates();
         renderModeTabs();
         buildUI();

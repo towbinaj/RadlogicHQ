@@ -9,10 +9,11 @@ import { oradsDefinition } from './definition.js';
 import { calculateOrads } from './calculator.js';
 import { oradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { getSizeUnit, setStored } from '../../core/storage.js';
 
 let masses = [createMassState(1)];
 let activeMassIndex = 0;
-let sizeUnit = localStorage.getItem('radtools:sizeUnit:orads') || 'mm';
+let sizeUnit = getSizeUnit('orads');
 
 function createMassState(num) {
   return { id: num, label: `Mass ${num}`, formState: {} };
@@ -118,7 +119,7 @@ function init() {
       btn.addEventListener('click', () => {
         if (btn.dataset.unit === sizeUnit) return;
         sizeUnit = btn.dataset.unit;
-        localStorage.setItem('radtools:sizeUnit:orads', sizeUnit);
+        setStored('sizeUnit:orads', sizeUnit);
         buildUI();
       });
     });
