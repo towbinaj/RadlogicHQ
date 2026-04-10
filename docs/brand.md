@@ -121,6 +121,7 @@ Not yet designed. Considerations:
 - No marketing copy on tool pages — just the calculator and report
 
 ### Landing page
+- Search bar + compact dropdown filters (Modality, Body Part, Specialty) in a single row
 - Tool cards with color-coded labels (body part, modality, specialty)
 - No hero section, no tagline, no description block — tools are the content
 - Clean grid, dark theme, immediate access

@@ -1,6 +1,6 @@
 # RadioLogicHQ v1.1 — Project State
 
-*Last updated: 2026-04-05*
+*Last updated: 2026-04-09*
 
 ## Current Version
 
@@ -67,6 +67,20 @@
   - All features have hover tooltips from ACR LI-RADS Lexicon
   - 3 report templates
 
+- **PI-RADS** — Prostate MRI risk stratification
+- **O-RADS** — Ovarian-adnexal mass risk stratification on ultrasound
+- **Lung-RADS** — Lung cancer screening CT structured reporting
+- **RECIST 1.1** — Response evaluation criteria in solid tumors
+- **Adrenal Washout** — Absolute and relative washout percentages
+- **Bosniak v2019** — Cystic renal mass classification on CT/MRI
+- **Fleischner 2017** — Incidental pulmonary nodule management guidelines
+- **Deauville** — 5-point scale for PET/CT lymphoma response assessment
+- **MIBG Score** — Curie and SIOPEN semi-quantitative scoring for neuroblastoma
+- **IDRF** — Neuroblastoma Image-Defined Risk Factors (INRG staging)
+- **PRETEXT** — Pediatric hepatoblastoma liver section staging (CDE: RDES358)
+- **Reimers' Index** — Proximal femoral migration percentage for hip surveillance
+- **Leg Length** — Lower extremity length discrepancy with alignment and physeal status
+
 ### Compliance (HIPAA + GDPR)
 - No PHI stored. PHI disclaimer on all report outputs
 - Self-hosted Google Fonts (no third-party IP transfer)
@@ -78,9 +92,8 @@
 - See `docs/compliance.md` for full details
 
 ### Pages
-- Landing page (`/`) — tool directory with color-coded labels, rendered from registry
-- TI-RADS (`/src/tools/tirads/tirads.html`)
-- LI-RADS (`/src/tools/lirads/lirads.html`)
+- Landing page (`/`) — tool directory with search bar and dropdown filters (modality, body part, specialty), rendered from registry
+- 15 tool pages (see Tools list above)
 - Profile (`/src/pages/profile.html`) — account, preferences, data management
 - Privacy Policy (`/src/pages/privacy.html`)
 
@@ -112,12 +125,8 @@
 ### Tools to Build
 - [ ] Bone Age Calculator (Greulich & Pyle)
 - [ ] BI-RADS (Breast)
-- [ ] Bosniak Classification (Renal cyst)
-- [ ] Adrenal Nodule Washout Calculator
-- [ ] Fleischner Criteria (Pulmonary nodule)
 
 ### Framework Enhancements
-- [ ] Landing page search/filter/sort by labels
 - [ ] Custom domain (radiologichq.com)
 - [ ] Favicon + PWA manifest
 - [ ] Dark/light mode toggle
