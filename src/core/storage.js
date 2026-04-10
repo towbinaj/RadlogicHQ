@@ -12,7 +12,7 @@ const PREFIX = 'radtools:';
 
 // --- Sync localStorage → Firestore on write ---
 
-const PREF_KEYS = ['compact', 'sectionOrder:tirads', 'sizeUnit:lirads', 'sizeUnit:nodule-size', 'defaultTemplate', 'defaultUnit', 'mode:curie', 'mode:leglength'];
+const PREF_KEYS = ['compact', 'sectionOrder:tirads', 'sizeUnit:lirads', 'sizeUnit:nodule-size', 'defaultTemplate', 'defaultUnit', 'mode:curie', 'mode:leglength', 'favorites', 'hiddenTools'];
 
 /**
  * Get a value from localStorage (synchronous, instant).

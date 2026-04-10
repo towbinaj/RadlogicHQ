@@ -5,6 +5,7 @@ import { toolsRegistry, getModalityLabel, getActiveLabels, MODALITIES } from './
 import { loadSharedTemplate } from './core/user-data.js';
 import { isLoggedIn } from './core/auth.js';
 import { copyToClipboard } from './core/clipboard.js';
+import { getStored, setStored } from './core/storage.js';
 
 // Landing page styles
 const style = document.createElement('style');
@@ -187,6 +188,59 @@ style.textContent = `
     color: var(--text-muted);
     font-size: var(--text-sm);
   }
+
+  /* --- Favorites & hide --- */
+  .tool-card__actions {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    display: flex;
+    gap: 2px;
+    opacity: 0.3;
+    transition: opacity var(--transition-fast);
+  }
+
+  .tool-card:hover .tool-card__actions,
+  .tool-card__actions:has(.tool-card__fav--active) {
+    opacity: 1;
+  }
+
+  .tool-card__fav,
+  .tool-card__hide {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 4px;
+    line-height: 1;
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast);
+  }
+
+  .tool-card__fav:hover { color: var(--warning); }
+  .tool-card__fav--active { color: var(--warning); opacity: 1; }
+  .tool-card__hide:hover { color: var(--danger); }
+
+  .filter-bar__favs-toggle {
+    padding: 6px var(--space-sm);
+    font-size: var(--text-xs);
+    font-family: var(--font-sans);
+    color: var(--text-muted);
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .filter-bar__favs-toggle--active {
+    color: var(--warning);
+    border-color: var(--warning);
+    background: rgba(251, 191, 36, 0.1);
+  }
 `;
 document.head.appendChild(style);
 
@@ -224,6 +278,17 @@ if (grid) {
     return select;
   }
 
+  // Favorites-only toggle
+  const favsToggle = document.createElement('button');
+  favsToggle.type = 'button';
+  favsToggle.className = 'filter-bar__favs-toggle';
+  favsToggle.textContent = '\u2605 Favorites';
+  favsToggle.addEventListener('click', () => {
+    favsToggle.classList.toggle('filter-bar__favs-toggle--active');
+    applyFilters();
+  });
+  filterBar.appendChild(favsToggle);
+
   const modalitySelect = buildSelect('Modality', activeLabels.modalities, getModalityLabel);
   const bodySelect = buildSelect('Body Part', activeLabels.bodyParts);
   const specialtySelect = buildSelect('Specialty', activeLabels.specialties);
@@ -241,11 +306,47 @@ if (grid) {
     modalitySelect.value = '';
     bodySelect.value = '';
     specialtySelect.value = '';
+    favsToggle.classList.remove('filter-bar__favs-toggle--active');
     applyFilters();
   });
   filterBar.appendChild(clearBtn);
 
   grid.parentNode.insertBefore(filterBar, grid);
+
+  // --- Favorites & hidden state ---
+  let favorites = getStored('favorites', []);
+  let hiddenTools = getStored('hiddenTools', []);
+
+  function toggleFavorite(toolId) {
+    const idx = favorites.indexOf(toolId);
+    if (idx >= 0) favorites.splice(idx, 1);
+    else favorites.push(toolId);
+    setStored('favorites', favorites);
+    sortCards();
+    applyFilters();
+  }
+
+  function toggleHidden(toolId) {
+    const idx = hiddenTools.indexOf(toolId);
+    if (idx >= 0) hiddenTools.splice(idx, 1);
+    else hiddenTools.push(toolId);
+    setStored('hiddenTools', hiddenTools);
+    applyFilters();
+  }
+
+  function sortCards() {
+    // Sort: favorites first (in favorites array order), then registry order
+    cards.sort((a, b) => {
+      const aFav = favorites.includes(a._tool.id);
+      const bFav = favorites.includes(b._tool.id);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      if (aFav && bFav) return favorites.indexOf(a._tool.id) - favorites.indexOf(b._tool.id);
+      return 0; // preserve registry order for non-favorites
+    });
+    for (const card of cards) grid.appendChild(card);
+    grid.appendChild(emptyMsg);
+  }
 
   // --- Render tool cards ---
   const cards = [];
@@ -268,6 +369,14 @@ if (grid) {
       labels.push(`<span class="tool-card__label tool-card__label--specialty">${sp}</span>`);
     }
 
+    const isFav = favorites.includes(tool.id);
+    const actionsHtml = isActive ? `
+      <div class="tool-card__actions">
+        <button class="tool-card__fav ${isFav ? 'tool-card__fav--active' : ''}" data-tool-id="${tool.id}" title="Favorite">${isFav ? '\u2605' : '\u2606'}</button>
+        <button class="tool-card__hide" data-tool-id="${tool.id}" title="Hide tool">\u00d7</button>
+      </div>
+    ` : (!isActive ? '<span class="tool-card__badge">Coming Soon</span>' : '');
+
     card.innerHTML = `
       <div class="tool-card__icon">${tool.icon}</div>
       <div class="tool-card__body">
@@ -275,8 +384,31 @@ if (grid) {
         <p class="tool-card__desc">${tool.description}</p>
         <div class="tool-card__tags">${labels.join('')}</div>
       </div>
-      ${!isActive ? '<span class="tool-card__badge">Coming Soon</span>' : ''}
+      ${actionsHtml}
     `;
+
+    // Wire star button
+    const favBtn = card.querySelector('.tool-card__fav');
+    if (favBtn) {
+      favBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleFavorite(tool.id);
+        const nowFav = favorites.includes(tool.id);
+        favBtn.textContent = nowFav ? '\u2605' : '\u2606';
+        favBtn.classList.toggle('tool-card__fav--active', nowFav);
+      });
+    }
+
+    // Wire hide button
+    const hideBtn = card.querySelector('.tool-card__hide');
+    if (hideBtn) {
+      hideBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleHidden(tool.id);
+      });
+    }
 
     grid.appendChild(card);
     cards.push(card);
@@ -295,7 +427,8 @@ if (grid) {
     const modFilter = modalitySelect.value;
     const bodyFilter = bodySelect.value;
     const specFilter = specialtySelect.value;
-    const hasAnyFilter = query.length > 0 || modFilter || bodyFilter || specFilter;
+    const favsOnly = favsToggle.classList.contains('filter-bar__favs-toggle--active');
+    const hasAnyFilter = query.length > 0 || modFilter || bodyFilter || specFilter || favsOnly;
 
     clearBtn.classList.toggle('visible', hasAnyFilter);
 
@@ -304,8 +437,18 @@ if (grid) {
       const tool = card._tool;
       let visible = true;
 
+      // Hidden tools always hidden
+      if (hiddenTools.includes(tool.id)) {
+        visible = false;
+      }
+
+      // Favorites-only mode
+      if (visible && favsOnly) {
+        visible = favorites.includes(tool.id);
+      }
+
       // Text search — match name or description
-      if (query) {
+      if (visible && query) {
         const haystack = (tool.name + ' ' + tool.description).toLowerCase();
         visible = haystack.includes(query);
       }
@@ -333,6 +476,10 @@ if (grid) {
   }
 
   searchInput.addEventListener('input', applyFilters);
+
+  // Initial sort by favorites
+  sortCards();
+  applyFilters();
 }
 
 // Handle shared template URLs: ?share=XXXXXXXX

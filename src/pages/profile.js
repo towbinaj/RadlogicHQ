@@ -5,6 +5,7 @@ import '../components/auth-ui.js';
 import { onAuthChange, getUser, signOut, deleteAccount } from '../core/auth.js';
 import { getSavedReports, getPreferences, exportAllUserData, deleteAllUserData } from '../core/user-data.js';
 import { getStored, setStored } from '../core/storage.js';
+import { toolsRegistry } from '../data/tools-registry.js';
 
 function init() {
   const page = document.getElementById('profile-page');
@@ -112,6 +113,12 @@ function init() {
         </div>
       </div>
 
+      <div class="profile-section card" id="hidden-tools-section" style="${(getStored('hiddenTools', [])).length === 0 ? 'display:none' : ''}">
+        <h3>Hidden Tools</h3>
+        <p style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-sm);">These tools are hidden from your landing page. Click to unhide.</p>
+        <div id="hidden-tools-list" style="display:flex;flex-wrap:wrap;gap:var(--space-xs);"></div>
+      </div>
+
       <div class="profile-section card">
         <h3>Data Management</h3>
         <div class="profile-data-actions">
@@ -150,6 +157,31 @@ function init() {
     page.querySelector('#pref-leglength-mode').addEventListener('change', (e) => {
       setStored('mode:leglength', e.target.value);
     });
+
+    // Hidden tools recovery
+    function renderHiddenTools() {
+      const hidden = getStored('hiddenTools', []);
+      const section = page.querySelector('#hidden-tools-section');
+      const list = page.querySelector('#hidden-tools-list');
+      section.style.display = hidden.length === 0 ? 'none' : '';
+      list.innerHTML = '';
+      for (const toolId of hidden) {
+        const tool = toolsRegistry.find((t) => t.id === toolId);
+        if (!tool) continue;
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.style.fontSize = 'var(--text-xs)';
+        btn.textContent = `${tool.name} \u00d7`;
+        btn.title = `Unhide ${tool.name}`;
+        btn.addEventListener('click', () => {
+          const updated = getStored('hiddenTools', []).filter((id) => id !== toolId);
+          setStored('hiddenTools', updated);
+          renderHiddenTools();
+        });
+        list.appendChild(btn);
+      }
+    }
+    renderHiddenTools();
 
     // Export data
     page.querySelector('#export-data').addEventListener('click', async () => {
