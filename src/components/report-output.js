@@ -73,6 +73,15 @@ export class ReportOutput extends HTMLElement {
       </div>
     `;
 
+    // Mobile floating "View Report" button
+    const mobileBtn = document.createElement('button');
+    mobileBtn.className = 'mobile-report-btn';
+    mobileBtn.textContent = 'View Report';
+    mobileBtn.addEventListener('click', () => {
+      this.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    document.body.appendChild(mobileBtn);
+
     this._els = {
       selector: this.querySelector('.report-output__selector'),
       text: this.querySelector('.report-output__text'),

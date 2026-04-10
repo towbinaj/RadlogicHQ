@@ -59,6 +59,17 @@ style.textContent = `
     font-size: var(--text-lg);
   }
 
+  /* Icon color coding by tool category */
+  .tool-card__icon--rads { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+  .tool-card__icon--oncologic { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+  .tool-card__icon--trauma { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+  .tool-card__icon--body { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+  .tool-card__icon--cardiac { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
+  .tool-card__icon--msk { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+  .tool-card__icon--peds { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+  .tool-card__icon--neuro { background: rgba(244, 114, 182, 0.15); color: #f472b6; }
+  .tool-card__icon--fetal { background: rgba(192, 132, 252, 0.15); color: #c084fc; }
+
   .tool-card__body {
     display: flex;
     flex-direction: column;
@@ -256,6 +267,35 @@ style.textContent = `
     border-color: var(--warning);
     background: rgba(251, 191, 36, 0.1);
   }
+
+  /* --- Mobile responsive --- */
+  @media (max-width: 768px) {
+    .filter-bar {
+      flex-wrap: wrap;
+    }
+
+    .filter-bar__search {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+
+    .filter-bar__select {
+      flex: 1 1 0;
+      min-width: 0;
+      font-size: 0.65rem;
+    }
+
+    .filter-bar__favs-toggle {
+      font-size: 0.65rem;
+    }
+
+    .tool-card__desc {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  }
 `;
 document.head.appendChild(style);
 
@@ -387,6 +427,18 @@ if (grid) {
     grid.appendChild(emptyMsg);
   }
 
+  // --- Icon category map ---
+  const ICON_CATEGORY = {
+    tirads: 'rads', lirads: 'rads', pirads: 'rads', orads: 'rads', lungrads: 'rads', birads: 'rads', cadrads: 'rads', nirads: 'rads',
+    recist: 'oncologic', mrecist: 'oncologic', rapno: 'oncologic', deauville: 'oncologic', lugano: 'oncologic', curie: 'oncologic', idrf: 'oncologic', pretext: 'oncologic',
+    'aast-liver': 'trauma', 'aast-spleen': 'trauma', 'aast-kidney': 'trauma', 'aast-pancreas': 'trauma', aspects: 'trauma', 'sah-grade': 'trauma',
+    'adrenal-washout': 'body', bosniak: 'body', fleischner: 'body', balthazar: 'body', nascet: 'neuro',
+    agatston: 'cardiac',
+    scoliosis: 'msk', kyphosis: 'msk', reimers: 'msk', leglength: 'msk', 'salter-harris': 'msk', 'kellgren-lawrence': 'msk', 'hip-dysplasia': 'msk', 'bone-age-gp': 'msk', 'bone-age-sontag': 'msk', pectus: 'msk',
+    hydronephrosis: 'peds', 'vur-vcug': 'peds', 'vur-nm': 'peds', gmh: 'peds',
+    'fetal-biometry': 'fetal', 'fetal-ventricle': 'fetal', 'fetal-lung': 'fetal', 'fetal-cc': 'fetal', 'fetal-pf': 'fetal',
+  };
+
   // --- Render tool cards ---
   const cards = [];
   for (const tool of toolsRegistry) {
@@ -417,7 +469,7 @@ if (grid) {
     ` : (!isActive ? '<span class="tool-card__badge">Coming Soon</span>' : '');
 
     card.innerHTML = `
-      <div class="tool-card__icon">${tool.icon}</div>
+      <div class="tool-card__icon ${ICON_CATEGORY[tool.id] ? 'tool-card__icon--' + ICON_CATEGORY[tool.id] : ''}">${tool.icon}</div>
       <div class="tool-card__body">
         <h2 class="tool-card__title">${tool.name}</h2>
         <p class="tool-card__desc">${tool.description}</p>

@@ -135,9 +135,11 @@ input.no-spinner[type="number"] {
   background: var(--bg-elevated);
 }
 
-.toggle-group__btn.active {
+.toggle-group__btn.active,
+.toggle-group__btn--active {
   color: white;
   background: var(--accent);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Button */
@@ -912,10 +914,19 @@ input.no-spinner[type="number"] {
 }
 
 .summary-badge__value {
-  font-size: var(--text-lg);
+  font-size: var(--text-xl);
   font-weight: 700;
   color: var(--text-primary);
+  min-width: 2ch;
+  text-align: center;
 }
+
+/* Severity color coding */
+.summary-badge__value[data-level="1"] { color: var(--success); }
+.summary-badge__value[data-level="2"] { color: #6ee7b7; }
+.summary-badge__value[data-level="3"] { color: var(--warning); }
+.summary-badge__value[data-level="4"] { color: #fb923c; }
+.summary-badge__value[data-level="5"] { color: var(--danger); }
 
 /* ===== Auth UI (AcademiQR-inspired layout) ===== */
 
@@ -1286,6 +1297,7 @@ input.no-spinner[type="number"] {
   color: white;
   background: var(--accent);
   border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 /* Major features card */
