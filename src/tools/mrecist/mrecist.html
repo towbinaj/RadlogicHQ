@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mRECIST Calculator | RadioLogicHQ</title>
+  <meta name="description" content="Modified RECIST for HCC — enhancing tumor response assessment with structured report output.">
+</head>
+<body>
+  <header class="site-header"><div class="container"><a href="/" class="site-header__logo">RadioLogicHQ</a><nav class="site-header__nav"><a href="/">All Tools</a><auth-ui></auth-ui></nav></div></header>
+  <main class="container">
+    <div class="tool-hero">
+      <div class="tool-hero__text"><h1>mRECIST <a href="https://doi.org/10.1055/s-0030-1247132" target="_blank" rel="noopener" class="tool-hero__ref" title="Lencioni R, Llovet JM. Modified RECIST criteria for HCC. Semin Liver Dis 2010.">Ref</a></h1></div>
+      <div class="tool-hero__summary">
+        <div class="summary-badge summary-badge--level"><span class="summary-badge__label">Response</span><span class="summary-badge__value" id="badge-response" data-level="0">--</span></div>
+        <div class="summary-badge"><span class="summary-badge__label">% Change</span><span class="summary-badge__value" id="badge-pct">--</span></div>
+      </div>
+    </div>
+    <div class="tool-layout">
+      <div class="tool-layout__input"><div id="step-container"></div><div class="study-findings card"><label for="additional-findings">Additional Findings</label><textarea id="additional-findings" rows="2"></textarea></div></div>
+      <div class="tool-layout__output"><report-output></report-output><div class="parse-panel card"><label for="parse-input">Paste Findings</label><textarea id="parse-input" rows="3" placeholder="Paste report text to auto-fill..."></textarea><div class="parse-panel__actions"><button class="btn btn--primary parse-panel__btn" id="parse-btn">Parse</button><span class="parse-panel__status" id="parse-status"></span></div></div></div>
+    </div>
+  </main>
+  <script type="module" src="./mrecist.js"></script>
+</body>
+</html>
