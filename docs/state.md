@@ -1,10 +1,10 @@
-# RadioLogicHQ v1.1 — Project State
+# RadioLogicHQ v1.2 — Project State
 
 *Last updated: 2026-04-09*
 
 ## Current Version
 
-**v1.1** — Live at radlogichq.pages.dev. Firebase auth + Firestore. Cloudflare Pages auto-deploy.
+**v1.2** — Live at radlogichq.pages.dev. 42 active tools. Firebase auth + Firestore. Cloudflare Pages auto-deploy.
 
 ## What's Shipped
 
@@ -18,8 +18,9 @@
 - CDE mapping registry for RadElement Common Data Elements (`cde.js`)
 - Copy-to-clipboard utility with fallback (`clipboard.js`)
 - Smart storage layer — localStorage + background Firestore sync (`storage.js`)
+- `getSizeUnit(toolId)` helper — falls back to global `defaultUnit` preference
 - Central tools registry with body part/modality/specialty labels (`tools-registry.js`)
-- mm/cm unit toggle on size inputs (persists preference)
+- mm/cm unit toggle on size inputs (persists per-tool and global preference)
 
 ### Authentication & User Data
 - Firebase Auth: email/password + Google OAuth + forgot password
@@ -35,6 +36,25 @@
 - Data export (JSON download of all user data)
 - Account deletion (cascades all Firestore data + Firebase Auth account)
 
+### User Preferences (synced to Firestore)
+- Default report template (PS360 / PS1 / RadAI) — applies across all tools
+- Default measurement unit (mm / cm) — global fallback with per-tool override
+- Compact mode (TI-RADS images)
+- MIBG scoring system (Curie / SIOPEN)
+- Leg length mode (Total / Segmental)
+- Hydronephrosis classification (UTD Postnatal / UTD Antenatal / SFU)
+- Hip dysplasia method (Graf / AAOS)
+- Tool favorites (array of tool IDs)
+- Hidden tools (array of tool IDs)
+
+### Landing Page
+- Tool directory with search bar and dropdown filters (modality, body part, specialty)
+- Favorites: star icon on each card, favorites float to top of grid
+- Hide: eye-slash icon hides tools from landing page
+- "Favorites only" toggle button in filter bar
+- All favorites/hidden state persists via localStorage + Firestore sync
+- Profile page shows hidden tools with unhide buttons
+
 ### Pill Editor
 - contentEditable div with non-editable inline pill spans
 - Blue pills = findings, gold = scores, green = metadata
@@ -47,39 +67,36 @@
 - Backward compatible: falls back to block-based rendering
 
 ### Web Components
-- `<report-output>` — pill-based editor, copy, save, history, share, template selector
+- `<report-output>` — pill-based editor, copy, save, history, share, template selector (reads defaultTemplate pref)
 - `<auth-ui>` — sign in/up/forgot-password modal with Google OAuth and consent
 
-### Tools
-- **TI-RADS** — Thyroid nodule risk stratification (CDE: RDES152)
-  - 5 scoring categories with option card grids + SVG diagrams
-  - Multi-nodule tabs (add, remove, rename, independent scoring)
-  - Draggable section reorder (syncs with report block order)
-  - Compact mode (hide images)
-  - Parse findings from pasted text
-  - 3 report templates: PowerScribe 360, PowerScribe One, RadAI Omni
+### Tools (42 active)
 
-- **LI-RADS v2018** — Liver HCC categorization (CDE: RDES5)
-  - Decision-tree UI: benign assessment → major features → ancillary
-  - Multi-observation tabs
-  - Couinaud segment + size + series/image number inputs
-  - Ancillary features as compact toggleable card grid
-  - All features have hover tooltips from ACR LI-RADS Lexicon
-  - 3 report templates
+**RADS Systems (8)**
+- TI-RADS, LI-RADS, PI-RADS, O-RADS, Lung-RADS, BI-RADS, CAD-RADS, NI-RADS
 
-- **PI-RADS** — Prostate MRI risk stratification
-- **O-RADS** — Ovarian-adnexal mass risk stratification on ultrasound
-- **Lung-RADS** — Lung cancer screening CT structured reporting
-- **RECIST 1.1** — Response evaluation criteria in solid tumors
-- **Adrenal Washout** — Absolute and relative washout percentages
-- **Bosniak v2019** — Cystic renal mass classification on CT/MRI
-- **Fleischner 2017** — Incidental pulmonary nodule management guidelines
-- **Deauville** — 5-point scale for PET/CT lymphoma response assessment
-- **MIBG Score** — Curie and SIOPEN semi-quantitative scoring for neuroblastoma
-- **IDRF** — Neuroblastoma Image-Defined Risk Factors (INRG staging)
-- **PRETEXT** — Pediatric hepatoblastoma liver section staging (CDE: RDES358)
-- **Reimers' Index** — Proximal femoral migration percentage for hip surveillance
-- **Leg Length** — Lower extremity length discrepancy with alignment and physeal status
+**Oncologic (8)**
+- RECIST 1.1, mRECIST, RAPNO (4 variants), Deauville, Lugano, MIBG Score, IDRF, PRETEXT
+
+**Trauma / Emergency (6)**
+- AAST Liver, AAST Spleen, AAST Kidney, AAST Pancreas, ASPECTS, SAH Grading
+
+**Body Imaging (5)**
+- Adrenal Washout, Bosniak v2019, Fleischner 2017, Balthazar/CTSI, NASCET
+
+**Cardiac (2)**
+- CAD-RADS (counted above in RADS), Agatston Score
+
+**MSK / Pediatric Orthopedic (10)**
+- Scoliosis, Kyphosis/Lordosis, Reimers' Index, Leg Length, Salter-Harris, Kellgren-Lawrence, Hip Dysplasia, Bone Age (G&P), Bone Age (Sontag), Pectus Excavatum
+
+**Pediatric GU / Neuro (4)**
+- Hydronephrosis (UTD/SFU), VUR (VCUG), VUR (Nuclear), GMH Grading
+
+### Shared Code Patterns
+- AAST tools (4 organs) share `calculator.js` + `templates.js` from `aast-liver/`
+- Bone age tools (G&P + Sontag) share `calculator.js` from `bone-age/`
+- All measurement tools use `getSizeUnit()` from `storage.js`
 
 ### Compliance (HIPAA + GDPR)
 - No PHI stored. PHI disclaimer on all report outputs
@@ -92,9 +109,9 @@
 - See `docs/compliance.md` for full details
 
 ### Pages
-- Landing page (`/`) — tool directory with search bar and dropdown filters (modality, body part, specialty), rendered from registry
-- 15 tool pages (see Tools list above)
-- Profile (`/src/pages/profile.html`) — account, preferences, data management
+- Landing page (`/`) — tool directory with search, filters, favorites, hide
+- 42 tool pages (see Tools list above)
+- Profile (`/src/pages/profile.html`) — account, preferences, hidden tools, data management
 - Privacy Policy (`/src/pages/privacy.html`)
 
 ### Styling
@@ -121,10 +138,6 @@
 - **GDPR**: Self-hosted fonts. Privacy policy. Account deletion. Data export. Consent.
 
 ## Feature Backlog
-
-### Tools to Build
-- [ ] Bone Age Calculator (Greulich & Pyle)
-- [ ] BI-RADS (Breast)
 
 ### Framework Enhancements
 - [ ] Custom domain (radiologichq.com)

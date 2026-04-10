@@ -1,8 +1,8 @@
-# RadioLogicHQ v1.1 — Architecture
+# RadioLogicHQ v1.2 — Architecture
 
 ## Overview
 
-RadioLogicHQ is a collection of radiology calculators that output structured reports for PowerScribe 360, PowerScribe One, and RadAI Omni. Reports map to RSNA Common Data Elements (CDEs). The app supports two tool types: point-based scoring (TI-RADS) and decision-tree categorization (LI-RADS).
+RadioLogicHQ is a collection of 42 radiology calculators that output structured reports for PowerScribe 360, PowerScribe One, and RadAI Omni. Reports map to RSNA Common Data Elements (CDEs). The app supports five tool types: point-based scoring, decision-tree categorization, measurement calculators, category selectors, and response assessment tools.
 
 ## Tech Stack
 
@@ -53,9 +53,12 @@ RadioLogicHQ/
 │   ├── components/
 │   │   ├── report-output.js           # <report-output> — pill editor, copy, save, history, share
 │   │   └── auth-ui.js                # <auth-ui> — sign in/up modal
-│   ├── tools/
+│   ├── tools/                             # 42 tool directories
 │   │   ├── tirads/                    # TI-RADS (point-based)
-│   │   └── lirads/                    # LI-RADS (decision-tree)
+│   │   ├── lirads/                    # LI-RADS (decision-tree)
+│   │   ├── aast-liver/                # AAST Liver (shared calculator for all AAST organs)
+│   │   ├── bone-age/                  # Bone Age G&P (shared calculator for Sontag)
+│   │   └── ...                        # 38 more tool directories
 │   ├── pages/
 │   │   ├── profile.html/js/css        # User profile, preferences, data management
 │   │   └── privacy.html/js            # Privacy policy
@@ -82,8 +85,11 @@ RadioLogicHQ/
 getStored(key) → localStorage (synchronous, instant)
 setStored(key, value) → localStorage + background Firestore sync (if logged in)
 removeStored(key) → localStorage + Firestore deletion (if logged in)
+getSizeUnit(toolId) → per-tool unit || global defaultUnit || 'mm'
 trackEvent(id) → Firestore atomic increment (fire-and-forget)
 ```
+
+PREF_KEYS synced to Firestore: compact, sectionOrder:tirads, sizeUnit:*, defaultTemplate, defaultUnit, mode:curie, mode:leglength, mode:hydronephrosis, mode:hip-dysplasia, favorites, hiddenTools.
 
 On login: Firestore preferences pulled into localStorage.
 On sign-out: prefsCache cleared to prevent user data bleed.
@@ -204,7 +210,7 @@ calculator.js → maps score to risk level + management
 templates.js → block/pill definitions for report
 ```
 
-### Decision-Tree (LI-RADS)
+### Decision-Tree (LI-RADS, Bosniak, Fleischner)
 ```
 definition.js → steps, major features, ancillary features
     ↓
@@ -215,4 +221,38 @@ calculator.js → decision table lookup (not engine.js)
 templates.js → block/pill definitions for report
 ```
 
-Both types share: report-output component, pill editor, parser, storage, auth.
+### Category Select (AAST, Salter-Harris, BI-RADS, KL)
+```
+definition.js → categories with findings + grades
+    ↓
+tool.js → benign-choice buttons (multi-select within category)
+    ↓
+calculator.js → highest grade from selected findings
+    ↓
+templates.js → block definitions for report
+```
+AAST organs share calculator/templates from `aast-liver/`.
+
+### Measurement (Reimers, NASCET, Leg Length, Pectus)
+```
+definition.js → minimal (option lists)
+    ↓
+tool.js → numeric inputs, auto-computed results
+    ↓
+calculator.js → formulas (ratios, percentages, differences)
+    ↓
+templates.js → block definitions for report
+```
+
+### Response Assessment (RECIST, mRECIST, RAPNO)
+```
+definition.js → response thresholds, non-target/new-lesion options
+    ↓
+tool.js → target lesion table + assessment inputs
+    ↓
+calculator.js → sum measurements → % change → response category
+    ↓
+templates.js → block definitions for report
+```
+
+All types share: report-output component (reads defaultTemplate preference), pill editor, parser, storage, auth.
