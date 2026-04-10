@@ -35,6 +35,8 @@ export default defineConfig({
         kyphosis: resolve(__dirname, 'src/tools/kyphosis/kyphosis.html'),
         'aast-pancreas': resolve(__dirname, 'src/tools/aast-pancreas/aast-pancreas.html'),
         lugano: resolve(__dirname, 'src/tools/lugano/lugano.html'),
+        'fetal-cc': resolve(__dirname, 'src/tools/fetal-cc/fetal-cc.html'),
+        'fetal-pf': resolve(__dirname, 'src/tools/fetal-pf/fetal-pf.html'),
         'fetal-biometry': resolve(__dirname, 'src/tools/fetal-biometry/fetal-biometry.html'),
         'fetal-ventricle': resolve(__dirname, 'src/tools/fetal-ventricle/fetal-ventricle.html'),
         'fetal-lung': resolve(__dirname, 'src/tools/fetal-lung/fetal-lung.html'),
