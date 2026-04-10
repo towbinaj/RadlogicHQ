@@ -1,0 +1,72 @@
+/* RAPNO tool — minimal overrides on shared forms.css */
+
+.rapno-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.rapno-table th {
+  text-align: left;
+  padding: var(--space-xs);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.rapno-table td {
+  padding: var(--space-xs);
+  border-bottom: 1px solid var(--border-subtle, var(--border));
+  vertical-align: middle;
+}
+
+.rapno-table input[type="number"],
+.rapno-table input[type="text"] {
+  width: 60px;
+  padding: 2px 4px;
+  font-size: var(--text-sm);
+}
+
+.rapno-table input[type="text"] {
+  width: 90px;
+}
+
+.rapno-prod {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 50px;
+  text-align: right;
+}
+
+.rapno-sum-row td {
+  font-weight: 600;
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+}
+
+.rapno-actions {
+  display: flex;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+.rapno-sequence-note {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-xs);
+}
+
+.rapno-assess-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+@media (max-width: 600px) {
+  .rapno-assess-grid {
+    grid-template-columns: 1fr;
+  }
+  .rapno-table input[type="number"] {
+    width: 48px;
+  }
+}

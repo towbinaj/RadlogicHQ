@@ -1,0 +1,48 @@
+/* Scoliosis tool — minimal overrides on shared forms.css */
+
+.scol-curve-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.scol-row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: end;
+}
+
+.scol-row .input-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.scol-row .input-group--narrow {
+  flex: 0 0 100px;
+}
+
+.scol-findings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+@media (max-width: 600px) {
+  .scol-findings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.scol-risser-row {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.scol-risser-row .benign-choice {
+  min-width: 40px;
+  text-align: center;
+}
+
+.scol-detail-input {
+  margin-top: var(--space-xs);
+}
