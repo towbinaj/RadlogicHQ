@@ -1,0 +1,6 @@
+/* BI-RADS — minimal overrides */
+.birads-info {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-top: var(--space-xs);
+}

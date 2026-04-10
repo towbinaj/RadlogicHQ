@@ -1,0 +1,13 @@
+/* ASPECTS — minimal overrides */
+
+.aspects-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xs);
+}
+
+@media (max-width: 500px) {
+  .aspects-grid {
+    grid-template-columns: 1fr;
+  }
+}

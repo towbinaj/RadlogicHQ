@@ -1,0 +1,7 @@
+/* NASCET — minimal overrides */
+.nascet-result {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  text-align: center;
+  padding: var(--space-sm);
+}
