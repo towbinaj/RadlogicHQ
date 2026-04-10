@@ -217,6 +217,22 @@ input.no-spinner[type="number"] {
   padding: var(--space-xs) var(--space-sm);
 }
 
+.report-output__impression-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.report-output__impression-toggle input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
 .report-output__text-wrap {
   padding: var(--space-sm) var(--space-md);
   max-height: 400px;

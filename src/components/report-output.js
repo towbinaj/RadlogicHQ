@@ -31,6 +31,9 @@ export class ReportOutput extends HTMLElement {
           <h3>Report Output</h3>
           <div class="report-output__controls">
             <select class="report-output__selector" aria-label="Report template"></select>
+            <label class="report-output__impression-toggle" title="Show or hide the impression section">
+              <input type="checkbox" checked> Impression
+            </label>
             <button class="btn report-output__edit-btn">Edit</button>
             <button class="btn report-output__history-btn" style="display:none">History</button>
             <button class="btn btn--primary report-output__copy-btn">Copy</button>
@@ -86,6 +89,7 @@ export class ReportOutput extends HTMLElement {
       selector: this.querySelector('.report-output__selector'),
       text: this.querySelector('.report-output__text'),
       copyBtn: this.querySelector('.report-output__copy-btn'),
+      impressionToggle: this.querySelector('.report-output__impression-toggle input'),
       editBtn: this.querySelector('.report-output__edit-btn'),
       historyBtn: this.querySelector('.report-output__history-btn'),
       palette: this.querySelector('.report-output__pill-palette'),
@@ -123,6 +127,13 @@ export class ReportOutput extends HTMLElement {
     this._els.selector.addEventListener('change', () => {
       this._activeTemplate = this._els.selector.value;
       this._loadBlockConfig();
+      this._render();
+    });
+
+    // Impression toggle
+    this._showImpression = true;
+    this._els.impressionToggle.addEventListener('change', () => {
+      this._showImpression = this._els.impressionToggle.checked;
       this._render();
     });
 
@@ -197,6 +208,10 @@ export class ReportOutput extends HTMLElement {
 
   _getConfig() {
     if (!this._blockConfig) this._loadBlockConfig();
+    // Override impression enabled based on toggle
+    if (this._blockConfig?.impression) {
+      this._blockConfig.impression.enabled = this._showImpression;
+    }
     return this._blockConfig;
   }
 
@@ -626,7 +641,11 @@ export class ReportOutput extends HTMLElement {
     this._els.editBtn.textContent = this._editing ? 'Cancel' : 'Edit';
 
     if (this._editing) {
-      this._els.pointsToggle.checked = this._getConfig().showPoints;
+      const config = this._getConfig();
+      this._els.pointsToggle.checked = config.showPoints;
+      // Hide points toggle if no blocks have pointsTemplate
+      const hasPoints = (config.blocks || []).some((b) => b.pointsTemplate);
+      this._els.pointsToggle.closest('label').style.display = hasPoints ? '' : 'none';
     } else {
       // Leaving edit mode — serialize final state
       const config = this._getConfig();
