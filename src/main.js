@@ -105,6 +105,16 @@ style.textContent = `
   .tool-card__label--modality { color: var(--success); border-color: rgba(52, 211, 153, 0.3); }
   .tool-card__label--specialty { color: var(--warning); border-color: rgba(251, 191, 36, 0.3); }
 
+  /* Drag-and-drop */
+  .tool-card--dragging {
+    opacity: 0.3;
+  }
+
+  .tool-card--dragover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-subtle);
+  }
+
   .tool-card__badge {
     position: absolute;
     top: var(--space-sm);
@@ -335,6 +345,23 @@ if (grid) {
     return select;
   }
 
+  // Sort dropdown
+  const sortSelect = document.createElement('select');
+  sortSelect.className = 'filter-bar__select';
+  for (const [val, label] of [['alpha', 'A-Z'], ['recent', 'Recent'], ['frequent', 'Most Used'], ['custom', 'Custom']]) {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = label;
+    sortSelect.appendChild(opt);
+  }
+  sortSelect.value = getStored('toolSort', 'alpha');
+  sortSelect.addEventListener('change', () => {
+    setStored('toolSort', sortSelect.value);
+    sortCards();
+    applyFilters();
+  });
+  filterBar.appendChild(sortSelect);
+
   // Favorites-only toggle
   const favsToggle = document.createElement('button');
   favsToggle.type = 'button';
@@ -364,6 +391,7 @@ if (grid) {
     bodySelect.value = '';
     specialtySelect.value = '';
     favsToggle.classList.remove('filter-bar__favs-toggle--active');
+    sortCards();
     applyFilters();
   });
   filterBar.appendChild(clearBtn);
@@ -393,9 +421,19 @@ if (grid) {
 
   grid.parentNode.insertBefore(filterBar, grid);
 
-  // --- Favorites & hidden state ---
+  // --- Favorites, hidden, usage, order state ---
   let favorites = getStored('favorites', []);
   let hiddenTools = getStored('hiddenTools', []);
+  let toolUsage = getStored('toolUsage', {}); // {toolId: {count, lastUsed}}
+  let toolOrder = getStored('toolOrder', []); // [toolId, ...] for custom sort
+
+  function trackToolUse(toolId) {
+    const entry = toolUsage[toolId] || { count: 0, lastUsed: 0 };
+    entry.count++;
+    entry.lastUsed = Date.now();
+    toolUsage[toolId] = entry;
+    setStored('toolUsage', toolUsage);
+  }
 
   function toggleFavorite(toolId) {
     const idx = favorites.indexOf(toolId);
@@ -416,15 +454,42 @@ if (grid) {
   }
 
   function sortCards() {
-    // Sort: favorites first (in favorites array order), then registry order
+    const mode = sortSelect.value;
+
     cards.sort((a, b) => {
+      // Favorites always float to top
       const aFav = favorites.includes(a._tool.id);
       const bFav = favorites.includes(b._tool.id);
       if (aFav && !bFav) return -1;
       if (!aFav && bFav) return 1;
       if (aFav && bFav) return favorites.indexOf(a._tool.id) - favorites.indexOf(b._tool.id);
-      return 0; // preserve registry order for non-favorites
+
+      // Then sort non-favorites by selected mode
+      if (mode === 'recent') {
+        const aTime = toolUsage[a._tool.id]?.lastUsed || 0;
+        const bTime = toolUsage[b._tool.id]?.lastUsed || 0;
+        if (aTime !== bTime) return bTime - aTime; // newest first
+        return a._tool.name.localeCompare(b._tool.name);
+      }
+      if (mode === 'frequent') {
+        const aCount = toolUsage[a._tool.id]?.count || 0;
+        const bCount = toolUsage[b._tool.id]?.count || 0;
+        if (aCount !== bCount) return bCount - aCount; // most used first
+        return a._tool.name.localeCompare(b._tool.name);
+      }
+      if (mode === 'custom') {
+        const aIdx = toolOrder.indexOf(a._tool.id);
+        const bIdx = toolOrder.indexOf(b._tool.id);
+        // Tools in custom order come first, in order; rest alphabetical
+        if (aIdx >= 0 && bIdx >= 0) return aIdx - bIdx;
+        if (aIdx >= 0) return -1;
+        if (bIdx >= 0) return 1;
+        return a._tool.name.localeCompare(b._tool.name);
+      }
+      // Default: alphabetical
+      return a._tool.name.localeCompare(b._tool.name);
     });
+
     for (const card of cards) grid.appendChild(card);
     grid.appendChild(emptyMsg);
   }
@@ -506,6 +571,56 @@ if (grid) {
       });
     });
 
+    // Track usage on click
+    if (isActive) {
+      card.addEventListener('click', () => trackToolUse(tool.id));
+    }
+
+    // Drag-and-drop for custom ordering
+    if (isActive) {
+      card.draggable = true;
+      card.addEventListener('dragstart', (e) => {
+        if (sortSelect.value !== 'custom') {
+          sortSelect.value = 'custom';
+          setStored('toolSort', 'custom');
+        }
+        e.dataTransfer.setData('text/plain', tool.id);
+        e.dataTransfer.effectAllowed = 'move';
+        card.classList.add('tool-card--dragging');
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('tool-card--dragging');
+        for (const c of cards) c.classList.remove('tool-card--dragover');
+      });
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        card.classList.add('tool-card--dragover');
+      });
+      card.addEventListener('dragleave', () => {
+        card.classList.remove('tool-card--dragover');
+      });
+      card.addEventListener('drop', (e) => {
+        e.preventDefault();
+        card.classList.remove('tool-card--dragover');
+        const draggedId = e.dataTransfer.getData('text/plain');
+        const targetId = tool.id;
+        if (draggedId === targetId) return;
+
+        // Build current visible order, insert dragged before target
+        const order = cards.filter((c) => c.style.display !== 'none').map((c) => c._tool.id);
+        const fromIdx = order.indexOf(draggedId);
+        if (fromIdx >= 0) order.splice(fromIdx, 1);
+        const toIdx = order.indexOf(targetId);
+        order.splice(toIdx, 0, draggedId);
+
+        toolOrder = order;
+        setStored('toolOrder', toolOrder);
+        sortCards();
+        applyFilters();
+      });
+    }
+
     grid.appendChild(card);
     cards.push(card);
   }
@@ -524,7 +639,7 @@ if (grid) {
     const bodyFilter = bodySelect.value;
     const specFilter = specialtySelect.value;
     const favsOnly = favsToggle.classList.contains('filter-bar__favs-toggle--active');
-    const hasAnyFilter = query.length > 0 || modFilter || bodyFilter || specFilter || favsOnly;
+    const hasAnyFilter = query.length > 0 || modFilter || bodyFilter || specFilter || favsOnly || sortSelect.value !== 'alpha';
 
     clearBtn.classList.toggle('visible', hasAnyFilter);
 
