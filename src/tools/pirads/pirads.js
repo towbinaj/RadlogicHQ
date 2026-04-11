@@ -9,7 +9,7 @@ import { piradsDefinition } from './definition.js';
 import { calculatePirads } from './calculator.js';
 import { piradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
-import { getSizeUnit, setStored } from '../../core/storage.js';
+import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
 
 let lesions = [createLesionState(1)];
 let activeLesionIndex = 0;
@@ -29,6 +29,7 @@ function esc(str) {
 }
 
 function init() {
+  trackEvent('tool:pirads:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const categoryDisplay = document.getElementById('pirads-category');

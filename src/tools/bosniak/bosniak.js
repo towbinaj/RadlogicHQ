@@ -9,7 +9,7 @@ import { bosniakDefinition } from './definition.js';
 import { calculateBosniak } from './calculator.js';
 import { bosniakTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
-import { getSizeUnit, setStored } from '../../core/storage.js';
+import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
 
 let cysts = [createCystState(1)];
 let activeCystIndex = 0;
@@ -29,6 +29,7 @@ function esc(str) {
 }
 
 function init() {
+  trackEvent('tool:bosniak:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const classDisplay = document.getElementById('bosniak-class');

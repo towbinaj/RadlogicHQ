@@ -9,7 +9,7 @@ import { oradsDefinition } from './definition.js';
 import { calculateOrads } from './calculator.js';
 import { oradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
-import { getSizeUnit, setStored } from '../../core/storage.js';
+import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
 
 let masses = [createMassState(1)];
 let activeMassIndex = 0;
@@ -29,6 +29,7 @@ function esc(str) {
 }
 
 function init() {
+  trackEvent('tool:orads:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const scoreDisplay = document.getElementById('orads-score');

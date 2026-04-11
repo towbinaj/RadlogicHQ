@@ -9,8 +9,10 @@ import { reimersDefinition } from './definition.js';
 import { calculateReimers } from './calculator.js';
 import { reimersTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { trackEvent } from '../../core/storage.js';
 
 function init() {
+  trackEvent('tool:reimers:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const rightDisplay = document.getElementById('reimers-right');

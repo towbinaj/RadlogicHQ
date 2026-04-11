@@ -9,7 +9,7 @@ import { liradsDefinition } from './definition.js';
 import { calculateLirads } from './calculator.js';
 import { liradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
-import { getSizeUnit, setStored } from '../../core/storage.js';
+import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
 
 let observations = [createObsState(1)];
 let activeObsIndex = 0;
@@ -30,6 +30,7 @@ function esc(str) {
 }
 
 function init() {
+  trackEvent('tool:lirads:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const categoryDisplay = document.getElementById('lirads-category');

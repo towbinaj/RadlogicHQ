@@ -6,6 +6,7 @@
  * On login, Firestore data is pulled down and merged into localStorage.
  */
 import { isLoggedIn, getUser, onAuthChange } from './auth.js';
+import { showToast } from './toast.js';
 import { saveTemplate, loadTemplate, deleteTemplate, setPreference, getPreferences, incrementCounter } from './user-data.js';
 
 const PREFIX = 'radtools:';
@@ -42,11 +43,11 @@ export function setStored(key, value) {
       // Template config — save to user_templates collection
       const parts = key.replace('blockConfig:', '').split(':');
       if (parts.length === 2) {
-        saveTemplate(parts[0], parts[1], value).catch(() => {});
+        saveTemplate(parts[0], parts[1], value).catch(() => showToast('Sync failed — changes saved locally'));
       }
     } else if (isPrefKey(key)) {
       // Preference — save to user_preferences
-      setPreference(key, value).catch(() => {});
+      setPreference(key, value).catch(() => showToast('Sync failed — changes saved locally'));
     }
   }
 }
@@ -64,7 +65,7 @@ export function removeStored(key) {
   if (isLoggedIn() && key.startsWith('blockConfig:')) {
     const parts = key.replace('blockConfig:', '').split(':');
     if (parts.length === 2) {
-      deleteTemplate(parts[0], parts[1]).catch(() => {});
+      deleteTemplate(parts[0], parts[1]).catch(() => showToast('Sync failed — changes saved locally'));
     }
   }
 }
@@ -94,7 +95,7 @@ onAuthChange(async (user) => {
       }
     }
   } catch {
-    // Silent — localStorage continues to work
+    showToast('Could not sync preferences from cloud');
   }
 });
 

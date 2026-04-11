@@ -1,5 +1,25 @@
 import { resolve } from 'path';
+import { readdirSync } from 'fs';
 import { defineConfig } from 'vite';
+
+// Auto-discover all HTML entry points
+const input = { main: resolve(__dirname, 'index.html') };
+
+// Tools: src/tools/{toolId}/{toolId}.html
+for (const dir of readdirSync('src/tools', { withFileTypes: true })) {
+  if (dir.isDirectory()) {
+    const html = `src/tools/${dir.name}/${dir.name}.html`;
+    try { readdirSync(resolve(__dirname, `src/tools/${dir.name}`)).includes(`${dir.name}.html`) && (input[dir.name] = resolve(__dirname, html)); } catch {}
+  }
+}
+
+// Pages: src/pages/{pageId}.html
+for (const file of readdirSync('src/pages', { withFileTypes: true })) {
+  if (file.isFile() && file.name.endsWith('.html')) {
+    const name = file.name.replace('.html', '');
+    input[name] = resolve(__dirname, `src/pages/${file.name}`);
+  }
+}
 
 export default defineConfig({
   plugins: [],
@@ -7,59 +27,9 @@ export default defineConfig({
   server: { open: true },
   build: {
     outDir: 'dist',
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html'),
-        tirads: resolve(__dirname, 'src/tools/tirads/tirads.html'),
-        lirads: resolve(__dirname, 'src/tools/lirads/lirads.html'),
-        profile: resolve(__dirname, 'src/pages/profile.html'),
-        bosniak: resolve(__dirname, 'src/tools/bosniak/bosniak.html'),
-        fleischner: resolve(__dirname, 'src/tools/fleischner/fleischner.html'),
-        leglength: resolve(__dirname, 'src/tools/leglength/leglength.html'),
-        reimers: resolve(__dirname, 'src/tools/reimers/reimers.html'),
-        pirads: resolve(__dirname, 'src/tools/pirads/pirads.html'),
-        orads: resolve(__dirname, 'src/tools/orads/orads.html'),
-        lungrads: resolve(__dirname, 'src/tools/lungrads/lungrads.html'),
-        pretext: resolve(__dirname, 'src/tools/pretext/pretext.html'),
-        'adrenal-washout': resolve(__dirname, 'src/tools/adrenal-washout/adrenal-washout.html'),
-        idrf: resolve(__dirname, 'src/tools/idrf/idrf.html'),
-        recist: resolve(__dirname, 'src/tools/recist/recist.html'),
-        curie: resolve(__dirname, 'src/tools/curie/curie.html'),
-        deauville: resolve(__dirname, 'src/tools/deauville/deauville.html'),
-        scoliosis: resolve(__dirname, 'src/tools/scoliosis/scoliosis.html'),
-        rapno: resolve(__dirname, 'src/tools/rapno/rapno.html'),
-        'aast-kidney': resolve(__dirname, 'src/tools/aast-kidney/aast-kidney.html'),
-        'aast-liver': resolve(__dirname, 'src/tools/aast-liver/aast-liver.html'),
-        'aast-spleen': resolve(__dirname, 'src/tools/aast-spleen/aast-spleen.html'),
-        mrecist: resolve(__dirname, 'src/tools/mrecist/mrecist.html'),
-        kyphosis: resolve(__dirname, 'src/tools/kyphosis/kyphosis.html'),
-        'aast-pancreas': resolve(__dirname, 'src/tools/aast-pancreas/aast-pancreas.html'),
-        lugano: resolve(__dirname, 'src/tools/lugano/lugano.html'),
-        'fetal-cc': resolve(__dirname, 'src/tools/fetal-cc/fetal-cc.html'),
-        'fetal-pf': resolve(__dirname, 'src/tools/fetal-pf/fetal-pf.html'),
-        'fetal-biometry': resolve(__dirname, 'src/tools/fetal-biometry/fetal-biometry.html'),
-        'fetal-ventricle': resolve(__dirname, 'src/tools/fetal-ventricle/fetal-ventricle.html'),
-        'fetal-lung': resolve(__dirname, 'src/tools/fetal-lung/fetal-lung.html'),
-        hydronephrosis: resolve(__dirname, 'src/tools/hydronephrosis/hydronephrosis.html'),
-        gmh: resolve(__dirname, 'src/tools/gmh/gmh.html'),
-        vur: resolve(__dirname, 'src/tools/vur/vur.html'),
-        'vur-nm': resolve(__dirname, 'src/tools/vur-nm/vur-nm.html'),
-        'bone-age': resolve(__dirname, 'src/tools/bone-age/bone-age.html'),
-        'bone-age-sontag': resolve(__dirname, 'src/tools/bone-age-sontag/bone-age-sontag.html'),
-        'hip-dysplasia': resolve(__dirname, 'src/tools/hip-dysplasia/hip-dysplasia.html'),
-        pectus: resolve(__dirname, 'src/tools/pectus/pectus.html'),
-        nirads: resolve(__dirname, 'src/tools/nirads/nirads.html'),
-        cadrads: resolve(__dirname, 'src/tools/cadrads/cadrads.html'),
-        agatston: resolve(__dirname, 'src/tools/agatston/agatston.html'),
-        'sah-grade': resolve(__dirname, 'src/tools/sah-grade/sah-grade.html'),
-        'salter-harris': resolve(__dirname, 'src/tools/salter-harris/salter-harris.html'),
-        'kellgren-lawrence': resolve(__dirname, 'src/tools/kellgren-lawrence/kellgren-lawrence.html'),
-        aspects: resolve(__dirname, 'src/tools/aspects/aspects.html'),
-        birads: resolve(__dirname, 'src/tools/birads/birads.html'),
-        nascet: resolve(__dirname, 'src/tools/nascet/nascet.html'),
-        balthazar: resolve(__dirname, 'src/tools/balthazar/balthazar.html'),
-        privacy: resolve(__dirname, 'src/pages/privacy.html'),
-      },
-    },
+    rollupOptions: { input },
+  },
+  test: {
+    include: ['src/**/*.test.js'],
   },
 });

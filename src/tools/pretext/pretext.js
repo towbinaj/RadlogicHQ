@@ -9,7 +9,7 @@ import { pretextDefinition } from './definition.js';
 import { calculatePretext } from './calculator.js';
 import { pretextTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
-import { getSizeUnit, setStored } from '../../core/storage.js';
+import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
 
 let sizeUnit = getSizeUnit('pretext');
 
@@ -23,6 +23,7 @@ function esc(str) {
 }
 
 function init() {
+  trackEvent('tool:pretext:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const groupDisplay = document.getElementById('pretext-group');

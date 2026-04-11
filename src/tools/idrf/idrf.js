@@ -9,12 +9,14 @@ import { idrfDefinition } from './definition.js';
 import { calculateIdrf } from './calculator.js';
 import { idrfTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { trackEvent } from '../../core/storage.js';
 
 function esc(str) {
   return (str || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
 function init() {
+  trackEvent('tool:idrf:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const stageDisplay = document.getElementById('idrf-stage');

@@ -17,5 +17,11 @@ export const agatstonDefinition = {
     { min: 1000, max: Infinity, label: 'Extensive calcium', risk: 'Very high', recommendation: 'High-intensity statin; aggressive risk factor management' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    score: {
+      pattern: /(?:agatston|calcium|cac)\s*(?:score)?[:\s]*(\d+)/i,
+      group: 1,
+      transform: (m) => parseFloat(m[1]),
+    },
+  },
 };

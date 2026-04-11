@@ -8,8 +8,11 @@ import { renderEditorContent } from '../../core/pill-editor.js';
 import { aspectsDefinition } from './definition.js';
 import { calculateAspects } from './calculator.js';
 import { aspectsTemplates } from './templates.js';
+import { trackEvent } from '../../core/storage.js';
+import { parseFindings } from '../../core/parser.js';
 
 function init() {
+  trackEvent('tool:aspects:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const badgeScore = document.getElementById('badge-score');
@@ -113,11 +116,21 @@ function init() {
   }
 
   const parseBtn = document.getElementById('parse-btn');
+  const parseInput = document.getElementById('parse-input');
   const parseStatus = document.getElementById('parse-status');
   parseBtn.addEventListener('click', () => {
-    parseStatus.textContent = 'Parse not yet implemented for ASPECTS';
-    parseStatus.className = 'parse-panel__status';
-    setTimeout(() => { parseStatus.textContent = ''; }, 3000);
+    const text = parseInput.value.trim();
+    if (!text) return;
+    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, aspectsDefinition);
+    if (parsed.side) side = parsed.side;
+    if (parsed.affected) for (const r of parsed.affected) affected.add(r);
+    additionalFindingsEl.value = remainder || '';
+    studyAdditionalFindings = additionalFindingsEl.value;
+    buildUI();
+    const total = matched.length + unmatched.length;
+    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+    parseStatus.className = 'parse-panel__status parse-panel__status--success';
+    setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });
 
   buildUI();

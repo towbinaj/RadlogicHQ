@@ -8,8 +8,11 @@ import { renderEditorContent } from '../../core/pill-editor.js';
 import { biradsDefinition } from './definition.js';
 import { calculateBirads } from './calculator.js';
 import { biradsTemplates } from './templates.js';
+import { trackEvent } from '../../core/storage.js';
+import { parseFindings } from '../../core/parser.js';
 
 function init() {
+  trackEvent('tool:birads:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const badgeCategory = document.getElementById('badge-category');
@@ -136,11 +139,20 @@ function init() {
   }
 
   const parseBtn = document.getElementById('parse-btn');
+  const parseInput = document.getElementById('parse-input');
   const parseStatus = document.getElementById('parse-status');
   parseBtn.addEventListener('click', () => {
-    parseStatus.textContent = 'Parse not yet implemented for BI-RADS';
-    parseStatus.className = 'parse-panel__status';
-    setTimeout(() => { parseStatus.textContent = ''; }, 3000);
+    const text = parseInput.value.trim();
+    if (!text) return;
+    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, biradsDefinition);
+    Object.assign(formState, parsed);
+    additionalFindingsEl.value = remainder || '';
+    studyAdditionalFindings = additionalFindingsEl.value;
+    buildUI();
+    const total = matched.length + unmatched.length;
+    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+    parseStatus.className = 'parse-panel__status parse-panel__status--success';
+    setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });
 
   buildUI();

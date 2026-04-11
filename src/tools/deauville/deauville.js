@@ -9,12 +9,14 @@ import { deauvilleDefinition } from './definition.js';
 import { calculateDeauville } from './calculator.js';
 import { deauvilleTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { trackEvent } from '../../core/storage.js';
 
 function esc(str) {
   return (str || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
 function init() {
+  trackEvent('tool:deauville:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const scoreDisplay = document.getElementById('deauville-score');

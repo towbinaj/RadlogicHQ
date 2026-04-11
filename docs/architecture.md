@@ -9,7 +9,8 @@ RadioLogicHQ is a collection of 42 radiology calculators that output structured 
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Vanilla ES6+ modules, Web Components, HTML5, CSS3 |
-| Build | Vite 8 (MPA mode — one HTML entry per tool/page) |
+| Build | Vite 8 (MPA mode — auto-discovers HTML entries from src/tools/ and src/pages/) |
+| Test | Vitest (co-located *.test.js files) |
 | Backend | Firebase (Firestore + Auth) |
 | Auth | Email/password + Google OAuth + forgot password |
 | Hosting | Cloudflare Pages (auto-deploy from GitHub) |
@@ -41,8 +42,10 @@ RadioLogicHQ/
 │   ├── core/                          # Shared framework
 │   │   ├── firebase.js                # Firebase client init
 │   │   ├── auth.js                    # Auth (sign in/up/out, Google, forgot, delete)
+│   │   ├── auth-state.js             # Shared auth state (breaks circular dep between auth ↔ user-data)
 │   │   ├── user-data.js              # Firestore CRUD (prefs, templates, reports, analytics, export, delete)
-│   │   ├── storage.js                 # Smart storage: localStorage + Firestore sync
+│   │   ├── storage.js                 # Smart storage: localStorage + Firestore sync + toast on failure
+│   │   ├── toast.js                   # Lightweight toast notification (Firestore sync errors)
 │   │   ├── engine.js                  # Point-based score calculator
 │   │   ├── renderer.js               # Form builder from tool definitions
 │   │   ├── report.js                  # Template engine ({{variable}}, {{#if}})
@@ -83,10 +86,10 @@ RadioLogicHQ/
 ### Storage Layer (`storage.js`)
 ```
 getStored(key) → localStorage (synchronous, instant)
-setStored(key, value) → localStorage + background Firestore sync (if logged in)
-removeStored(key) → localStorage + Firestore deletion (if logged in)
+setStored(key, value) → localStorage + background Firestore sync (if logged in, toast on failure)
+removeStored(key) → localStorage + Firestore deletion (if logged in, toast on failure)
 getSizeUnit(toolId) → per-tool unit || global defaultUnit || 'mm'
-trackEvent(id) → Firestore atomic increment (fire-and-forget)
+trackEvent(id) → Firestore atomic increment (fire-and-forget, silent on failure)
 ```
 
 PREF_KEYS synced to Firestore: compact, sectionOrder:tirads, sizeUnit:*, defaultTemplate, defaultUnit, mode:curie, mode:leglength, mode:hydronephrosis, mode:hip-dysplasia, favorites, hiddenTools.

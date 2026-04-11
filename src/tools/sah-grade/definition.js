@@ -26,5 +26,24 @@ export const sahDefinition = {
     { id: '4', label: 'Grade 4', description: 'Thick SAH with IVH', vasospasm: 'High' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    huntHess: {
+      options: {
+        '1': ['hunt-hess 1', 'hunt hess 1', 'hunt-hess grade 1', 'hh grade 1', 'hh 1'],
+        '2': ['hunt-hess 2', 'hunt hess 2', 'hunt-hess grade 2', 'hh grade 2', 'hh 2'],
+        '3': ['hunt-hess 3', 'hunt hess 3', 'hunt-hess grade 3', 'hh grade 3', 'hh 3'],
+        '4': ['hunt-hess 4', 'hunt hess 4', 'hunt-hess grade 4', 'hh grade 4', 'hh 4'],
+        '5': ['hunt-hess 5', 'hunt hess 5', 'hunt-hess grade 5', 'hh grade 5', 'hh 5'],
+      },
+    },
+    modifiedFisher: {
+      options: {
+        '0': ['modified fisher 0', 'fisher 0', 'fisher grade 0', 'no sah or ivh', 'no sah'],
+        '1': ['modified fisher 1', 'fisher 1', 'fisher grade 1', 'thin sah, no ivh', 'thin sah without ivh'],
+        '2': ['modified fisher 2', 'fisher 2', 'fisher grade 2', 'thin sah with ivh'],
+        '3': ['modified fisher 3', 'fisher 3', 'fisher grade 3', 'thick sah, no ivh', 'thick sah without ivh'],
+        '4': ['modified fisher 4', 'fisher 4', 'fisher grade 4', 'thick sah with ivh'],
+      },
+    },
+  },
 };

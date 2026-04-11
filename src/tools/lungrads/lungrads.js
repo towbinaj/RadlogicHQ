@@ -9,7 +9,7 @@ import { lungradsDefinition } from './definition.js';
 import { calculateLungrads } from './calculator.js';
 import { lungradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
-import { getSizeUnit, setStored } from '../../core/storage.js';
+import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
 
 let nodules = [createNoduleState(1)];
 let activeNoduleIndex = 0;
@@ -29,6 +29,7 @@ function esc(str) {
 }
 
 function init() {
+  trackEvent('tool:lungrads:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const categoryDisplay = document.getElementById('lungrads-category');

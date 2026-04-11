@@ -9,10 +9,12 @@ import { recistDefinition } from './definition.js';
 import { calculateRecist } from './calculator.js';
 import { recistTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { trackEvent } from '../../core/storage.js';
 
 const MAX_TARGETS = 5;
 
 function init() {
+  trackEvent('tool:recist:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const responseDisplay = document.getElementById('recist-response');

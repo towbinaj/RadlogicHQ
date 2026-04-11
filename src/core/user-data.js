@@ -4,7 +4,7 @@
  */
 import { doc, getDoc, setDoc, collection, query, where, getDocs, deleteDoc, increment } from 'firebase/firestore';
 import { db } from './firebase.js';
-import { isLoggedIn, getUser } from './auth.js';
+import { isLoggedIn, getUser } from './auth-state.js';
 
 // ==========================================
 // PREFERENCES

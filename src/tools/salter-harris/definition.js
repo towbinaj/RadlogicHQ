@@ -17,5 +17,20 @@ export const salterHarrisDefinition = {
     { id: 'V', label: 'Type V — Ruined/Crush', anatomy: 'Axial compression/crush of physis', prognosis: 'Poor — growth arrest likely', management: 'Close follow-up for growth disturbance' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    type: {
+      options: {
+        V: ['salter-harris v', 'salter harris v', 'salter v', 'type v', 'sh type v', 'sh v', 'crush'],
+        IV: ['salter-harris iv', 'salter harris iv', 'salter iv', 'type iv', 'sh type iv', 'sh iv', 'transverse'],
+        III: ['salter-harris iii', 'salter harris iii', 'salter iii', 'type iii', 'sh type iii', 'sh iii'],
+        II: ['salter-harris ii', 'salter harris ii', 'salter ii', 'type ii', 'sh type ii', 'sh ii', 'thurstan holland'],
+        I: ['salter-harris i', 'salter harris i', 'salter i', 'type i', 'sh type i', 'sh i'],
+      },
+    },
+    location: {
+      pattern: /(?:distal|proximal)\s+\w+/i,
+      group: 0,
+      transform: (m) => m[0],
+    },
+  },
 };

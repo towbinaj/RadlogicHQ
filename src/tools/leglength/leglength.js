@@ -9,7 +9,7 @@ import { leglengthDefinition } from './definition.js';
 import { calculateLegLength, calculateSegmental } from './calculator.js';
 import { leglengthTemplates, segmentalTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
-import { getStored, setStored } from '../../core/storage.js';
+import { getStored, setStored , trackEvent } from '../../core/storage.js';
 
 let mode = getStored('mode:leglength', 'total');
 const totalState = {};
@@ -20,6 +20,7 @@ function pad(val) {
 }
 
 function init() {
+  trackEvent('tool:leglength:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const discDisplay = document.getElementById('ll-discrepancy');

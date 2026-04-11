@@ -14,43 +14,26 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
+import { setCurrentUser, notifyAuthListeners } from './auth-state.js';
 import { migrateLocalStorageToCloud, clearUserDataCache } from './user-data.js';
+
+// Re-export auth state accessors for backward compatibility
+export { onAuthChange, getUser, isLoggedIn } from './auth-state.js';
 
 const googleProvider = new GoogleAuthProvider();
 
-// --- Auth state ---
-
-let currentUser = null;
-const listeners = [];
+// --- Auth state listener ---
 
 onAuthStateChanged(auth, async (user) => {
-  currentUser = user;
+  setCurrentUser(user);
   if (user) {
     await ensureProfile(user);
     await migrateLocalStorageToCloud(user.uid);
   } else {
     clearUserDataCache();
   }
-  listeners.forEach((fn) => fn(user));
+  notifyAuthListeners();
 });
-
-export function onAuthChange(fn) {
-  listeners.push(fn);
-  // Call immediately with current state
-  fn(currentUser);
-  return () => {
-    const idx = listeners.indexOf(fn);
-    if (idx !== -1) listeners.splice(idx, 1);
-  };
-}
-
-export function getUser() {
-  return currentUser;
-}
-
-export function isLoggedIn() {
-  return currentUser != null;
-}
 
 // --- Sign in/up/out ---
 

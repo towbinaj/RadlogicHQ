@@ -25,5 +25,23 @@ export const balthazarDefinition = {
     { id: 'gt50', label: '>50%', points: 6 },
   ],
 
-  parseRules: {},
+  parseRules: {
+    grade: {
+      options: {
+        A: ['normal pancreas', 'grade a', 'balthazar a'],
+        B: ['focal or diffuse enlargement', 'diffuse enlargement', 'focal enlargement', 'grade b', 'balthazar b'],
+        C: ['peripancreatic inflammatory', 'peripancreatic inflammation', 'inflammatory changes', 'grade c', 'balthazar c'],
+        D: ['single peripancreatic fluid collection', 'single fluid collection', 'grade d', 'balthazar d'],
+        E: ['two or more fluid collections', 'multiple fluid collections', 'retroperitoneal gas', 'grade e', 'balthazar e'],
+      },
+    },
+    necrosis: {
+      options: {
+        none: ['no necrosis', 'without necrosis', 'no pancreatic necrosis'],
+        lt30: ['necrosis less than 30', 'necrosis <30', 'necrosis < 30'],
+        '30-50': ['necrosis 30-50', 'necrosis 30 to 50', 'necrosis 30%-50%'],
+        gt50: ['necrosis greater than 50', 'necrosis >50', 'necrosis > 50'],
+      },
+    },
+  },
 };

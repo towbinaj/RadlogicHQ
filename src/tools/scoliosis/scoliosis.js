@@ -8,6 +8,7 @@ import { renderEditorContent } from '../../core/pill-editor.js';
 import { scoliosisDefinition, VERTEBRAE } from './definition.js';
 import { calculateScoliosis } from './calculator.js';
 import { scoliosisTemplates } from './templates.js';
+import { trackEvent } from '../../core/storage.js';
 
 function createCurveState(num) {
   return { id: num, label: `Curve ${num}`, direction: null, region: null, angle: null, upperVertebra: null, lowerVertebra: null, apex: null };
@@ -18,6 +19,7 @@ function esc(str) {
 }
 
 function init() {
+  trackEvent('tool:scoliosis:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const badgeAngle = document.getElementById('badge-angle');

@@ -8,6 +8,8 @@ import { renderEditorContent } from '../../core/pill-editor.js';
 import { rapnoDefinition, VARIANTS } from './definition.js';
 import { calculateRapno } from './calculator.js';
 import { rapnoTemplates } from './templates.js';
+import { trackEvent } from '../../core/storage.js';
+import { parseFindings } from '../../core/parser.js';
 
 const MAX_TARGETS = 5;
 
@@ -20,6 +22,7 @@ function esc(str) {
 }
 
 function init() {
+  trackEvent('tool:rapno:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const badgeResponse = document.getElementById('badge-response');
@@ -285,16 +288,22 @@ function init() {
     reportEl.updateReport(data);
   }
 
-  // --- Parse (placeholder) ---
-  const parseInput = document.getElementById('parse-input');
+  // --- Parse ---
   const parseBtn = document.getElementById('parse-btn');
+  const parseInput = document.getElementById('parse-input');
   const parseStatus = document.getElementById('parse-status');
   parseBtn.addEventListener('click', () => {
     const text = parseInput.value.trim();
     if (!text) return;
-    parseStatus.textContent = 'Parse not yet implemented for RAPNO';
-    parseStatus.className = 'parse-panel__status';
-    setTimeout(() => { parseStatus.textContent = ''; }, 3000);
+    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, rapnoDefinition);
+    Object.assign(formState, parsed);
+    additionalFindingsEl.value = remainder || '';
+    studyAdditionalFindings = additionalFindingsEl.value;
+    buildUI();
+    const total = matched.length + unmatched.length;
+    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+    parseStatus.className = 'parse-panel__status parse-panel__status--success';
+    setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });
 
   renderModeTabs();

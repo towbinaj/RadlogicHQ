@@ -9,7 +9,7 @@ import { fleischnerDefinition } from './definition.js';
 import { calculateFleischner } from './calculator.js';
 import { fleischnerTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
-import { getSizeUnit, setStored } from '../../core/storage.js';
+import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
 
 let nodules = [createNoduleState(1)];
 let activeNoduleIndex = 0;
@@ -29,6 +29,7 @@ function esc(str) {
 }
 
 function init() {
+  trackEvent('tool:fleischner:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const recDisplay = document.getElementById('fleischner-rec');

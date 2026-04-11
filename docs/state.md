@@ -1,6 +1,6 @@
 # RadioLogicHQ v1.2 — Project State
 
-*Last updated: 2026-04-09*
+*Last updated: 2026-04-11*
 
 ## Current Version
 
@@ -17,7 +17,9 @@
 - Text parser engine with per-tool keyword rules (`parser.js`)
 - CDE mapping registry for RadElement Common Data Elements (`cde.js`)
 - Copy-to-clipboard utility with fallback (`clipboard.js`)
-- Smart storage layer — localStorage + background Firestore sync (`storage.js`)
+- Smart storage layer — localStorage + background Firestore sync, toast on failure (`storage.js`)
+- Toast notification utility for sync errors (`toast.js`)
+- Auth state extracted to `auth-state.js` (eliminates circular import between auth.js ↔ user-data.js)
 - `getSizeUnit(toolId)` helper — falls back to global `defaultUnit` preference
 - Central tools registry with body part/modality/specialty labels (`tools-registry.js`)
 - mm/cm unit toggle on size inputs (persists per-tool and global preference)
@@ -31,7 +33,7 @@
 - Custom template configs (pill editor layout) sync to Firestore
 - Saved report history (Save + History buttons, text only, no PHI)
 - Template sharing via link/code with import dialog
-- Aggregate analytics (tool usage + template popularity counters, no PII)
+- Aggregate analytics (tool opens + report copies + template popularity counters, no PII)
 - User profile page: account info, data summary, editable preferences
 - Data export (JSON download of all user data)
 - Account deletion (cascades all Firestore data + Firebase Auth account)
@@ -69,6 +71,26 @@
 ### Web Components
 - `<report-output>` — pill-based editor, copy, save, history, share, template selector (reads defaultTemplate pref)
 - `<auth-ui>` — sign in/up/forgot-password modal with Google OAuth and consent
+
+### Testing
+- Vitest unit tests co-located with source (`*.test.js`)
+- Tests for: engine.js, parser.js, tirads, nascet, bosniak, reimers, aast-liver calculators (76 tests)
+- `npm run test:run` for CI, `npm run test` for watch mode
+
+### Build
+- Vite config auto-discovers HTML entries from `src/tools/*/` and `src/pages/` (no manual updates)
+
+### Analytics
+- All 47 tools track page opens via `trackEvent('tool:{toolId}:opens')` in `init()`
+- Report copy tracking via `trackEvent('tool:{toolId}:reports')`
+- Template usage tracking via `trackEvent('template:{templateId}:uses')`
+
+### Parser (paste-to-autofill)
+- `buildParseRules(definition)` auto-generates rules from definition labels (sections, inputs, categories, grades, scores)
+- Synonym dictionary in `parser.js` expands labels with common radiology variants (hypo-echoic, right-sided, etc.)
+- Hand-written `parseRules` in definition.js override auto-generated on conflict
+- 10 tools have additional hand-written parseRules: TI-RADS, Bosniak, LI-RADS, Lung-RADS, Fleischner, NASCET, Balthazar, SAH Grade, Kellgren-Lawrence, Salter-Harris, Hydronephrosis, GMH, Agatston, Leg Length
+- All tools get baseline parsing automatically from their definition structure
 
 ### Tools (42 active)
 
@@ -123,7 +145,6 @@
 ## Known Issues
 
 1. **SVG images are schematic** — placeholder diagrams, not actual ultrasound images
-2. **Circular import chain** (auth.js ↔ user-data.js) — works via ES module live bindings but is fragile
 
 ## Infrastructure
 
@@ -133,7 +154,8 @@
 - **Auth**: Email/password + Google OAuth + forgot password
 - **Database**: Firestore (profiles, preferences, templates, saved reports, analytics)
 - **Repo**: `github.com/towbinaj/RadlogicHQ` (public, branch `main`)
-- **Build**: Vite 8 MPA, `npm run build` → `dist/`
+- **Build**: Vite 8 MPA (auto-discovers entries), `npm run build` → `dist/`
+- **Test**: Vitest, `npm run test:run`
 - **HIPAA**: No PHI stored. Aggregate analytics only.
 - **GDPR**: Self-hosted fonts. Privacy policy. Account deletion. Data export. Consent.
 

@@ -37,5 +37,33 @@ export const hydronephrosisDefinition = {
     { id: 'bilateral', label: 'Bilateral' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    grade: {
+      options: {
+        P3: ['utd p3', 'p3', 'severe hydronephrosis'],
+        P2: ['utd p2', 'p2', 'moderate hydronephrosis'],
+        P1: ['utd p1', 'p1', 'mild hydronephrosis'],
+        'A2-3': ['utd a2-3', 'a2-3', 'utd a2', 'utd a3'],
+        A1: ['utd a1', 'a1'],
+        '4': ['sfu grade 4', 'sfu 4', 'grade 4 hydronephrosis'],
+        '3': ['sfu grade 3', 'sfu 3', 'grade 3 hydronephrosis'],
+        '2': ['sfu grade 2', 'sfu 2', 'grade 2 hydronephrosis'],
+        '1': ['sfu grade 1', 'sfu 1', 'grade 1 hydronephrosis'],
+        '0': ['sfu grade 0', 'sfu 0', 'no hydronephrosis'],
+        normal: ['normal', 'no hydronephrosis'],
+      },
+    },
+    side: {
+      options: {
+        right: ['right kidney', 'right renal', 'right'],
+        left: ['left kidney', 'left renal', 'left'],
+        bilateral: ['bilateral', 'both kidneys', 'both'],
+      },
+    },
+    aprpd: {
+      pattern: /aprpd[:\s]*(\d*\.?\d+)\s*(?:mm)?/i,
+      group: 1,
+      transform: (m) => parseFloat(m[1]),
+    },
+  },
 };

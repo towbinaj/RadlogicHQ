@@ -4,6 +4,8 @@
 npm run dev       # Vite dev server
 npm run build     # Production build to dist/
 npm run preview   # Preview production build
+npm run test      # Vitest watch mode
+npm run test:run  # Vitest single run
 
 ## Architecture
 - Vanilla ES6+ modules, no framework — multi-page app (MPA) via Vite
@@ -13,7 +15,7 @@ npm run preview   # Preview production build
 - Dark radiology reading room theme by default
 
 ## Key Directories
-- `src/core/` — Shared framework (engine, renderer, report/pill-editor, auth, storage, parser, Firebase client)
+- `src/core/` — Shared framework (engine, renderer, report/pill-editor, auth, auth-state, storage, toast, parser, Firebase client)
 - `src/components/` — Web Components (report-output with pill editor, auth-ui modal)
 - `src/tools/{toolId}/` — One directory per calculator tool (42 tools)
 - `src/pages/` — Non-tool pages (profile, privacy)
@@ -150,6 +152,16 @@ Helper: `getSizeUnit(toolId)` falls back to `defaultUnit` then 'mm'.
 - Efficiency first: minimize clicks, scrolling, mouse mileage
 - All labels same size/weight per `docs/toolui.md`
 
+## Testing
+- Vitest for unit tests, co-located with source (`*.test.js`)
+- Calculator tests cover: engine.js, parser.js, tirads, nascet, bosniak, reimers, aast-liver
+- Run `npm run test:run` before committing
+
+## Analytics
+- `trackEvent('tool:{toolId}:opens')` fires on every tool page load
+- `trackEvent('tool:{toolId}:reports')` fires on report copy
+- All counters are aggregate-only (no PII) in `analytics_aggregate` Firestore collection
+
 ## Adding a New Tool
 See `docs/newtool.md` for the complete checklist.
 
@@ -164,3 +176,10 @@ See `docs/newtool.md` for the complete checklist.
 - Tools should use `getSizeUnit(toolId)` and `setStored()` — not raw `localStorage` calls
 - AAST tools share calculator/templates from `aast-liver/` — only definition.js is per-organ
 - Bone age tools share calculator from `bone-age/` — Sontag imports it
+- `auth-state.js` holds shared auth state — `auth.js` and `user-data.js` both import from it (no circular dependency)
+- `vite.config.js` auto-discovers HTML entries — no manual updates needed when adding tools
+- Firestore sync failures show a toast via `toast.js` — analytics failures remain silent
+- New tools must include `trackEvent('tool:{toolId}:opens')` in their `init()` function
+- Parse rules are auto-generated from definition labels + synonym dictionary in `parser.js` — most tools need no manual `parseRules`
+- Hand-written `parseRules` override auto-generated on conflict — use for specialized terminology only
+- To add new synonyms, update the `SYNONYMS` dictionary in `src/core/parser.js`

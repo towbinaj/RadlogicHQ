@@ -11,6 +11,7 @@ import { tiradsDefinition } from './definition.js';
 import { calculateTirads } from './calculator.js';
 import { tiradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
+import { trackEvent } from '../../core/storage.js';
 
 // Each nodule has its own form state
 let nodules = [createNoduleState(1)];
@@ -24,6 +25,7 @@ function createNoduleState(num) {
 }
 
 function init() {
+  trackEvent('tool:tirads:opens');
   const inputContainer = document.getElementById('tool-input');
   const reportEl = document.querySelector('report-output');
   const scoreDisplay = document.getElementById('total-score');

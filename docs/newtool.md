@@ -175,6 +175,23 @@ export const {toolId}Definition = {
 
 ### Parse Rules
 
+**Parse rules are auto-generated from the definition structure.** The parser (`parser.js`) uses `buildParseRules(definition)` to derive rules from:
+- `sections` → keyword rules from option labels (single-select or multi-select)
+- `primaryInputs` with `single-select` → keyword rules from option labels
+- `primaryInputs` with `float`/`integer` → regex from label + unit
+- `categories` with `findings` → multi-select rules from finding labels (AAST style)
+- `categories` flat list → single-select rules from category labels (BI-RADS style)
+- `grades` → keyword rules from grade labels (VUR style)
+- `scores` → keyword rules from score labels + interpretations (Deauville style)
+- Named option groups (e.g., `t2Score`, `dce`) → keyword rules from option labels
+- `sideOptions`, `lateralityOptions`, `modalityOptions` → keyword rules from labels
+
+A **synonym dictionary** in `parser.js` expands label keywords with common radiology variants (e.g., "hypoechoic" → "hypo-echoic", "right" → "right-sided", "present" → "positive"/"identified"/"seen").
+
+**Most tools need no manual `parseRules`** — just leave `parseRules: {}` and the auto-generator handles it.
+
+For tools needing **specialized terminology** not covered by labels/synonyms, add manual overrides. Hand-written rules win on conflict with auto-generated:
+
 ```js
 parseRules: {
   // Regex — extracts numeric value
@@ -204,6 +221,7 @@ parseRules: {
 - Remainder goes to Additional Findings, separated by semicolons
 - Section label variants (plural/singular) auto-stripped from remainder
 - Re-parse replaces form state (not appends)
+- To add new synonyms, update the `SYNONYMS` dictionary in `src/core/parser.js`
 
 ---
 
@@ -360,6 +378,7 @@ export const {toolId}Templates = {
 
 **Key responsibilities:**
 - Import styles (`base.css`, `forms.css`, tool CSS) and `report-output.js` component
+- Track tool opens: `trackEvent('tool:{toolId}:opens')` as first line in `init()`
 - Manage multi-item state — each item has its own `formState`
 - Render item tabs (add, remove, switch, double-click to rename)
 - Build UI (point-based: `renderToolForm()` | decision-tree: custom DOM)
@@ -422,9 +441,7 @@ These styles are shared across ALL tools — do NOT duplicate in tool CSS:
 ## 10. Config Updates
 
 ### vite.config.js
-```js
-{toolId}: resolve(__dirname, 'src/tools/{toolId}/{toolId}.html'),
-```
+**No manual update needed.** Vite config auto-discovers HTML files from `src/tools/*/` and `src/pages/`.
 
 ### src/data/tools-registry.js
 ```js
@@ -486,9 +503,13 @@ Landing page renders automatically from the registry — no HTML edits needed.
 - [ ] Hover tooltips on all feature labels
 - [ ] No gray instruction text — tooltips only
 - [ ] Build passes (`npm run build`)
+- [ ] Tests pass (`npm run test:run`)
+- [ ] Unit tests written for `calculator.js` (co-located as `calculator.test.js`)
+- [ ] `trackEvent('tool:{toolId}:opens')` in `init()` function
+- [ ] Paste & parse works via auto-generated rules (add manual overrides if specialized terminology needed)
 - [ ] CDE set ID and element IDs correct per radelement.org
 - [ ] Tool registered in `tools-registry.js` with body parts, modalities, specialties
 
 ---
 
-*Last updated: 2026-04-05. Update this doc each time a new tool is built or the framework changes.*
+*Last updated: 2026-04-11. Update this doc each time a new tool is built or the framework changes.*

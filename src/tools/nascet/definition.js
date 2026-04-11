@@ -15,5 +15,22 @@ export const nascetDefinition = {
     { id: 'left', label: 'Left' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    stenosisDiam: {
+      pattern: /stenosis[:\s]*(\d*\.?\d+)\s*mm/i,
+      group: 1,
+      transform: (m) => parseFloat(m[1]),
+    },
+    distalDiam: {
+      pattern: /distal[:\s]*(\d*\.?\d+)\s*mm/i,
+      group: 1,
+      transform: (m) => parseFloat(m[1]),
+    },
+    side: {
+      options: {
+        right: ['right ica', 'right carotid', 'right internal carotid'],
+        left: ['left ica', 'left carotid', 'left internal carotid'],
+      },
+    },
+  },
 };

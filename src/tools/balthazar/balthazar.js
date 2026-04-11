@@ -7,9 +7,12 @@ import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
 import { balthazarDefinition } from './definition.js';
 import { calculateBalthazar } from './calculator.js';
+import { parseFindings } from '../../core/parser.js';
 import { balthazarTemplates } from './templates.js';
+import { trackEvent } from '../../core/storage.js';
 
 function init() {
+  trackEvent('tool:balthazar:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const badgeCtsi = document.getElementById('badge-ctsi');
@@ -107,11 +110,20 @@ function init() {
   }
 
   const parseBtn = document.getElementById('parse-btn');
+  const parseInput = document.getElementById('parse-input');
   const parseStatus = document.getElementById('parse-status');
   parseBtn.addEventListener('click', () => {
-    parseStatus.textContent = 'Parse not yet implemented for Balthazar';
-    parseStatus.className = 'parse-panel__status';
-    setTimeout(() => { parseStatus.textContent = ''; }, 3000);
+    const text = parseInput.value.trim();
+    if (!text) return;
+    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, balthazarDefinition);
+    Object.assign(formState, parsed);
+    additionalFindingsEl.value = remainder || '';
+    studyAdditionalFindings = additionalFindingsEl.value;
+    buildUI();
+    const total = matched.length + unmatched.length;
+    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+    parseStatus.className = 'parse-panel__status parse-panel__status--success';
+    setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });
 
   buildUI();

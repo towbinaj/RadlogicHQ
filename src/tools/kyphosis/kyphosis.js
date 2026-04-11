@@ -8,10 +8,13 @@ import { renderEditorContent } from '../../core/pill-editor.js';
 import { kyphosisDefinition } from './definition.js';
 import { calculateKyphosis } from './calculator.js';
 import { kyphosisTemplates } from './templates.js';
+import { trackEvent } from '../../core/storage.js';
+import { parseFindings } from '../../core/parser.js';
 
 function esc(s) { return (s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
 function init() {
+  trackEvent('tool:kyphosis:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const badgeKyphosis = document.getElementById('badge-kyphosis');
@@ -101,7 +104,22 @@ function init() {
     reportEl.updateReport(data);
   }
 
-  document.getElementById('parse-btn').addEventListener('click', () => { const s = document.getElementById('parse-status'); s.textContent = 'Parse not yet implemented'; s.className = 'parse-panel__status'; setTimeout(() => { s.textContent = ''; }, 3000); });
+  const parseBtn = document.getElementById('parse-btn');
+  const parseInput = document.getElementById('parse-input');
+  const parseStatus = document.getElementById('parse-status');
+  parseBtn.addEventListener('click', () => {
+    const text = parseInput.value.trim();
+    if (!text) return;
+    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, kyphosisDefinition);
+    Object.assign(formState, parsed);
+    additionalFindingsEl.value = remainder || '';
+    studyAdditionalFindings = additionalFindingsEl.value;
+    buildUI();
+    const total = matched.length + unmatched.length;
+    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+    parseStatus.className = 'parse-panel__status parse-panel__status--success';
+    setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
+  });
   buildUI();
 }
 

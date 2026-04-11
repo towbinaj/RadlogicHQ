@@ -9,7 +9,7 @@ import { curieDefinition } from './definition.js';
 import { calculateMibg } from './calculator.js';
 import { curieTemplates, siopenTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
-import { getStored, setStored } from '../../core/storage.js';
+import { getStored, setStored , trackEvent } from '../../core/storage.js';
 
 let mode = getStored('mode:curie', 'curie');
 const curieScores = {};
@@ -20,6 +20,7 @@ function esc(str) {
 }
 
 function init() {
+  trackEvent('tool:curie:opens');
   const stepContainer = document.getElementById('step-container');
   const reportEl = document.querySelector('report-output');
   const scoreDisplay = document.getElementById('mibg-score');
