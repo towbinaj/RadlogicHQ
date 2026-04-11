@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AAST Multi-Trauma | RadioLogicHQ</title>
+  <meta name="description" content="Combined AAST 2018 multi-organ trauma grading — liver, spleen, kidney, and pancreas on one page with unified report output.">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-header__logo">RadioLogicHQ</a>
+      <nav class="site-header__nav">
+        <a href="/">All Tools</a>
+        <auth-ui></auth-ui>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <nav class="breadcrumb"><a href="/">All Tools</a><span class="breadcrumb__sep">/</span><span class="breadcrumb__current">AAST Multi-Trauma</span></nav>
+
+    <div class="tool-hero">
+      <div class="tool-hero__text">
+        <h1>AAST Multi-Trauma <a href="https://doi.org/10.1097/TA.0000000000002058" target="_blank" rel="noopener" class="tool-hero__ref" title="Kozar RA et al. Organ injury scaling 2018 update. J Trauma Acute Care Surg 2018;85(6):1119-1122.">Ref</a></h1>
+      </div>
+      <div class="tool-hero__summary" id="badge-row"></div>
+    </div>
+
+    <div class="tool-layout">
+      <div class="tool-layout__input">
+        <div id="organs-container"></div>
+        <div class="study-findings card">
+          <label for="additional-findings">Additional Findings</label>
+          <textarea id="additional-findings" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="tool-layout__output">
+        <report-output></report-output>
+        <div class="parse-panel card">
+          <label for="parse-input">Paste Findings</label>
+          <textarea id="parse-input" rows="3" placeholder="Paste report text to auto-fill..."></textarea>
+          <div class="parse-panel__actions">
+            <button class="btn btn--primary parse-panel__btn" id="parse-btn">Parse</button>
+            <span class="parse-panel__status" id="parse-status"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./aast-multi.js"></script>
+</body>
+</html>

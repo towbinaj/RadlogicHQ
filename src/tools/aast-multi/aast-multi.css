@@ -1,0 +1,47 @@
+/* AAST Multi-Trauma — organ section layout */
+@import '../aast-liver/aast-liver.css';
+
+.organ-section {
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+.organ-section--active {
+  opacity: 1;
+}
+
+.organ-section__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.organ-section__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--text-base);
+}
+
+.organ-section__toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+
+.organ-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.organ-section:not(.organ-section--active) .organ-section__body {
+  display: none;
+}
+
+.organ-section__category {
+  padding-left: var(--space-xs);
+}

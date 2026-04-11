@@ -583,6 +583,18 @@ export const toolsRegistry = [
     cdeSetId: null,
   },
   {
+    id: 'aast-multi',
+    name: 'AAST Multi-Trauma',
+    description: 'Combined AAST 2018 multi-organ trauma grading — liver, spleen, kidney, and pancreas.',
+    icon: 'MT',
+    path: '/src/tools/aast-multi/aast-multi.html',
+    status: 'active',
+    bodyParts: ['Liver', 'Spleen', 'Kidney', 'Pancreas'],
+    modalities: ['CT'],
+    specialties: ['Emergency Radiology', 'Body Imaging', 'Pediatric Radiology'],
+    cdeSetId: null,
+  },
+  {
     id: 'rapno',
     name: 'RAPNO',
     description: 'Response Assessment in Pediatric Neuro-Oncology — HGG, LGG, DIPG, and medulloblastoma.',
