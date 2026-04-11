@@ -115,6 +115,16 @@ style.textContent = `
     box-shadow: 0 0 0 2px var(--accent-subtle);
   }
 
+  .tool-card--touch-clone {
+    position: fixed;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0.85;
+    transform: scale(0.95);
+    box-shadow: var(--shadow-lg);
+    transition: none;
+  }
+
   .tool-card__badge {
     position: absolute;
     top: var(--space-sm);
@@ -581,10 +591,7 @@ if (grid) {
     if (isActive) {
       card.draggable = true;
       card.addEventListener('dragstart', (e) => {
-        if (sortSelect.value !== 'custom') {
-          sortSelect.value = 'custom';
-          setStored('toolSort', 'custom');
-        }
+        ensureCustomSort();
         e.dataTransfer.setData('text/plain', tool.id);
         e.dataTransfer.effectAllowed = 'move';
         card.classList.add('tool-card--dragging');
@@ -604,27 +611,118 @@ if (grid) {
       card.addEventListener('drop', (e) => {
         e.preventDefault();
         card.classList.remove('tool-card--dragover');
-        const draggedId = e.dataTransfer.getData('text/plain');
-        const targetId = tool.id;
-        if (draggedId === targetId) return;
-
-        // Build current visible order, insert dragged before target
-        const order = cards.filter((c) => c.style.display !== 'none').map((c) => c._tool.id);
-        const fromIdx = order.indexOf(draggedId);
-        if (fromIdx >= 0) order.splice(fromIdx, 1);
-        const toIdx = order.indexOf(targetId);
-        order.splice(toIdx, 0, draggedId);
-
-        toolOrder = order;
-        setStored('toolOrder', toolOrder);
-        sortCards();
-        applyFilters();
+        reorderTool(e.dataTransfer.getData('text/plain'), tool.id);
       });
     }
 
     grid.appendChild(card);
     cards.push(card);
   }
+
+  // --- Shared reorder helpers ---
+  function ensureCustomSort() {
+    if (sortSelect.value !== 'custom') {
+      sortSelect.value = 'custom';
+      setStored('toolSort', 'custom');
+    }
+  }
+
+  function reorderTool(draggedId, targetId) {
+    if (draggedId === targetId) return;
+    const order = cards.filter((c) => c.style.display !== 'none').map((c) => c._tool.id);
+    const fromIdx = order.indexOf(draggedId);
+    if (fromIdx >= 0) order.splice(fromIdx, 1);
+    const toIdx = order.indexOf(targetId);
+    order.splice(toIdx, 0, draggedId);
+    toolOrder = order;
+    setStored('toolOrder', toolOrder);
+    sortCards();
+    applyFilters();
+  }
+
+  // --- Touch drag-and-drop (mobile) ---
+  let _touchDrag = null;
+
+  grid.addEventListener('touchstart', (e) => {
+    const card = e.target.closest('.tool-card');
+    if (!card || !card._tool || card.tagName !== 'A') return;
+
+    const touch = e.touches[0];
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+
+    // Long-press to initiate drag (400ms)
+    const timer = setTimeout(() => {
+      e.preventDefault();
+      ensureCustomSort();
+
+      const rect = card.getBoundingClientRect();
+      const clone = card.cloneNode(true);
+      clone.className = 'tool-card tool-card--touch-clone';
+      clone.style.width = rect.width + 'px';
+      clone.style.left = rect.left + 'px';
+      clone.style.top = rect.top + 'px';
+      document.body.appendChild(clone);
+
+      card.classList.add('tool-card--dragging');
+      _touchDrag = { card, clone, toolId: card._tool.id, offsetX: startX - rect.left, offsetY: startY - rect.top };
+    }, 400);
+
+    const cancelOnMove = (ev) => {
+      const t = ev.touches[0];
+      // If moved more than 10px before long-press, cancel (user is scrolling)
+      if (Math.abs(t.clientX - startX) > 10 || Math.abs(t.clientY - startY) > 10) {
+        clearTimeout(timer);
+        card.removeEventListener('touchmove', cancelOnMove);
+      }
+    };
+    card.addEventListener('touchmove', cancelOnMove, { passive: true });
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      card.removeEventListener('touchmove', cancelOnMove);
+      card.removeEventListener('touchend', cleanup);
+      card.removeEventListener('touchcancel', cleanup);
+    };
+    card.addEventListener('touchend', cleanup, { once: true });
+    card.addEventListener('touchcancel', cleanup, { once: true });
+  }, { passive: true });
+
+  grid.addEventListener('touchmove', (e) => {
+    if (!_touchDrag) return;
+    e.preventDefault();
+
+    const touch = e.touches[0];
+    _touchDrag.clone.style.left = (touch.clientX - _touchDrag.offsetX) + 'px';
+    _touchDrag.clone.style.top = (touch.clientY - _touchDrag.offsetY) + 'px';
+
+    // Find card under touch
+    _touchDrag.clone.style.display = 'none';
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    _touchDrag.clone.style.display = '';
+
+    for (const c of cards) c.classList.remove('tool-card--dragover');
+    const target = el?.closest('.tool-card');
+    if (target && target !== _touchDrag.card && target._tool) {
+      target.classList.add('tool-card--dragover');
+      _touchDrag.targetId = target._tool.id;
+    } else {
+      _touchDrag.targetId = null;
+    }
+  }, { passive: false });
+
+  grid.addEventListener('touchend', () => {
+    if (!_touchDrag) return;
+
+    _touchDrag.card.classList.remove('tool-card--dragging');
+    _touchDrag.clone.remove();
+    for (const c of cards) c.classList.remove('tool-card--dragover');
+
+    if (_touchDrag.targetId) {
+      reorderTool(_touchDrag.toolId, _touchDrag.targetId);
+    }
+    _touchDrag = null;
+  });
 
   // Empty-state message (hidden by default)
   const emptyMsg = document.createElement('div');
