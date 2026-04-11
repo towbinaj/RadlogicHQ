@@ -424,13 +424,14 @@ if (grid) {
   // --- Favorites, hidden, usage, order state ---
   let favorites = getStored('favorites', []);
   let hiddenTools = getStored('hiddenTools', []);
-  let toolUsage = getStored('toolUsage', {}); // {toolId: {count, lastUsed}}
+  let toolUsage = getStored('toolUsage', {}); // {toolId: {count, lastUsed (sequence#)}}
   let toolOrder = getStored('toolOrder', []); // [toolId, ...] for custom sort
+  let _usageSeq = Math.max(0, ...Object.values(toolUsage).map((e) => e.lastUsed || 0));
 
   function trackToolUse(toolId) {
     const entry = toolUsage[toolId] || { count: 0, lastUsed: 0 };
     entry.count++;
-    entry.lastUsed = Date.now();
+    entry.lastUsed = ++_usageSeq;
     toolUsage[toolId] = entry;
     setStored('toolUsage', toolUsage);
   }
