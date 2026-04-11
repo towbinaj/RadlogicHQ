@@ -36,8 +36,6 @@ export class ReportOutput extends HTMLElement {
             <label class="report-output__impression-toggle" title="Show or hide the impression section">
               <input type="checkbox" checked> Impression
             </label>
-            <button class="btn report-output__export-tmpl-btn" title="Export this template">Export</button>
-            <button class="btn report-output__import-tmpl-btn" title="Import a template">Import</button>
             <input type="file" class="report-output__import-file" accept=".json,.xml,.txt" style="display:none">
             <button class="btn report-output__edit-btn">Edit</button>
             <button class="btn report-output__history-btn" style="display:none">History</button>
@@ -55,6 +53,8 @@ export class ReportOutput extends HTMLElement {
             </label>
             <button class="btn edit-bar__undo-btn" disabled>Undo</button>
             <button class="btn edit-bar__redo-btn" disabled>Redo</button>
+            <button class="btn report-output__export-tmpl-btn" title="Export this template">Export</button>
+            <button class="btn report-output__import-tmpl-btn" title="Import a template">Import</button>
             <button class="btn edit-bar__save-btn" style="display:none">Save</button>
             <button class="btn edit-bar__share-btn" style="display:none">Share</button>
             <button class="btn edit-bar__reset-btn">Reset</button>
