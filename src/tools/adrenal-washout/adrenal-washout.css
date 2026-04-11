@@ -4,13 +4,6 @@
 #aw-absolute[data-level="indeterminate"] { color: var(--warning); }
 #aw-relative[data-level="adenoma"] { color: var(--success); }
 #aw-relative[data-level="indeterminate"] { color: var(--warning); }
-
-#step-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
 .aw-measure-card {
   padding: var(--space-sm) var(--space-md);
 }
@@ -29,7 +22,7 @@
 }
 
 .aw-input-item label {
-  margin-bottom: 2px;
+  margin-bottom: var(--space-xs);
   font-size: var(--text-xs);
   font-weight: 500;
   color: var(--text-secondary);

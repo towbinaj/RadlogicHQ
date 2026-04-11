@@ -1241,6 +1241,14 @@ input.no-spinner[type="number"] {
 
 /* ===== Decision-tree tool styles (shared across LI-RADS, Fleischner, etc.) ===== */
 
+/* Step container — shared layout for all tool input cards */
+#step-container,
+#organs-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
 /* Step card */
 .step-card {
   padding: var(--space-sm) var(--space-md);
@@ -1463,12 +1471,13 @@ input.no-spinner[type="number"] {
   border-color: var(--accent);
 }
 
-/* Observation / nodule tabs */
+/* Observation / nodule / mode tabs */
 .observation-tabs-bar,
-.nodule-tabs-bar {
+.nodule-tabs-bar,
+.mode-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   padding: var(--space-sm) 0;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: var(--space-sm);

@@ -1,22 +1,5 @@
 /* Leg Length tool-specific styles (shared styles in forms.css) */
-
-/* Step container */
-#step-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
 /* Mode tabs reuse obs-tab styling from forms.css */
-.mode-tabs-bar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: var(--space-sm) 0;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: var(--space-sm);
-}
-
 /* Segmental measurement table */
 .ll-segment-card {
   padding: var(--space-md);

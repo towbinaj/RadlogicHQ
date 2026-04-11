@@ -2,7 +2,7 @@
 
 Reference this when styling new tools to maintain visual consistency across RadioLogicHQ. All values use CSS variables from `src/styles/variables.css`. Shared styles live in `src/styles/forms.css`.
 
-*Last updated: 2026-04-05*
+*Last updated: 2026-04-11*
 
 ---
 
@@ -11,18 +11,20 @@ Reference this when styling new tools to maintain visual consistency across Radi
 **`src/styles/forms.css`** contains ALL shared styles:
 - Report output component (header, text, controls, edit bar, editable lines, toast)
 - Hero bar (layout, title, ref link, summary badges)
+- Step container layout (`#step-container`, `#organs-container` — flex column, `var(--space-sm)` gap)
+- Tab bars (`.observation-tabs-bar`, `.nodule-tabs-bar`, `.mode-tabs-bar`)
+- Step cards, choice/benign-choice buttons
 - Study findings, parse panel
 - Unit toggle (mm/cm), no-spinner class
 - Form controls (inputs, selects, textareas, buttons)
 
 **`src/tools/{toolId}/{toolId}.css`** contains ONLY tool-specific styles:
 - Level badge colors
-- Section/card grid styles
-- Step wizard styles (decision-tree tools)
+- Tool-specific tables, grids, measurement layouts
 - Ancillary feature grid
 - Compact mode overrides (point-based tools)
 
-**Never duplicate shared styles in tool CSS.**
+**Never duplicate shared styles in tool CSS.** In particular, `#step-container`, `.mode-tabs-bar`, and tab bar styles are centralized — do not redefine them per tool.
 
 ---
 
@@ -48,7 +50,7 @@ Reference this when styling new tools to maintain visual consistency across Radi
 
 ## Multi-Item Tabs
 
-- **Layout**: flex row, 4px gap, bottom border
+- **Layout**: flex row, `var(--space-xs)` gap, bottom border
 - **Tab**: `var(--text-sm)`, weight 500, surface background
 - **Active**: white text, accent background
 - **Add (+)**: dashed border, success color
@@ -84,7 +86,7 @@ Reference this when styling new tools to maintain visual consistency across Radi
 - **Points badge**: `var(--text-xs)`, transitions to accent when has points
 
 ### Option Cards Grid
-- **Grid**: `repeat(auto-fill, minmax(100px, 1fr))`, 4px gap
+- **Grid**: `repeat(auto-fill, minmax(100px, 1fr))`, `var(--space-xs)` gap
 - **Card**: `var(--bg-input)`, 2px transparent border, `var(--radius-md)`
 - **Hover**: border `var(--border-color)`, bg `var(--bg-elevated)`
 - **Selected**: border `var(--accent)`, bg `var(--accent-subtle)`
@@ -124,7 +126,7 @@ Reference this when styling new tools to maintain visual consistency across Radi
 - `var(--text-sm)`, weight 600, primary color
 
 ### Choice Buttons (benign assessment)
-- **Layout**: flex row, wrap, 4px gap
+- **Layout**: flex row, wrap, `var(--space-xs)` gap
 - **Button**: `var(--text-xs)`, weight 500, secondary color, `var(--bg-input)`, border
 - **Active**: white, accent background
 - **Tooltips**: `title` attribute with definition — NO inline gray text

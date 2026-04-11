@@ -85,7 +85,7 @@
 .score-section__options {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .option-card {
@@ -157,7 +157,7 @@
 .nodule-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   padding: var(--space-sm) 0;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: var(--space-sm);

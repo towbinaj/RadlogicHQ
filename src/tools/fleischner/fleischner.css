@@ -6,10 +6,3 @@
 #fleischner-rec[data-level="3"] { color: var(--warning); }
 #fleischner-rec[data-level="4"] { color: #fb923c; }
 #fleischner-rec[data-level="5"] { color: var(--danger); }
-
-/* Step container */
-#step-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}

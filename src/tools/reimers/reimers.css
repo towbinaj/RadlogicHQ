@@ -1,11 +1,4 @@
 /* Reimers' Index tool-specific styles */
-
-#step-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
 .reimers-measure-card {
   padding: var(--space-sm) var(--space-md);
 }
@@ -24,7 +17,7 @@
 }
 
 .reimers-input-item label {
-  margin-bottom: 2px;
+  margin-bottom: var(--space-xs);
   font-size: var(--text-xs);
   font-weight: 500;
   color: var(--text-secondary);

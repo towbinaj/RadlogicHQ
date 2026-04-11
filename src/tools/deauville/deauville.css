@@ -10,18 +10,11 @@
 #deauville-response[data-level="3"] { color: var(--warning); }
 #deauville-response[data-level="4"],
 #deauville-response[data-level="5"] { color: var(--danger); }
-
-#step-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
 /* Score cards — larger clickable panels */
 .deauville-scores {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xs);
   margin-top: var(--space-xs);
 }
 

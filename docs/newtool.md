@@ -416,6 +416,9 @@ reportEl.renderFn = (config, _data) => {
 These styles are shared across ALL tools — do NOT duplicate in tool CSS:
 - Report output component (header, text, controls, edit bar, editable lines, toast)
 - Hero bar (layout, title, ref link, summary badges)
+- Step container layout (`#step-container`, `#organs-container` — flex column, `var(--space-sm)` gap)
+- Tab bars (`.observation-tabs-bar`, `.nodule-tabs-bar`, `.mode-tabs-bar`)
+- Step cards, choice buttons, benign-choice buttons
 - Study findings (label, textarea)
 - Parse panel (label, textarea, button, status)
 - Unit toggle (`mm | cm` buttons)
@@ -423,9 +426,9 @@ These styles are shared across ALL tools — do NOT duplicate in tool CSS:
 
 **Tool CSS should only contain:**
 - Level badge colors (`data-level` attributes)
-- Tool-specific section/card styles
-- Decision-tree step styles (if applicable)
+- Tool-specific section/card styles (tables, custom grids)
 - Ancillary feature grid styles (if applicable)
+- **Never add `#step-container` or `.mode-tabs-bar` styles** — these are centralized in forms.css
 
 ---
 
