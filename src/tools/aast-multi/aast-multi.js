@@ -74,8 +74,8 @@ function init() {
         if (!os.enabled) {
           os.formState.selectedFindings.clear();
           os.formState.multipleInjuries = false;
-          rebuildOrganBody(os, section);
         }
+        rebuildOrganBody(os, section);
         update();
       });
       section.appendChild(header);
