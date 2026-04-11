@@ -143,9 +143,11 @@ export class ReportOutput extends HTMLElement {
     });
 
     // Impression toggle
-    this._showImpression = true;
+    this._showImpression = getStored('showImpression', true);
+    this._els.impressionToggle.checked = this._showImpression;
     this._els.impressionToggle.addEventListener('change', () => {
       this._showImpression = this._els.impressionToggle.checked;
+      setStored('showImpression', this._showImpression);
       this._render();
     });
 
