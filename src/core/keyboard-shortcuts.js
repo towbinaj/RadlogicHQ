@@ -54,7 +54,16 @@ export function initKeyboardShortcuts({ container }) {
     document.head.appendChild(s);
   }
 
-  const observer = new MutationObserver(() => applyBadges(container));
+  let badgeTimer = null;
+  const observer = new MutationObserver(() => {
+    if (badgeTimer) return;
+    badgeTimer = requestAnimationFrame(() => {
+      observer.disconnect();
+      applyBadges(container);
+      observer.observe(container, { childList: true, subtree: true });
+      badgeTimer = null;
+    });
+  });
   observer.observe(container, { childList: true, subtree: true });
   applyBadges(container);
 
