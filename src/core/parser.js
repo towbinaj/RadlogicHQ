@@ -453,6 +453,17 @@ export function extractText(raw) {
     }
   }
 
+  // Detect RadAI structured format: [STRUCTURED REPORT] ... [END STRUCTURED REPORT]
+  if (trimmed.includes('[STRUCTURED REPORT]')) {
+    const match = trimmed.match(/\[STRUCTURED REPORT\]([\s\S]*?)(?:\[END STRUCTURED REPORT\]|$)/i);
+    if (match) {
+      // Strip bracket headers and convert Key: Value to parseable text
+      let body = match[1].trim();
+      body = body.replace(/^\[.*?\]$/gm, '').trim();
+      return body;
+    }
+  }
+
   return trimmed;
 }
 
@@ -461,6 +472,16 @@ export function extractText(raw) {
  * If no FINDINGS header is found, returns the full text.
  */
 function extractFindingsSection(text) {
+  // Also handle RadAI bracket format within extracted text
+  if (text.includes('[STRUCTURED REPORT]')) {
+    const match = text.match(/\[STRUCTURED REPORT\]([\s\S]*?)(?:\[END STRUCTURED REPORT\]|$)/i);
+    if (match) {
+      let body = match[1].trim();
+      body = body.replace(/^\[.*?\]$/gm, '').trim();
+      return body;
+    }
+  }
+
   const findingsMatch = text.match(/\bFINDINGS\s*:([\s\S]*)/i);
   if (!findingsMatch) return text;
 

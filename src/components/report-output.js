@@ -959,11 +959,50 @@ export class ReportOutput extends HTMLElement {
   _importFromText(reportText) {
     if (!reportText.trim()) { this._showToast('Empty report text'); return; }
 
-    // Convert plain text into editorContent (all text nodes, no pills)
-    // User can then enter edit mode and add pills from the palette
     const config = this._getConfig();
     this._pushUndo();
-    config.editorContent = [{ type: 'text', value: reportText.trim() }];
+
+    // Detect RadAI-style structured format: [STRUCTURED REPORT] ... Key: Value ... [END STRUCTURED REPORT]
+    const radaiMatch = reportText.match(/\[STRUCTURED REPORT\]([\s\S]*?)(?:\[END STRUCTURED REPORT\]|$)/i);
+    if (radaiMatch) {
+      const structuredBody = radaiMatch[1].trim();
+      const content = [];
+      const lines = structuredBody.split('\n');
+
+      for (const line of lines) {
+        const trimLine = line.trim();
+        if (!trimLine) continue;
+
+        // Detect section headers like [IMPRESSION], [FINDINGS], [OTHER FINDINGS]
+        if (/^\[.+\]$/.test(trimLine)) {
+          content.push({ type: 'text', value: '\n' + trimLine + '\n' });
+          continue;
+        }
+
+        // Detect Key: Value pairs (e.g., "Composition: Solid")
+        const kvMatch = trimLine.match(/^([A-Za-z_][A-Za-z0-9_ ]*?):\s*(.+)$/);
+        if (kvMatch) {
+          const key = kvMatch[1].trim();
+          const value = kvMatch[2].trim();
+          // Create as pill-ready text: label + value on same line
+          content.push({ type: 'text', value: key + ': ' + value + '\n' });
+        } else {
+          content.push({ type: 'text', value: trimLine + '\n' });
+        }
+      }
+
+      // Also capture any text outside the structured block (e.g., impression)
+      const afterBlock = reportText.replace(/\[STRUCTURED REPORT\][\s\S]*?(?:\[END STRUCTURED REPORT\]|$)/i, '').trim();
+      if (afterBlock) {
+        content.push({ type: 'text', value: '\n' + afterBlock });
+      }
+
+      config.editorContent = content.length > 0 ? content : [{ type: 'text', value: reportText.trim() }];
+    } else {
+      // Plain text — convert to single text node
+      config.editorContent = [{ type: 'text', value: reportText.trim() }];
+    }
+
     this._saveBlockConfig();
     this._render();
     this._showToast('Report template imported — edit to add data fields');
