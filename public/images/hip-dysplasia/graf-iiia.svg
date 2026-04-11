@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150">
+  <!-- Graf Type IIIa: Eccentric, femoral head displaced upward (alpha <43°) -->
+  <!-- Ilium -->
+  <line x1="20" y1="40" x2="180" y2="40" stroke="#3a4a5a" stroke-width="4"/>
+  <!-- Acetabular roof - very flat/shallow -->
+  <path d="M100,40 Q98,44 97,68" stroke="#f87171" stroke-width="3" fill="none"/>
+  <!-- Cartilaginous roof - pushed superiorly, still hyaline -->
+  <path d="M100,40 Q120,42 138,50" stroke="#60a5fa" stroke-width="2" fill="none" stroke-dasharray="4,3"/>
+  <!-- Empty acetabulum outline -->
+  <path d="M97,68 Q98,82 105,88" stroke="#3a4a5a" stroke-width="2" fill="none" opacity="0.5"/>
+  <!-- Femoral head - displaced superolaterally -->
+  <circle cx="125" cy="58" r="24" fill="#3a4a5a" opacity="0.5"/>
+  <circle cx="125" cy="58" r="24" fill="none" stroke="#f87171" stroke-width="2"/>
+  <!-- Alpha angle line - very shallow -->
+  <line x1="100" y1="40" x2="94" y2="68" stroke="#f87171" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <!-- Displacement arrow -->
+  <line x1="105" y1="78" x2="118" y2="64" stroke="#f87171" stroke-width="1.5"/>
+  <polygon points="118,64 113,67 116,61" fill="#f87171"/>
+  <!-- Labels -->
+  <text x="68" y="35" fill="#f87171" font-size="10" font-family="sans-serif">α &lt;43°</text>
+  <text x="100" y="145" fill="#f87171" font-size="11" font-family="sans-serif" text-anchor="middle">Type IIIa — Eccentric</text>
+</svg>

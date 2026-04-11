@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150">
+  <!-- Torso outline -->
+  <path d="M60,10 Q65,5 75,5 L80,5 Q85,8 90,15 L90,20 Q95,18 100,18 Q105,18 110,20 L110,15 Q115,8 120,5 L125,5 Q135,5 140,10 L145,25 Q148,35 145,50 L142,65 L145,80 L148,100 Q150,120 145,135 L140,145 L60,145 L55,135 Q50,120 52,100 L55,80 L58,65 L55,50 Q52,35 55,25 Z" fill="none" stroke="#60a5fa" stroke-width="1.5"/>
+  <!-- Neck -->
+  <path d="M90,15 Q100,12 110,15" fill="none" stroke="#60a5fa" stroke-width="1.5"/>
+  <!-- Mediastinum region outline -->
+  <ellipse cx="100" cy="50" rx="12" ry="20" fill="none" stroke="#60a5fa" stroke-width="1" stroke-dasharray="3,2" opacity="0.5"/>
+  <!-- Liver region with dim fill (reference) -->
+  <path d="M72,75 Q80,68 95,70 Q110,72 120,78 Q125,82 122,90 Q118,95 105,95 Q90,95 78,90 Q72,85 72,75 Z" fill="#f87171" fill-opacity="0.15" stroke="#60a5fa" stroke-width="1" stroke-dasharray="3,2" opacity="0.8"/>
+  <!-- Primary lesion — intense uptake -->
+  <ellipse cx="115" cy="45" rx="9" ry="7" fill="#f87171" opacity="0.7" stroke="#f87171" stroke-width="1" stroke-opacity="0.8"/>
+  <!-- Additional lesion — left axillary -->
+  <ellipse cx="135" cy="35" rx="5" ry="4" fill="#f87171" opacity="0.7" stroke="#f87171" stroke-width="0.8" stroke-opacity="0.7"/>
+  <!-- Additional lesion — lower -->
+  <ellipse cx="85" cy="110" rx="6" ry="5" fill="#f87171" opacity="0.7" stroke="#f87171" stroke-width="0.8" stroke-opacity="0.7"/>
+  <!-- Labels -->
+  <text x="100" y="48" text-anchor="middle" fill="#60a5fa" font-size="7" font-family="sans-serif" opacity="0.6">Mediastinum</text>
+  <text x="97" y="85" text-anchor="middle" fill="#60a5fa" font-size="7" font-family="sans-serif" opacity="0.6">Liver</text>
+</svg>

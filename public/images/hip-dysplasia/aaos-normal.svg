@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150">
+  <!-- AAOS Normal: well-seated femoral head, AP pelvis view -->
+  <!-- Pelvis outline - simplified -->
+  <path d="M30,30 Q60,20 100,25 Q140,20 170,30" stroke="#3a4a5a" stroke-width="3" fill="none"/>
+  <!-- Iliac wings -->
+  <path d="M30,30 Q35,50 45,65" stroke="#3a4a5a" stroke-width="3" fill="none"/>
+  <path d="M170,30 Q165,50 155,65" stroke="#3a4a5a" stroke-width="3" fill="none"/>
+  <!-- Acetabulum - deep, well-formed -->
+  <path d="M45,65 Q55,60 65,65 Q75,80 72,95" stroke="#60a5fa" stroke-width="2.5" fill="none"/>
+  <path d="M155,65 Q145,60 135,65 Q125,80 128,95" stroke="#60a5fa" stroke-width="2.5" fill="none"/>
+  <!-- Femoral heads - well seated bilaterally -->
+  <circle cx="68" cy="78" r="18" fill="#3a4a5a" opacity="0.5"/>
+  <circle cx="68" cy="78" r="18" fill="none" stroke="#60a5fa" stroke-width="2"/>
+  <circle cx="132" cy="78" r="18" fill="none" stroke="#60a5fa" stroke-width="2"/>
+  <circle cx="132" cy="78" r="18" fill="#3a4a5a" opacity="0.5"/>
+  <!-- Femoral necks -->
+  <line x1="55" y1="93" x2="42" y2="120" stroke="#60a5fa" stroke-width="2"/>
+  <line x1="145" y1="93" x2="158" y2="120" stroke="#60a5fa" stroke-width="2"/>
+  <!-- Obturator foramina (simplified) -->
+  <ellipse cx="82" cy="105" rx="10" ry="14" stroke="#3a4a5a" stroke-width="1.5" fill="none" opacity="0.4"/>
+  <ellipse cx="118" cy="105" rx="10" ry="14" stroke="#3a4a5a" stroke-width="1.5" fill="none" opacity="0.4"/>
+  <!-- Labels -->
+  <text x="100" y="145" fill="#60a5fa" font-size="11" font-family="sans-serif" text-anchor="middle">AAOS — Normal</text>
+</svg>

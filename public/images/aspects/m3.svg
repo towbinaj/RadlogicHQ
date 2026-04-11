@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150">
+  <!-- Brain outline -->
+  <ellipse cx="100" cy="75" rx="80" ry="60" fill="#3a4a5a" stroke="#60a5fa" stroke-width="1.5"/>
+  <!-- Midline -->
+  <line x1="100" y1="15" x2="100" y2="135" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+  <!-- Falx notch -->
+  <line x1="90" y1="15" x2="100" y2="20" stroke="#60a5fa" stroke-width="1" opacity="0.5"/>
+  <line x1="110" y1="15" x2="100" y2="20" stroke="#60a5fa" stroke-width="1" opacity="0.5"/>
+  <!-- M3 — posterior temporal lobe, posterior inferior, LEFT hemisphere -->
+  <path d="M140,100 Q150,95 155,105 Q148,115 135,120 Q125,118 120,112 Q130,110 138,105 Z" fill="#f87171" opacity="0.4"/>
+</svg>

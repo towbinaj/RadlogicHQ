@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150">
+  <!-- Graf Type Ib: Good bony roof, prominent cartilage rim, alpha ≥60° -->
+  <!-- Ilium -->
+  <line x1="20" y1="40" x2="180" y2="40" stroke="#3a4a5a" stroke-width="4"/>
+  <!-- Acetabular roof - steep, good coverage -->
+  <path d="M100,40 Q85,55 80,85" stroke="#60a5fa" stroke-width="3" fill="none"/>
+  <!-- Prominent cartilaginous roof (thicker, more prominent) -->
+  <path d="M100,40 Q115,52 120,72" stroke="#60a5fa" stroke-width="3" fill="none" stroke-dasharray="4,3"/>
+  <path d="M120,72 Q118,80 112,85" stroke="#60a5fa" stroke-width="2" fill="none" stroke-dasharray="4,3"/>
+  <!-- Femoral head - well seated -->
+  <circle cx="100" cy="80" r="25" fill="#3a4a5a" opacity="0.5"/>
+  <circle cx="100" cy="80" r="25" fill="none" stroke="#60a5fa" stroke-width="2"/>
+  <!-- Alpha angle line -->
+  <line x1="100" y1="40" x2="75" y2="83" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <!-- Alpha angle arc -->
+  <path d="M88,40 A12,12 0 0,0 82,50" stroke="#60a5fa" stroke-width="1.5" fill="none"/>
+  <!-- Labels -->
+  <text x="72" y="35" fill="#60a5fa" font-size="10" font-family="sans-serif">α ≥60°</text>
+  <text x="130" y="65" fill="#60a5fa" font-size="9" font-family="sans-serif">cartilage</text>
+  <text x="100" y="145" fill="#60a5fa" font-size="11" font-family="sans-serif" text-anchor="middle">Type Ib — Prominent Cartilage</text>
+</svg>

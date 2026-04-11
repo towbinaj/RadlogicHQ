@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150">
+  <!-- Liver outline (transverse cross-section) -->
+  <path id="liver" d="M25,75 Q30,35 65,25 Q100,15 140,25 Q165,32 180,50 Q190,65 185,80 Q178,100 155,110 Q130,120 100,118 Q65,115 40,105 Q28,95 25,75 Z" fill="#3a4a5a" stroke="#60a5fa" stroke-width="1.5"/>
+  <!-- Right anterior section highlight -->
+  <path d="M105,18 Q120,16 140,25 L145,27 L150,112 Q140,116 130,120 Q115,119 100,118 L105,18 Z" fill="#f87171" fill-opacity="0.4" stroke="none"/>
+  <!-- Division lines -->
+  <line x1="70" y1="28" x2="62" y2="108" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+  <line x1="105" y1="18" x2="100" y2="118" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+  <line x1="145" y1="27" x2="150" y2="112" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+  <!-- Caudate lobe outline -->
+  <path d="M88,38 Q95,32 108,35 Q115,40 115,50 Q112,58 105,60 Q95,60 90,55 Q86,48 88,38 Z" fill="none" stroke="#60a5fa" stroke-width="0.8" opacity="0.4"/>
+  <!-- Section labels -->
+  <text x="48" y="72" text-anchor="middle" fill="#60a5fa" font-size="8" font-family="sans-serif" opacity="0.7">LL</text>
+  <text x="85" y="90" text-anchor="middle" fill="#60a5fa" font-size="8" font-family="sans-serif" opacity="0.7">LM</text>
+  <text x="168" y="70" text-anchor="middle" fill="#60a5fa" font-size="8" font-family="sans-serif" opacity="0.7">RP</text>
+  <text x="100" y="50" text-anchor="middle" fill="#60a5fa" font-size="8" font-family="sans-serif" opacity="0.5">C</text>
+  <text x="125" y="78" text-anchor="middle" fill="#fff" font-size="8" font-weight="bold" font-family="sans-serif">RA</text>
+</svg>

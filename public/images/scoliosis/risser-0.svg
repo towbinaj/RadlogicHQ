@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150">
+  <!-- Risser Stage 0: No ossification of iliac crest apophysis -->
+  <!-- Iliac crest bone -->
+  <path d="M30,90 Q60,40 100,30 Q140,40 170,90" stroke="#3a4a5a" stroke-width="3" fill="none"/>
+  <!-- Inner iliac surface -->
+  <path d="M40,95 Q65,55 100,45 Q135,55 160,95" stroke="#3a4a5a" stroke-width="2" fill="none" opacity="0.4"/>
+  <!-- Apophysis region outline (no fill - stage 0) -->
+  <path d="M30,90 Q60,40 100,30 Q140,40 170,90" stroke="#60a5fa" stroke-width="1" fill="none" stroke-dasharray="4,3" opacity="0.3"/>
+  <!-- Quadrant markers -->
+  <line x1="135" y1="38" x2="135" y2="48" stroke="#3a4a5a" stroke-width="1" opacity="0.3"/>
+  <line x1="100" y1="30" x2="100" y2="40" stroke="#3a4a5a" stroke-width="1" opacity="0.3"/>
+  <line x1="65" y1="38" x2="65" y2="48" stroke="#3a4a5a" stroke-width="1" opacity="0.3"/>
+  <!-- Lateral/Medial labels -->
+  <text x="170" y="105" fill="#60a5fa" font-size="8" font-family="sans-serif" text-anchor="end">Lateral</text>
+  <text x="30" y="105" fill="#60a5fa" font-size="8" font-family="sans-serif">Medial</text>
+  <!-- Stage label -->
+  <text x="100" y="125" fill="#60a5fa" font-size="10" font-family="sans-serif" text-anchor="middle">0% ossification</text>
+  <text x="100" y="145" fill="#60a5fa" font-size="11" font-family="sans-serif" text-anchor="middle">Risser 0 — No Ossification</text>
+</svg>
