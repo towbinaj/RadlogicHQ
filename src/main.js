@@ -92,6 +92,13 @@ style.textContent = `
     border: 1px solid var(--border-color);
     color: var(--text-muted);
     background: var(--bg-input);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .tool-card__label:hover {
+    background: var(--bg-elevated);
+    border-color: var(--text-muted);
   }
 
   .tool-card__label--body { color: var(--info); border-color: rgba(96, 165, 250, 0.3); }
@@ -429,13 +436,13 @@ if (grid) {
 
     const labels = [];
     for (const bp of tool.bodyParts || []) {
-      labels.push(`<span class="tool-card__label tool-card__label--body">${bp}</span>`);
+      labels.push(`<span class="tool-card__label tool-card__label--body" data-filter-type="body" data-filter-value="${bp}">${bp}</span>`);
     }
     for (const mod of tool.modalities || []) {
-      labels.push(`<span class="tool-card__label tool-card__label--modality">${getModalityLabel(mod)}</span>`);
+      labels.push(`<span class="tool-card__label tool-card__label--modality" data-filter-type="modality" data-filter-value="${mod}">${getModalityLabel(mod)}</span>`);
     }
     for (const sp of tool.specialties || []) {
-      labels.push(`<span class="tool-card__label tool-card__label--specialty">${sp}</span>`);
+      labels.push(`<span class="tool-card__label tool-card__label--specialty" data-filter-type="specialty" data-filter-value="${sp}">${sp}</span>`);
     }
 
     const isFav = favorites.includes(tool.id);
@@ -478,6 +485,21 @@ if (grid) {
         toggleHidden(tool.id);
       });
     }
+
+    // Wire tag clicks to set filter
+    card.querySelectorAll('.tool-card__label[data-filter-type]').forEach((label) => {
+      label.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const type = label.dataset.filterType;
+        const value = label.dataset.filterValue;
+        if (type === 'body') bodySelect.value = value;
+        else if (type === 'modality') modalitySelect.value = value;
+        else if (type === 'specialty') specialtySelect.value = value;
+        applyFilters();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
 
     grid.appendChild(card);
     cards.push(card);
