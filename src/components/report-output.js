@@ -38,7 +38,7 @@ export class ReportOutput extends HTMLElement {
             </label>
             <button class="btn report-output__export-tmpl-btn" title="Export this template">Export</button>
             <button class="btn report-output__import-tmpl-btn" title="Import a template">Import</button>
-            <input type="file" class="report-output__import-file" accept=".json" style="display:none">
+            <input type="file" class="report-output__import-file" accept=".json,.xml,.txt" style="display:none">
             <button class="btn report-output__edit-btn">Edit</button>
             <button class="btn report-output__history-btn" style="display:none">History</button>
             <button class="btn btn--primary report-output__copy-btn">Copy</button>
@@ -876,6 +876,20 @@ export class ReportOutput extends HTMLElement {
     this._els.importTmplFile.value = '';
     if (!file) return;
     file.text().then((text) => {
+      const trimmed = text.trim();
+
+      // Detect XML (PowerScribe AutoText export or plain XML)
+      if (trimmed.startsWith('<')) {
+        this._importFromXML(trimmed);
+        return;
+      }
+
+      // Detect plain text (not JSON)
+      if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+        this._importFromText(trimmed);
+        return;
+      }
+
       try {
         const data = JSON.parse(text);
 
@@ -913,6 +927,46 @@ export class ReportOutput extends HTMLElement {
         this._showToast('Invalid file');
       }
     });
+  }
+
+  _importFromXML(xml) {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xml, 'text/xml');
+      if (doc.querySelector('parsererror')) {
+        this._showToast('Invalid XML file');
+        return;
+      }
+      // Extract ContentText from PowerScribe AutoText export
+      const contentEls = doc.querySelectorAll('ContentText');
+      if (contentEls.length === 0) {
+        // Fallback: try all text content
+        const allText = doc.documentElement.textContent.trim();
+        if (!allText) { this._showToast('No text found in XML'); return; }
+        this._importFromText(allText);
+        return;
+      }
+      // If multiple AutoTexts, let user pick or use the first
+      const texts = [...contentEls].map((el) => el.textContent.trim()).filter(Boolean);
+      if (texts.length === 0) { this._showToast('Empty ContentText in XML'); return; }
+      // Use first ContentText (most common: single AutoText export)
+      this._importFromText(texts[0]);
+    } catch {
+      this._showToast('Could not parse XML');
+    }
+  }
+
+  _importFromText(reportText) {
+    if (!reportText.trim()) { this._showToast('Empty report text'); return; }
+
+    // Convert plain text into editorContent (all text nodes, no pills)
+    // User can then enter edit mode and add pills from the palette
+    const config = this._getConfig();
+    this._pushUndo();
+    config.editorContent = [{ type: 'text', value: reportText.trim() }];
+    this._saveBlockConfig();
+    this._render();
+    this._showToast('Report template imported — edit to add data fields');
   }
 
   _showToast(msg = 'Copied!') {

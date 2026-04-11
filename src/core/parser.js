@@ -410,6 +410,70 @@ function mergeRules(auto, manual) {
 }
 
 // ============================================================
+// TEXT EXTRACTION (plain text, XML, RTF)
+// ============================================================
+
+const SECTION_RE = /^(?:FINDINGS|IMPRESSION|TECHNIQUE|COMPARISON|CLINICAL\s+(?:INDICATION|HISTORY|INFORMATION)|EXAM(?:INATION)?|PROCEDURE|CONCLUSION|SUMMARY)\s*:/im;
+
+/**
+ * Extract parseable text from various input formats.
+ * Supports:
+ *  - Plain text (returned as-is)
+ *  - PowerScribe XML (<PortalAutoTextExport> with <ContentText>)
+ *  - Raw XML with <ContentText> tags
+ *
+ * For structured reports, extracts the FINDINGS section if present.
+ * @param {string} raw - Raw input (plain text or XML)
+ * @returns {string} Extracted text ready for parsing
+ */
+export function extractText(raw) {
+  if (!raw || !raw.trim()) return '';
+  const trimmed = raw.trim();
+
+  // Detect XML by leading angle bracket or XML declaration
+  if (trimmed.startsWith('<')) {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(trimmed, 'text/xml');
+      if (!doc.querySelector('parsererror')) {
+        // Try <ContentText> (PowerScribe format)
+        const contentEls = doc.querySelectorAll('ContentText');
+        if (contentEls.length > 0) {
+          // Concatenate all ContentText nodes (multiple AutoTexts)
+          const texts = [...contentEls].map((el) => el.textContent.trim()).filter(Boolean);
+          const combined = texts.join('\n\n');
+          return extractFindingsSection(combined);
+        }
+        // Fallback: grab all text content from the XML
+        const allText = doc.documentElement.textContent.trim();
+        if (allText) return extractFindingsSection(allText);
+      }
+    } catch {
+      // Not valid XML — fall through to plain text
+    }
+  }
+
+  return trimmed;
+}
+
+/**
+ * Pull out the FINDINGS section from a structured report.
+ * If no FINDINGS header is found, returns the full text.
+ */
+function extractFindingsSection(text) {
+  const findingsMatch = text.match(/\bFINDINGS\s*:([\s\S]*)/i);
+  if (!findingsMatch) return text;
+
+  let findings = findingsMatch[1];
+  // Truncate at the next section header (IMPRESSION, CONCLUSION, etc.)
+  const nextSection = findings.match(/\n\s*(?:IMPRESSION|CONCLUSION|SUMMARY|TECHNIQUE|COMPARISON|CLINICAL\s+(?:INDICATION|HISTORY))\s*:/i);
+  if (nextSection) {
+    findings = findings.slice(0, nextSection.index);
+  }
+  return findings.trim();
+}
+
+// ============================================================
 // MAIN PARSER
 // ============================================================
 
@@ -418,19 +482,22 @@ function mergeRules(auto, manual) {
  * Merges auto-generated rules from the definition structure with
  * any hand-written parseRules (hand-written override on conflict).
  *
- * @param {string} text - Raw findings text
+ * Accepts plain text, PowerScribe XML, or any format supported by extractText().
+ *
+ * @param {string} text - Raw findings text (or XML)
  * @param {Object} definition - Tool definition
  * @returns {{ formState: Object, matched: string[], unmatched: string[], remainder: string }}
  */
 export function parseFindings(text, definition) {
+  const extracted = extractText(text);
   const autoRules = buildParseRules(definition);
   const rules = mergeRules(autoRules, definition.parseRules);
 
-  if (!rules || Object.keys(rules).length === 0 || !text) {
-    return { formState: {}, matched: [], unmatched: [], remainder: text || '' };
+  if (!rules || Object.keys(rules).length === 0 || !extracted) {
+    return { formState: {}, matched: [], unmatched: [], remainder: extracted || '' };
   }
 
-  const normalized = text.toLowerCase();
+  const normalized = extracted.toLowerCase();
   const formState = {};
   const matched = [];
   const unmatched = [];
@@ -493,7 +560,7 @@ export function parseFindings(text, definition) {
   }
 
   // Build remainder by stripping all matched spans
-  let remainder = text;
+  let remainder = extracted;
   const sortedSpans = [...matchedSpans].sort((a, b) => b.length - a.length);
   for (const span of sortedSpans) {
     const idx = remainder.toLowerCase().indexOf(span.toLowerCase());
