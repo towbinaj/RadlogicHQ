@@ -24,5 +24,27 @@ export const aspectsDefinition = {
     { id: 'M6', label: 'M6 — Posterior MCA territory (superior to M3)' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    affected: {
+      multi: true,
+      options: {
+        C: ['caudate', 'caudate head', 'caudate nucleus'],
+        L: ['lentiform', 'lentiform nucleus', 'putamen', 'globus pallidus'],
+        IC: ['internal capsule', 'posterior limb'],
+        I: ['insular ribbon', 'insular cortex', 'insula'],
+        M1: ['frontal operculum', 'M1 region'],
+        M2: ['anterior temporal', 'M2 region'],
+        M3: ['posterior temporal', 'M3 region'],
+        M4: ['anterior MCA', 'superior frontal', 'M4 region'],
+        M5: ['lateral MCA', 'M5 region'],
+        M6: ['posterior MCA', 'M6 region'],
+      },
+    },
+    side: {
+      options: {
+        right: ['right', 'right-sided', 'right MCA'],
+        left: ['left', 'left-sided', 'left MCA'],
+      },
+    },
+  },
 };

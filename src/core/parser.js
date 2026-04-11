@@ -20,6 +20,10 @@ const SYNONYMS = {
   left: ['left-sided', 'lt'],
   bilateral: ['both', 'bilaterally', 'b/l'],
 
+  // --- Sex ---
+  male: ['m', 'boy'],
+  female: ['f', 'girl'],
+
   // --- Echogenicity ---
   anechoic: ['anechoic'],
   hyperechoic: ['hyper-echoic', 'echogenic', 'hyperechogenic'],
@@ -34,22 +38,27 @@ const SYNONYMS = {
   spongiform: ['spongiform appearance'],
   calcification: ['calcified', 'calcifications'],
   'no calcification': ['no calcifications', 'without calcification'],
+  'ground glass': ['ggo', 'ground-glass', 'ggn', 'nonsolid', 'non-solid'],
 
   // --- Margins ---
   'smooth margin': ['well-defined', 'well defined', 'smooth margins', 'circumscribed'],
   'irregular margin': ['irregular margins', 'poorly defined', 'ill-defined', 'ill defined', 'spiculated'],
   lobulated: ['lobulated margin', 'lobulated margins'],
+  smooth: ['well-defined', 'well defined', 'circumscribed'],
 
   // --- Enhancement ---
   enhancing: ['enhancement', 'enhances'],
   'no enhancement': ['non-enhancing', 'nonenhancing', 'without enhancement'],
   'measurable enhancement': ['measurable', 'definite enhancement'],
   'perceived enhancement': ['perceived', 'subjective enhancement'],
+  aphe: ['arterial phase hyperenhancement', 'arterial enhancement', 'non-rim aphe'],
+  washout: ['venous washout', 'portal venous washout', 'nonperipheral washout'],
 
-  // --- Vascularity ---
+  // --- Vascularity / Doppler ---
   'active bleeding': ['active extravasation', 'active hemorrhage', 'contrast extravasation'],
   pseudoaneurysm: ['pseudo-aneurysm', 'psudoaneurysm'],
   'arteriovenous fistula': ['av fistula', 'avf'],
+  'no flow': ['avascular', 'no vascularity', 'no doppler flow'],
 
   // --- Sizes / descriptors ---
   subcapsular: ['sub-capsular'],
@@ -61,45 +70,146 @@ const SYNONYMS = {
   present: ['positive', 'identified', 'seen', 'noted', 'demonstrated'],
   absent: ['negative', 'not identified', 'not seen', 'not noted', 'none', 'no evidence'],
 
+  // --- Severity ---
+  mild: ['mildly', 'slight', 'slightly', 'minimal', 'minor'],
+  moderate: ['moderately', 'intermediate'],
+  severe: ['severely', 'marked', 'markedly', 'significant', 'significantly', 'advanced'],
+  normal: ['unremarkable', 'within normal limits', 'wnl', 'no abnormality'],
+
   // --- Response categories ---
   'complete response': ['complete remission', 'cr'],
   'partial response': ['partial remission', 'pr'],
   'stable disease': ['sd', 'no change'],
   'progressive disease': ['pd', 'progression'],
+  stable: ['unchanged', 'no interval change', 'no change'],
+  growing: ['enlarging', 'increased in size', 'increasing', 'interval growth'],
+  'new nodule': ['new finding', 'new lesion', 'interval development'],
 
   // --- Injury / trauma ---
   hematoma: ['haematoma'],
   laceration: ['lacerations', 'tear'],
   'parenchymal disruption': ['parenchymal destruction', 'devascularization'],
+  devascularization: ['devascularized', 'avascular segment'],
+  contusion: ['bruise', 'bruising'],
+  transection: ['complete transection', 'complete disruption'],
 
-  // --- Grades (Roman numeral variants) ---
+  // --- Grades (Roman ↔ Arabic) ---
   'grade i': ['grade 1'],
   'grade ii': ['grade 2'],
   'grade iii': ['grade 3'],
   'grade iv': ['grade 4'],
   'grade v': ['grade 5'],
+  'grade 0': ['grade zero'],
+  'grade 1': ['grade i'],
+  'grade 2': ['grade ii'],
+  'grade 3': ['grade iii'],
+  'grade 4': ['grade iv'],
+  'grade 5': ['grade v'],
+
+  // --- Stages (Lugano) ---
+  'stage i': ['stage 1', 'ann arbor i'],
+  'stage ii': ['stage 2', 'ann arbor ii'],
+  'stage iii': ['stage 3', 'ann arbor iii'],
+  'stage iv': ['stage 4', 'ann arbor iv'],
+
+  // --- Types (Salter-Harris, Graf) ---
+  'type i': ['type 1'],
+  'type ii': ['type 2'],
+  'type iii': ['type 3'],
+  'type iv': ['type 4'],
+  'type v': ['type 5'],
 
   // --- Common modalities ---
   mammography: ['mammo', 'mammogram'],
   ultrasound: ['us', 'sonography', 'sonographic'],
   mri: ['mr', 'magnetic resonance'],
-  ct: ['computed tomography', 'cat scan'],
 
   // --- Hydronephrosis ---
   hydronephrosis: ['hydroureteronephrosis', 'collecting system dilation', 'pelvicaliectasis', 'pyelectasis'],
+  ventriculomegaly: ['dilated ventricle', 'dilated ventricles', 'ventricular dilation', 'ventricular dilatation'],
 
   // --- Vascular ---
   stenosis: ['stenotic', 'narrowing'],
+  occlusion: ['occluded', 'total occlusion', 'complete occlusion'],
 
   // --- PET/CT ---
   'no uptake': ['no fdg uptake', 'no metabolic activity', 'no hypermetabolism'],
   mediastinum: ['mediastinal blood pool', 'mediastinal'],
+  uptake: ['fdg uptake', 'metabolic activity', 'hypermetabolism', 'fdg avid', 'avidity'],
 
   // --- Lymphoma ---
   'complete metabolic response': ['cmr'],
+  'b symptoms': ['fever', 'night sweats', 'weight loss'],
+  hodgkin: ['hodgkin lymphoma', 'hl', 'hodgkin disease'],
+  'non-hodgkin': ['nhl', 'non-hodgkin lymphoma'],
+  'extranodal': ['extranodal extension', 'extranodal involvement'],
+  'bulky disease': ['bulky', 'bulky mass'],
+  splenic: ['splenic involvement', 'spleen involvement'],
 
-  // --- Bone ---
+  // --- Bone / MSK ---
   'coxa valga': ['coxa valga alignment'],
+  osteophyte: ['osteophytes', 'bone spur', 'bone spurs', 'marginal osteophyte'],
+  'joint space narrowing': ['jsn', 'joint space loss', 'narrowed joint space'],
+  subluxation: ['subluxed', 'partial dislocation'],
+  dislocation: ['dislocated', 'complete dislocation'],
+  dysplasia: ['dysplastic'],
+  kyphosis: ['kyphotic', 'thoracic kyphosis', 'increased kyphosis'],
+  lordosis: ['lordotic', 'lumbar lordosis'],
+  scoliosis: ['scoliotic', 'curvature'],
+  dextroscoliosis: ['dextro', 'rightward curvature', 'dextro-convex'],
+  levoscoliosis: ['levo', 'leftward curvature', 'levo-convex'],
+  valgus: ['valgus alignment', 'valgus deformity'],
+  varus: ['varus alignment', 'varus deformity'],
+
+  // --- Salter-Harris ---
+  separation: ['physeal separation', 'physis separation'],
+
+  // --- Pectus ---
+  'pectus excavatum': ['funnel chest', 'pectus'],
+
+  // --- Prostate (PI-RADS) ---
+  'peripheral zone': ['pz'],
+  'transition zone': ['tz'],
+  'central zone': ['cz'],
+  'anterior fibromuscular stroma': ['afs', 'anterior fibromuscular'],
+  'extraprostatic extension': ['epe', 'extracapsular extension', 'ece'],
+  'diffusion restriction': ['restricted diffusion', 'diffusion-weighted', 'dwi', 'low adc'],
+
+  // --- LI-RADS ---
+  'threshold growth': ['interval growth', 'new threshold growth'],
+  capsule: ['capsule appearance', 'enhancing capsule', 'tumor capsule'],
+
+  // --- NI-RADS ---
+  recurrence: ['recurrent', 'recurrent tumor', 'tumor recurrence'],
+
+  // --- Head & neck / Neuro ---
+  'caudate': ['caudate head', 'caudate nucleus'],
+  'lentiform': ['lentiform nucleus', 'putamen', 'globus pallidus'],
+  'insular': ['insular ribbon', 'insular cortex', 'insula'],
+  'internal capsule': ['posterior limb internal capsule'],
+
+  // --- IDRF / Neuroblastoma ---
+  encasement: ['encased', 'encasing', 'vessel encasement'],
+  infiltration: ['infiltrating', 'infiltrative'],
+
+  // --- Fetal ---
+  'biparietal diameter': ['bpd'],
+  'cisterna magna': ['cm depth', 'posterior fossa fluid'],
+  'cerebellar': ['cerebellar diameter', 'tcd', 'cerebellar transverse diameter'],
+  'corpus callosum': ['cc length', 'callosal'],
+
+  // --- Calcium scoring ---
+  calcium: ['calcification', 'coronary calcium', 'cac'],
+
+  // --- Nodule multiplicity ---
+  single: ['solitary', 'single nodule'],
+  multiple: ['multifocal', 'multiple nodules', 'numerous'],
+
+  // --- Ascites / fluid ---
+  ascites: ['free fluid', 'peritoneal fluid', 'abdominal fluid'],
+
+  // --- AAST specific ---
+  'shattered': ['shattered kidney', 'shattered spleen', 'complete fragmentation'],
 };
 
 /**

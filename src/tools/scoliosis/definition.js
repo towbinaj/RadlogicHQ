@@ -71,5 +71,16 @@ export const scoliosisDefinition = {
     { id: 'not-visualized', label: 'Not visualized' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    cobbAngle: {
+      pattern: /(\d+(?:\.\d+)?)\s*(?:degree|°|deg)/i,
+      group: 1,
+      transform: (m) => parseFloat(m[1]),
+    },
+    risserGrade: {
+      pattern: /risser\s*(\d)/i,
+      group: 1,
+      transform: (m) => parseInt(m[1], 10),
+    },
+  },
 };

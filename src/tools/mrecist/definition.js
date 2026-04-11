@@ -25,5 +25,19 @@ export const mrecistDefinition = {
     { id: 'yes', label: 'Yes' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    nonTarget: {
+      options: {
+        'absent': ['non-target absent', 'nontarget absent', 'non-target cr', 'no viable tumor', 'no arterial enhancement'],
+        'present': ['non-target present', 'nontarget present', 'residual enhancement', 'viable tumor'],
+        'progression': ['non-target progression', 'nontarget progression', 'unequivocal progression', 'new enhancing lesion'],
+      },
+    },
+    newLesion: {
+      options: {
+        'no': ['no new lesion', 'no new lesions', 'no new enhancing lesion'],
+        'yes': ['new lesion', 'new lesions', 'new enhancing lesion', 'new hcc'],
+      },
+    },
+  },
 };

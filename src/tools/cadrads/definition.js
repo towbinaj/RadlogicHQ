@@ -32,5 +32,34 @@ export const cadradsDefinition = {
     { id: 'P4', label: 'P4 — Extensive' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    category: {
+      options: {
+        '0': ['no plaque', 'no stenosis', 'cad-rads 0', 'cadrads 0', 'normal coronary'],
+        '1': ['minimal stenosis', 'cad-rads 1', 'cadrads 1', '1-24%'],
+        '2': ['mild stenosis', 'cad-rads 2', 'cadrads 2', '25-49%'],
+        '3': ['moderate stenosis', 'cad-rads 3', 'cadrads 3', '50-69%'],
+        '4A': ['severe stenosis', 'cad-rads 4a', 'cadrads 4a', '70-99%'],
+        '4B': ['three-vessel', '3-vessel', 'left main', 'cad-rads 4b', 'cadrads 4b'],
+        '5': ['total occlusion', 'complete occlusion', 'cad-rads 5', 'cadrads 5', '100% occlusion'],
+        'N': ['non-diagnostic', 'non diagnostic', 'cad-rads n'],
+      },
+    },
+    modifier: {
+      multi: true,
+      options: {
+        'S': ['stent', 'stented'],
+        'G': ['graft', 'bypass graft', 'cabg'],
+        'V': ['vulnerable plaque', 'high-risk plaque', 'positive remodeling', 'low attenuation plaque', 'napkin-ring'],
+      },
+    },
+    plaqueBurden: {
+      options: {
+        'P1': ['mild plaque', 'p1 plaque', 'minimal plaque burden'],
+        'P2': ['moderate plaque', 'p2 plaque'],
+        'P3': ['severe plaque', 'p3 plaque'],
+        'P4': ['extensive plaque', 'p4 plaque', 'diffuse plaque'],
+      },
+    },
+  },
 };

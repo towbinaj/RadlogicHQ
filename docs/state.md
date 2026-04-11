@@ -74,7 +74,7 @@
 
 ### Testing
 - Vitest unit tests co-located with source (`*.test.js`)
-- Tests for: engine.js, parser.js, tirads, nascet, bosniak, reimers, aast-liver calculators (76 tests)
+- Tests for: engine.js, parser.js, tirads, nascet, bosniak, reimers, aast-liver calculators (93 tests)
 - `npm run test:run` for CI, `npm run test` for watch mode
 
 ### Build
@@ -87,10 +87,11 @@
 
 ### Parser (paste-to-autofill)
 - `buildParseRules(definition)` auto-generates rules from definition labels (sections, inputs, categories, grades, scores)
-- Synonym dictionary in `parser.js` expands labels with common radiology variants (hypo-echoic, right-sided, etc.)
+- Synonym dictionary in `parser.js` expands labels with common radiology variants (~100 entries: echogenicity, laterality, severity, grades, stages, types, morphology, enhancement, vascular, MSK, fetal, PET/CT, etc.)
 - Hand-written `parseRules` in definition.js override auto-generated on conflict
-- 10 tools have additional hand-written parseRules: TI-RADS, Bosniak, LI-RADS, Lung-RADS, Fleischner, NASCET, Balthazar, SAH Grade, Kellgren-Lawrence, Salter-Harris, Hydronephrosis, GMH, Agatston, Leg Length
+- 30 tools have hand-written parseRules for disease-specific terminology (RADS category keywords, AAST findings, response criteria, annotation factors, anatomic regions, etc.)
 - All tools get baseline parsing automatically from their definition structure
+- `npm run check-synonyms {toolId}` reports synonym coverage and hand-written rule counts per tool
 
 ### Tools (42 active)
 

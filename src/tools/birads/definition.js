@@ -32,5 +32,19 @@ export const biradsDefinition = {
     { id: 'bilateral', label: 'Bilateral' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    category: {
+      options: {
+        '0': ['incomplete', 'birads 0', 'bi-rads 0', 'additional imaging needed'],
+        '1': ['negative', 'birads 1', 'bi-rads 1', 'no finding'],
+        '2': ['benign', 'birads 2', 'bi-rads 2', 'benign finding'],
+        '3': ['probably benign', 'birads 3', 'bi-rads 3', 'short-interval follow-up', 'short interval follow-up'],
+        '4a': ['low suspicion', 'birads 4a', 'bi-rads 4a'],
+        '4b': ['moderate suspicion', 'birads 4b', 'bi-rads 4b'],
+        '4c': ['high suspicion', 'birads 4c', 'bi-rads 4c'],
+        '5': ['highly suggestive', 'birads 5', 'bi-rads 5'],
+        '6': ['known malignancy', 'biopsy-proven', 'birads 6', 'bi-rads 6'],
+      },
+    },
+  },
 };

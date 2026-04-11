@@ -222,6 +222,8 @@ parseRules: {
 - Section label variants (plural/singular) auto-stripped from remainder
 - Re-parse replaces form state (not appends)
 - To add new synonyms, update the `SYNONYMS` dictionary in `src/core/parser.js`
+- Run `npm run check-synonyms {toolId}` to see which labels have synonym coverage and which don't
+- Run `npm run check-synonyms -- --all` to check all tools at once
 
 ---
 
@@ -507,6 +509,7 @@ Landing page renders automatically from the registry — no HTML edits needed.
 - [ ] Unit tests written for `calculator.js` (co-located as `calculator.test.js`)
 - [ ] `trackEvent('tool:{toolId}:opens')` in `init()` function
 - [ ] Paste & parse works via auto-generated rules (add manual overrides if specialized terminology needed)
+- [ ] Synonym coverage checked (`npm run check-synonyms {toolId}`) — add missing synonyms to `SYNONYMS` in `parser.js` if needed
 - [ ] CDE set ID and element IDs correct per radelement.org
 - [ ] Tool registered in `tools-registry.js` with body parts, modalities, specialties
 

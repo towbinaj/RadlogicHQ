@@ -174,5 +174,39 @@ export const idrfDefinition = {
     },
   ],
 
-  parseRules: {},
+  parseRules: {
+    location: {
+      options: {
+        'cervical': ['neck mass', 'cervical mass', 'cervical neuroblastoma'],
+        'thoracic': ['posterior mediastinal', 'posterior mediastinum', 'paravertebral thoracic', 'thoracic mass'],
+        'abdominal': ['retroperitoneal', 'abdominal mass', 'retroperitoneal mass'],
+        'pelvic': ['pelvic mass', 'presacral', 'pelvic neuroblastoma'],
+        'adrenal': ['adrenal mass', 'adrenal neuroblastoma', 'suprarenal'],
+      },
+    },
+    selectedFactors: {
+      multi: true,
+      options: {
+        crossCompartment: ['crosses compartment', 'two body compartments', 'multi-compartment', 'neck-chest', 'chest-abdomen'],
+        carotidEncasement: ['carotid encasement', 'carotid artery encased', 'vertebral artery encasement', 'ijv encasement'],
+        skullBase: ['skull base extension', 'skull base involvement'],
+        trachealCompressionNeck: ['tracheal compression', 'trachea compressed'],
+        brachialPlexus: ['brachial plexus', 'plexus encasement'],
+        subclavian: ['subclavian', 'subclavian vessel'],
+        aortaThoracic: ['aorta encasement', 'aortic encasement', 'thoracic aorta'],
+        airwayThoracic: ['bronchial compression', 'bronchus compressed', 'airway compression'],
+        costovertebral: ['costovertebral', 'costovertebral junction'],
+        vcAortaAbdominal: ['abdominal aorta encased', 'vena cava encased', 'ivc encasement'],
+        portaHepatis: ['porta hepatis', 'portal infiltration'],
+        hepatoduodenal: ['hepatoduodenal', 'hepatoduodenal ligament'],
+        smaBranch: ['sma branch', 'mesenteric root', 'superior mesenteric'],
+        celiacAxis: ['celiac axis', 'celiac trunk', 'sma origin'],
+        renalPedicle: ['renal pedicle', 'renal vessel invasion', 'renal artery encased'],
+        iliac: ['iliac vessel', 'iliac artery', 'iliac vein'],
+        sciaticNotch: ['sciatic notch', 'sciatic foramen'],
+        organInfiltration: ['organ infiltration', 'pericardial infiltration', 'diaphragm infiltration', 'kidney infiltration', 'liver infiltration'],
+        spinalCanal: ['spinal canal', 'intraspinal', 'epidural extension', 'spinal cord compression'],
+      },
+    },
+  },
 };

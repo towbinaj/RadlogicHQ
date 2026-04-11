@@ -23,5 +23,23 @@ export const niradsDefinition = {
     { id: '4', label: '4 — Definite recurrence', management: 'Treatment' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    primaryCategory: {
+      options: {
+        '1': ['no recurrence', 'no evidence of recurrence', 'nirads 1', 'ni-rads 1', 'expected post-treatment'],
+        '2a': ['low suspicion superficial', 'nirads 2a', 'ni-rads 2a', 'superficial mucosal'],
+        '2b': ['low suspicion deep', 'nirads 2b', 'ni-rads 2b', 'submucosal'],
+        '3': ['high suspicion', 'nirads 3', 'ni-rads 3', 'new or enlarging mass'],
+        '4': ['definite recurrence', 'nirads 4', 'ni-rads 4', 'proven recurrence'],
+      },
+    },
+    neckCategory: {
+      options: {
+        '1': ['no suspicious nodes', 'no suspicious lymph', 'benign nodes'],
+        '2': ['mildly suspicious node', 'borderline node', 'indeterminate node'],
+        '3': ['suspicious node', 'suspicious lymph', 'pathologic node'],
+        '4': ['definite nodal recurrence', 'proven nodal'],
+      },
+    },
+  },
 };

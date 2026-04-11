@@ -23,5 +23,19 @@ export const recistDefinition = {
     { id: 'yes', label: 'Yes', tooltip: 'Any new lesion = progressive disease' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    nonTarget: {
+      options: {
+        'absent': ['non-target absent', 'nontarget absent', 'non-target cr', 'complete response non-target'],
+        'present': ['non-target present', 'nontarget present', 'residual non-target'],
+        'progression': ['non-target progression', 'nontarget progression', 'unequivocal progression'],
+      },
+    },
+    newLesion: {
+      options: {
+        'no': ['no new lesion', 'no new lesions', 'no new metastasis', 'no new metastases'],
+        'yes': ['new lesion', 'new lesions', 'new metastasis', 'new metastases'],
+      },
+    },
+  },
 };

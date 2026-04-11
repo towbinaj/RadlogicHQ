@@ -61,5 +61,27 @@ export const curieDefinition = {
     { id: '6', label: '6', tooltip: 'Diffuse involvement of entire bone' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    // Curie segments use specific anatomic keywords
+    craniofacial: {
+      pattern: /(?:skull|craniofacial|calvari)\w*\s*(?:score)?\s*[:=]?\s*(\d)/i,
+      group: 1,
+      transform: (m) => m[1],
+    },
+    cervThoSpine: {
+      pattern: /(?:cervi?c(?:al|o)?|thoracic)\s*(?:(?:&|and)\s*thoracic\s*)?spine\s*(?:score)?\s*[:=]?\s*(\d)/i,
+      group: 1,
+      transform: (m) => m[1],
+    },
+    pelvis: {
+      pattern: /pelvi(?:s|c)\s*(?:score)?\s*[:=]?\s*(\d)/i,
+      group: 1,
+      transform: (m) => m[1],
+    },
+    softTissue: {
+      pattern: /soft\s*tissue\s*(?:score)?\s*[:=]?\s*(\d)/i,
+      group: 1,
+      transform: (m) => m[1],
+    },
+  },
 };

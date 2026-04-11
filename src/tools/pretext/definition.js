@@ -92,5 +92,48 @@ export const pretextDefinition = {
     },
   ],
 
-  parseRules: {},
+  parseRules: {
+    V: {
+      options: {
+        'yes': ['hepatic vein involvement', 'ivc involvement', 'ivc thrombus', 'vein thrombus', 'v-positive', 'v positive'],
+        'no': ['v-negative', 'v negative', 'veins patent', 'ivc patent'],
+      },
+    },
+    P: {
+      options: {
+        'yes': ['portal vein involvement', 'portal thrombus', 'portal vein thrombus', 'p-positive', 'p positive'],
+        'no': ['p-negative', 'p negative', 'portal vein patent'],
+      },
+    },
+    E: {
+      options: {
+        'yes': ['extrahepatic', 'extrahepatic extension', 'peritoneal nodules', 'e-positive', 'e positive'],
+        'no': ['e-negative', 'e negative', 'no extrahepatic'],
+      },
+    },
+    F: {
+      options: {
+        'yes': ['multifocal', 'multiple tumors', 'f-positive', 'f positive'],
+        'no': ['f-negative', 'f negative', 'unifocal', 'single tumor'],
+      },
+    },
+    R: {
+      options: {
+        'yes': ['rupture', 'tumor rupture', 'r-positive', 'r positive'],
+        'no': ['r-negative', 'r negative', 'no rupture', 'intact capsule'],
+      },
+    },
+    N: {
+      options: {
+        'yes': ['lymphadenopathy', 'nodal metastasis', 'nodal metastases', 'suspicious nodes', 'n-positive', 'n positive'],
+        'no': ['n-negative', 'n negative', 'no lymphadenopathy', 'no suspicious nodes'],
+      },
+    },
+    M: {
+      options: {
+        'yes': ['distant metastasis', 'distant metastases', 'lung metastasis', 'lung metastases', 'pulmonary nodules', 'm-positive', 'm positive'],
+        'no': ['m-negative', 'm negative', 'no metastasis', 'no metastases', 'no pulmonary nodules'],
+      },
+    },
+  },
 };

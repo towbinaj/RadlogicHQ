@@ -6,6 +6,8 @@ npm run build     # Production build to dist/
 npm run preview   # Preview production build
 npm run test      # Vitest watch mode
 npm run test:run  # Vitest single run
+npm run check-synonyms <toolId>  # Check parser synonym coverage for a tool
+npm run check-synonyms -- --all  # Check all tools
 
 ## Architecture
 - Vanilla ES6+ modules, no framework — multi-page app (MPA) via Vite
@@ -180,6 +182,7 @@ See `docs/newtool.md` for the complete checklist.
 - `vite.config.js` auto-discovers HTML entries — no manual updates needed when adding tools
 - Firestore sync failures show a toast via `toast.js` — analytics failures remain silent
 - New tools must include `trackEvent('tool:{toolId}:opens')` in their `init()` function
-- Parse rules are auto-generated from definition labels + synonym dictionary in `parser.js` — most tools need no manual `parseRules`
-- Hand-written `parseRules` override auto-generated on conflict — use for specialized terminology only
-- To add new synonyms, update the `SYNONYMS` dictionary in `src/core/parser.js`
+- Parse rules are auto-generated from definition labels + synonym dictionary (~100 entries) in `parser.js` — most tools need no manual `parseRules`
+- Hand-written `parseRules` override auto-generated on conflict — use for disease-specific terminology (30 tools have these)
+- Two synonym layers: cross-tool (SYNONYMS dict in `parser.js`) and tool-specific (`parseRules` in each `definition.js`)
+- Run `npm run check-synonyms {toolId}` to check coverage; add missing synonyms to `SYNONYMS` or `parseRules` as needed

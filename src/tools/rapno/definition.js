@@ -77,5 +77,32 @@ export const rapnoDefinition = {
     { id: 'increased', label: 'Increased' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    nonTarget: {
+      options: {
+        'absent': ['non-target absent', 'non-target cr', 'nontarget absent', 'nontarget cr', 'no non-target', 'complete response non-target'],
+        'present': ['non-target present', 'nontarget present', 'residual non-target'],
+        'progression': ['non-target progression', 'nontarget progression', 'unequivocal non-target progression'],
+      },
+    },
+    newLesion: {
+      options: {
+        'no': ['no new lesion', 'no new lesions', 'no new tumor', 'no new tumors'],
+        'yes': ['new lesion', 'new lesions', 'new tumor', 'new enhancement', 'new nodule'],
+      },
+    },
+    clinicalStatus: {
+      options: {
+        'stable': ['clinically stable', 'neurologically stable'],
+        'improved': ['clinically improved', 'neurologically improved'],
+        'worsened': ['clinically worsened', 'neurologically worsened', 'clinical decline'],
+      },
+    },
+    steroidDose: {
+      options: {
+        'stable-decreased': ['stable steroids', 'decreased steroids', 'reduced steroids', 'steroid taper', 'off steroids'],
+        'increased': ['increased steroids', 'steroid increase', 'escalated steroids'],
+      },
+    },
+  },
 };

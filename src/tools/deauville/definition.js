@@ -69,5 +69,22 @@ export const deauvilleDefinition = {
     { id: 'surveillance', label: 'Surveillance', tooltip: 'Post-treatment follow-up PET' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    score: {
+      options: {
+        '1': ['no uptake', 'deauville 1', 'no fdg uptake', 'no metabolic activity'],
+        '2': ['uptake ≤ mediastinum', 'uptake less than mediastinum', 'below mediastinal', 'deauville 2'],
+        '3': ['uptake > mediastinum', 'above mediastinal', 'below liver', 'deauville 3'],
+        '4': ['uptake moderately above liver', 'moderately greater than liver', 'moderately > liver', 'deauville 4'],
+        '5': ['uptake markedly above liver', 'markedly greater than liver', 'markedly > liver', 'new lesions', 'deauville 5'],
+      },
+    },
+    timing: {
+      options: {
+        'interim': ['interim', 'mid-treatment', 'after 2 cycles', 'interim pet'],
+        'eot': ['end of treatment', 'end-of-treatment', 'post-treatment', 'completion of therapy'],
+        'surveillance': ['surveillance', 'follow-up pet', 'routine pet'],
+      },
+    },
+  },
 };
