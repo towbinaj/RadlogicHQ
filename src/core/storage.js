@@ -7,7 +7,7 @@
  */
 import { isLoggedIn, getUser, onAuthChange } from './auth.js';
 import { showToast } from './toast.js';
-import { saveTemplate, loadTemplate, deleteTemplate, setPreference, getPreferences, incrementCounter } from './user-data.js';
+import { saveTemplate, loadTemplate, deleteTemplate, getAllTemplates, setPreference, getPreferences, incrementCounter } from './user-data.js';
 
 const PREFIX = 'radtools:';
 
@@ -83,16 +83,19 @@ onAuthChange(async (user) => {
   if (!user) return;
 
   try {
-    // Pull preferences from Firestore and merge into localStorage
+    // Pull preferences from Firestore — cloud is source of truth
     const prefs = await getPreferences();
     if (prefs && typeof prefs === 'object') {
       for (const [key, value] of Object.entries(prefs)) {
-        const localVal = localStorage.getItem(PREFIX + key);
-        if (localVal == null) {
-          // Only fill in if localStorage doesn't already have it
-          localStorage.setItem(PREFIX + key, typeof value === 'string' ? value : JSON.stringify(value));
-        }
+        localStorage.setItem(PREFIX + key, typeof value === 'string' ? value : JSON.stringify(value));
       }
+    }
+
+    // Pull custom templates from Firestore
+    const templates = await getAllTemplates();
+    for (const { toolId, templateId, config } of templates) {
+      const key = `${PREFIX}blockConfig:${toolId}:${templateId}`;
+      localStorage.setItem(key, JSON.stringify(config));
     }
   } catch {
     showToast('Could not sync preferences from cloud');

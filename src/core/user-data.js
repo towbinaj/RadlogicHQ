@@ -104,6 +104,22 @@ export async function loadTemplate(toolId, templateId) {
 }
 
 /**
+ * Get all custom templates for the current user.
+ * @returns {Promise<Array<{toolId, templateId, config}>>}
+ */
+export async function getAllTemplates() {
+  if (!isLoggedIn()) return [];
+
+  const uid = getUser().uid;
+  const q = query(collection(db, 'user_templates'), where('userId', '==', uid));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return { toolId: data.toolId, templateId: data.templateId, config: data.config };
+  });
+}
+
+/**
  * Delete a custom template (reset to default).
  */
 export async function deleteTemplate(toolId, templateId) {
