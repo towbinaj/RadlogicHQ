@@ -261,6 +261,7 @@ export class ReportOutput extends HTMLElement {
   _render() {
     if (!this._renderFn) {
       this._els.text.textContent = 'Select options above to generate report.';
+      this._els.text.className = 'report-output__text report-output__text--empty';
       return;
     }
 
