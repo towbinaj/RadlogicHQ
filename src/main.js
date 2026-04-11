@@ -5,7 +5,7 @@ import { toolsRegistry, getModalityLabel, getActiveLabels, MODALITIES } from './
 import { loadSharedTemplate } from './core/user-data.js';
 import { isLoggedIn } from './core/auth.js';
 import { copyToClipboard } from './core/clipboard.js';
-import { getStored, setStored } from './core/storage.js';
+import { getStored, setStored, getToolDisplayName, setToolDisplayName } from './core/storage.js';
 
 // Landing page styles
 const style = document.createElement('style');
@@ -248,6 +248,37 @@ style.textContent = `
 
   .tool-card__fav:hover { color: var(--warning); }
   .tool-card__fav--active { color: var(--warning); opacity: 1; }
+  .tool-card__rename {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 4px;
+    line-height: 1;
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast);
+  }
+  .tool-card__rename:hover { color: var(--accent); }
+  .tool-card__rename svg { display: block; }
+
+  .tool-card__title-input {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    background: var(--bg-input);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 0 var(--space-xs);
+    width: 100%;
+    outline: none;
+  }
+
+  .tool-card__title--custom {
+    color: var(--accent);
+  }
+
   .tool-card__hide:hover { color: var(--text-secondary); }
   .tool-card__hide svg { display: block; }
 
@@ -527,8 +558,11 @@ if (grid) {
     }
 
     const isFav = favorites.includes(tool.id);
+    const displayName = getToolDisplayName(tool.id, tool.name);
+    const isCustomName = displayName !== tool.name;
     const actionsHtml = isActive ? `
       <div class="tool-card__actions">
+        <button class="tool-card__rename" data-tool-id="${tool.id}" title="Rename tool"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
         <button class="tool-card__fav ${isFav ? 'tool-card__fav--active' : ''}" data-tool-id="${tool.id}" title="Favorite">${isFav ? '\u2605' : '\u2606'}</button>
         <button class="tool-card__hide" data-tool-id="${tool.id}" title="Hide tool"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
       </div>
@@ -537,7 +571,7 @@ if (grid) {
     card.innerHTML = `
       <div class="tool-card__icon">${tool.icon}</div>
       <div class="tool-card__body">
-        <h2 class="tool-card__title">${tool.name}</h2>
+        <h2 class="tool-card__title ${isCustomName ? 'tool-card__title--custom' : ''}">${displayName}</h2>
         <p class="tool-card__desc">${tool.description}</p>
         <div class="tool-card__tags">${labels.join('')}</div>
       </div>
@@ -564,6 +598,45 @@ if (grid) {
         e.preventDefault();
         e.stopPropagation();
         toggleHidden(tool.id);
+      });
+    }
+
+    // Wire rename button
+    const renameBtn = card.querySelector('.tool-card__rename');
+    if (renameBtn) {
+      renameBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const titleEl = card.querySelector('.tool-card__title');
+        if (titleEl.tagName === 'INPUT') return; // already editing
+
+        const currentName = getToolDisplayName(tool.id, tool.name);
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'tool-card__title-input';
+        input.value = currentName;
+        input.maxLength = 40;
+        input.placeholder = tool.name;
+
+        const commit = () => {
+          const newName = input.value.trim();
+          const isCustom = newName && newName !== tool.name;
+          setToolDisplayName(tool.id, isCustom ? newName : '');
+          const h2 = document.createElement('h2');
+          h2.className = `tool-card__title ${isCustom ? 'tool-card__title--custom' : ''}`;
+          h2.textContent = isCustom ? newName : tool.name;
+          input.replaceWith(h2);
+        };
+
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+          if (ev.key === 'Escape') { input.value = tool.name; input.blur(); }
+        });
+
+        titleEl.replaceWith(input);
+        input.focus();
+        input.select();
       });
     }
 
@@ -758,9 +831,10 @@ if (grid) {
         visible = favorites.includes(tool.id);
       }
 
-      // Text search — match name or description
+      // Text search — match name, custom name, or description
       if (visible && query) {
-        const haystack = (tool.name + ' ' + tool.description).toLowerCase();
+        const customName = getToolDisplayName(tool.id, '');
+        const haystack = (tool.name + ' ' + (customName || '') + ' ' + tool.description).toLowerCase();
         visible = haystack.includes(query);
       }
 

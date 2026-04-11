@@ -10,6 +10,7 @@ import { calculateOrads } from './calculator.js';
 import { oradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 let masses = [createMassState(1)];
 let activeMassIndex = 0;

@@ -10,6 +10,7 @@ import { calculateRecist } from './calculator.js';
 import { recistTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 const MAX_TARGETS = 5;
 

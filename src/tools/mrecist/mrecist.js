@@ -10,6 +10,7 @@ import { calculateMrecist } from './calculator.js';
 import { mrecistTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
 import { parseFindings } from '../../core/parser.js';
+import '../../core/tool-name.js';
 
 const MAX_TARGETS = 5;
 

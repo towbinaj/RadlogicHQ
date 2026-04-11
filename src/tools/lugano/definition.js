@@ -28,5 +28,30 @@ export const luganoDefinition = {
     { id: 'nhl', label: 'Non-Hodgkin' },
   ],
 
-  parseRules: {},
+  parseRules: {
+    stage: {
+      options: {
+        'IV': ['stage iv', 'stage 4', 'lugano iv', 'lugano 4', 'disseminated', 'diffuse extranodal'],
+        'III': ['stage iii', 'stage 3', 'lugano iii', 'lugano 3', 'both sides of diaphragm'],
+        'II': ['stage ii', 'stage 2', 'lugano ii', 'lugano 2'],
+        'I': ['stage i', 'stage 1', 'lugano i', 'lugano 1', 'single lymph node region'],
+      },
+    },
+    suffixes: {
+      multi: true,
+      options: {
+        'A': ['no b symptoms', 'a symptoms', 'asymptomatic'],
+        'B': ['b symptoms', 'night sweats', 'weight loss', 'fever'],
+        'E': ['extranodal extension', 'extranodal', 'contiguous extranodal'],
+        'S': ['splenic involvement', 'spleen involved', 'splenic'],
+        'X': ['bulky disease', 'bulky'],
+      },
+    },
+    lymphomaType: {
+      options: {
+        'hodgkin': ['hodgkin', 'hodgkin lymphoma', 'hl', 'classical hodgkin'],
+        'nhl': ['non-hodgkin', 'nhl', 'diffuse large b-cell', 'dlbcl', 'follicular lymphoma', 'mantle cell', 'burkitt'],
+      },
+    },
+  },
 };

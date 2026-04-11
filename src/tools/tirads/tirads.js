@@ -12,6 +12,8 @@ import { calculateTirads } from './calculator.js';
 import { tiradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { trackEvent } from '../../core/storage.js';
+import { initKeyboardShortcuts } from '../../core/keyboard-shortcuts.js';
+import '../../core/tool-name.js';
 
 // Each nodule has its own form state
 let nodules = [createNoduleState(1)];
@@ -355,6 +357,7 @@ function init() {
 
   renderNoduleTabs();
   renderActiveNodule();
+  initKeyboardShortcuts({ container: inputContainer });
 }
 
 /**

@@ -10,6 +10,7 @@ import { calculatePectus } from './calculator.js';
 import { pectusTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
 import { parseFindings } from '../../core/parser.js';
+import '../../core/tool-name.js';
 
 function init() {
   trackEvent('tool:pectus:opens');

@@ -10,6 +10,7 @@ import { calculateHipDysplasia } from './calculator.js';
 import { hipDysplasiaTemplates } from './templates.js';
 import { getStored, setStored , trackEvent } from '../../core/storage.js';
 import { parseFindings } from '../../core/parser.js';
+import '../../core/tool-name.js';
 
 let mode = getStored('mode:hip-dysplasia', 'graf');
 
@@ -69,7 +70,7 @@ function init() {
     const grades = mode === 'graf' ? hipDysplasiaDefinition.grafTypes : hipDysplasiaDefinition.aaosCategories;
     const gradeCard = document.createElement('div');
     gradeCard.className = 'step-card card';
-    gradeCard.innerHTML = `<div class="step-card__question">${mode === 'graf' ? 'Graf Type' : 'AAOS Classification'}</div><div style="display:flex; flex-direction:column; gap:var(--space-xs);">${grades.map((g) => `<button class="benign-choice ${formState.grade === g.id ? 'benign-choice--active' : ''}" data-grade="${g.id}" style="text-align:left; justify-content:flex-start;">${g.label}<br><span style="font-size:var(--text-xs); color:var(--text-muted);">${g.description}</span></button>`).join('')}</div>`;
+    gradeCard.innerHTML = `<div class="step-card__question">${mode === 'graf' ? 'Graf Type' : 'AAOS Classification'}</div><div class="hd-grade-grid">${grades.map((g) => `<button class="benign-choice hd-grade-btn ${formState.grade === g.id ? 'benign-choice--active' : ''}" data-grade="${g.id}">${g.image ? `<img class="hd-option-img" src="${g.image}" alt="${g.label}">` : ''}<span class="hd-grade-label">${g.label}</span><span style="font-size:var(--text-xs); color:var(--text-muted);">${g.description}</span></button>`).join('')}</div>`;
     gradeCard.querySelectorAll('.benign-choice').forEach((btn) => {
       btn.addEventListener('click', () => { formState.grade = btn.dataset.grade; gradeCard.querySelectorAll('.benign-choice').forEach((b) => b.classList.toggle('benign-choice--active', b.dataset.grade === formState.grade)); update(); });
     });

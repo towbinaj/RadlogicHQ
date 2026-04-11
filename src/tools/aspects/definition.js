@@ -12,16 +12,16 @@ export const aspectsDefinition = {
   name: 'ASPECTS',
 
   regions: [
-    { id: 'C', label: 'C — Caudate head' },
-    { id: 'L', label: 'L — Lentiform nucleus' },
-    { id: 'IC', label: 'IC — Internal capsule' },
-    { id: 'I', label: 'I — Insular ribbon' },
-    { id: 'M1', label: 'M1 — Frontal operculum' },
-    { id: 'M2', label: 'M2 — Anterior temporal lobe' },
-    { id: 'M3', label: 'M3 — Posterior temporal lobe' },
-    { id: 'M4', label: 'M4 — Anterior MCA territory (superior to M1)' },
-    { id: 'M5', label: 'M5 — Lateral MCA territory (superior to M2)' },
-    { id: 'M6', label: 'M6 — Posterior MCA territory (superior to M3)' },
+    { id: 'C', label: 'C — Caudate head', image: '/images/aspects/caudate.svg' },
+    { id: 'L', label: 'L — Lentiform nucleus', image: '/images/aspects/lentiform.svg' },
+    { id: 'IC', label: 'IC — Internal capsule', image: '/images/aspects/internal-capsule.svg' },
+    { id: 'I', label: 'I — Insular ribbon', image: '/images/aspects/insular.svg' },
+    { id: 'M1', label: 'M1 — Frontal operculum', image: '/images/aspects/m1.svg' },
+    { id: 'M2', label: 'M2 — Anterior temporal lobe', image: '/images/aspects/m2.svg' },
+    { id: 'M3', label: 'M3 — Posterior temporal lobe', image: '/images/aspects/m3.svg' },
+    { id: 'M4', label: 'M4 — Anterior MCA territory (superior to M1)', image: '/images/aspects/m4.svg' },
+    { id: 'M5', label: 'M5 — Lateral MCA territory (superior to M2)', image: '/images/aspects/m5.svg' },
+    { id: 'M6', label: 'M6 — Posterior MCA territory (superior to M3)', image: '/images/aspects/m6.svg' },
   ],
 
   parseRules: {

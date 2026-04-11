@@ -67,3 +67,12 @@
   font-weight: 500;
   line-height: 1.3;
 }
+
+.deauville-option-img {
+  height: 56px;
+  width: 56px;
+  object-fit: contain;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}

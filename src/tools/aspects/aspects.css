@@ -2,12 +2,38 @@
 
 .aspects-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--space-xs);
 }
 
-@media (max-width: 500px) {
+.aspects-region-btn {
+  flex-direction: column;
+  text-align: center;
+  padding: 0;
+  overflow: hidden;
+}
+
+.aspects-region-btn > span {
+  padding: var(--space-xs);
+  font-size: var(--text-xs);
+}
+
+.aspects-option-img {
+  height: 56px;
+  width: 100%;
+  object-fit: contain;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+@media (max-width: 700px) {
   .aspects-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 400px) {
+  .aspects-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }

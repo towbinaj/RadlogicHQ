@@ -10,6 +10,7 @@ import { calculateAdrenalWashout } from './calculator.js';
 import { adrenalWashoutTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 function init() {
   trackEvent('tool:adrenal-washout:opens');

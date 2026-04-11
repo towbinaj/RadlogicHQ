@@ -10,6 +10,7 @@ import { calculateIdrf } from './calculator.js';
 import { idrfTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 function esc(str) {
   return (str || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');

@@ -10,6 +10,7 @@ import { calculateAgatston } from './calculator.js';
 import { parseFindings } from '../../core/parser.js';
 import { agatstonTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 function init() {
   trackEvent('tool:agatston:opens');

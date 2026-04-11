@@ -10,11 +10,11 @@ export const salterHarrisDefinition = {
   name: 'Salter-Harris',
 
   types: [
-    { id: 'I', label: 'Type I — Separation', anatomy: 'Physis only (slip through growth plate)', prognosis: 'Excellent', management: 'Immobilization' },
-    { id: 'II', label: 'Type II — Above', anatomy: 'Physis + metaphysis (Thurstan Holland fragment)', prognosis: 'Good', management: 'Closed reduction, immobilization' },
-    { id: 'III', label: 'Type III — Lower', anatomy: 'Physis + epiphysis (intra-articular)', prognosis: 'Moderate — growth disturbance risk', management: 'Anatomic reduction (often surgical)' },
-    { id: 'IV', label: 'Type IV — Transverse', anatomy: 'Metaphysis through physis to epiphysis', prognosis: 'Guarded — high physeal fusion risk', management: 'Open reduction, internal fixation' },
-    { id: 'V', label: 'Type V — Ruined/Crush', anatomy: 'Axial compression/crush of physis', prognosis: 'Poor — growth arrest likely', management: 'Close follow-up for growth disturbance' },
+    { id: 'I', label: 'Type I — Separation', anatomy: 'Physis only (slip through growth plate)', prognosis: 'Excellent', management: 'Immobilization', image: '/images/salter-harris/type-i.svg' },
+    { id: 'II', label: 'Type II — Above', anatomy: 'Physis + metaphysis (Thurstan Holland fragment)', prognosis: 'Good', management: 'Closed reduction, immobilization', image: '/images/salter-harris/type-ii.svg' },
+    { id: 'III', label: 'Type III — Lower', anatomy: 'Physis + epiphysis (intra-articular)', prognosis: 'Moderate — growth disturbance risk', management: 'Anatomic reduction (often surgical)', image: '/images/salter-harris/type-iii.svg' },
+    { id: 'IV', label: 'Type IV — Transverse', anatomy: 'Metaphysis through physis to epiphysis', prognosis: 'Guarded — high physeal fusion risk', management: 'Open reduction, internal fixation', image: '/images/salter-harris/type-iv.svg' },
+    { id: 'V', label: 'Type V — Ruined/Crush', anatomy: 'Axial compression/crush of physis', prognosis: 'Poor — growth arrest likely', management: 'Close follow-up for growth disturbance', image: '/images/salter-harris/type-v.svg' },
   ],
 
   parseRules: {

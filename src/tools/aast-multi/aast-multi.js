@@ -11,6 +11,7 @@ import { calculateAast } from '../aast-liver/calculator.js';
 import { buildMultiTraumaTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
 import { parseFindings } from '../../core/parser.js';
+import '../../core/tool-name.js';
 
 const templates = buildMultiTraumaTemplates();
 

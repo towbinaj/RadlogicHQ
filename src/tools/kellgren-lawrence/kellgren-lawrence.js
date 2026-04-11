@@ -10,6 +10,8 @@ import { calculateKL } from './calculator.js';
 import { parseFindings } from '../../core/parser.js';
 import { klTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
+import { initKeyboardShortcuts } from '../../core/keyboard-shortcuts.js';
+import '../../core/tool-name.js';
 
 function init() {
   trackEvent('tool:kellgren-lawrence:opens');
@@ -129,6 +131,7 @@ function init() {
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });
   buildUI();
+  initKeyboardShortcuts({ container: stepContainer });
 }
 
 document.addEventListener('DOMContentLoaded', init);

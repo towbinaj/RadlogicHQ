@@ -22,6 +22,8 @@ export class ReportOutput extends HTMLElement {
     this._renderFn = null;
     this._editing = false;
     this._popover = null;
+    this._undoStack = [];
+    this._redoStack = [];
   }
 
   connectedCallback() {
@@ -34,6 +36,9 @@ export class ReportOutput extends HTMLElement {
             <label class="report-output__impression-toggle" title="Show or hide the impression section">
               <input type="checkbox" checked> Impression
             </label>
+            <button class="btn report-output__export-tmpl-btn" title="Export this template">Export</button>
+            <button class="btn report-output__import-tmpl-btn" title="Import a template">Import</button>
+            <input type="file" class="report-output__import-file" accept=".json" style="display:none">
             <button class="btn report-output__edit-btn">Edit</button>
             <button class="btn report-output__history-btn" style="display:none">History</button>
             <button class="btn btn--primary report-output__copy-btn">Copy</button>
@@ -48,6 +53,8 @@ export class ReportOutput extends HTMLElement {
             <label class="edit-bar__points-toggle">
               <input type="checkbox" checked> Show points
             </label>
+            <button class="btn edit-bar__undo-btn" disabled>Undo</button>
+            <button class="btn edit-bar__redo-btn" disabled>Redo</button>
             <button class="btn edit-bar__save-btn" style="display:none">Save</button>
             <button class="btn edit-bar__share-btn" style="display:none">Share</button>
             <button class="btn edit-bar__reset-btn">Reset</button>
@@ -90,6 +97,9 @@ export class ReportOutput extends HTMLElement {
       text: this.querySelector('.report-output__text'),
       copyBtn: this.querySelector('.report-output__copy-btn'),
       impressionToggle: this.querySelector('.report-output__impression-toggle input'),
+      exportTmplBtn: this.querySelector('.report-output__export-tmpl-btn'),
+      importTmplBtn: this.querySelector('.report-output__import-tmpl-btn'),
+      importTmplFile: this.querySelector('.report-output__import-file'),
       editBtn: this.querySelector('.report-output__edit-btn'),
       historyBtn: this.querySelector('.report-output__history-btn'),
       palette: this.querySelector('.report-output__pill-palette'),
@@ -100,6 +110,8 @@ export class ReportOutput extends HTMLElement {
       shareResult: this.querySelector('.edit-bar__share-result'),
       shareUrl: this.querySelector('.edit-bar__share-url'),
       shareCopy: this.querySelector('.edit-bar__share-copy'),
+      undoBtn: this.querySelector('.edit-bar__undo-btn'),
+      redoBtn: this.querySelector('.edit-bar__redo-btn'),
       resetBtn: this.querySelector('.edit-bar__reset-btn'),
       doneBtn: this.querySelector('.edit-bar__done-btn'),
       historyPanel: this.querySelector('.report-output__history-panel'),
@@ -153,7 +165,29 @@ export class ReportOutput extends HTMLElement {
       this._showToast('Link copied!');
     });
 
+    this._els.exportTmplBtn.addEventListener('click', () => this._exportTemplate());
+    this._els.importTmplBtn.addEventListener('click', () => this._els.importTmplFile.click());
+    this._els.importTmplFile.addEventListener('change', () => this._importTemplate());
+
+    this._els.undoBtn.addEventListener('click', () => this._undo());
+    this._els.redoBtn.addEventListener('click', () => this._redo());
+
+    // Keyboard shortcuts for undo/redo
+    this._keyHandler = (e) => {
+      if (!this._editing) return;
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        this._undo();
+      } else if (mod && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        this._redo();
+      }
+    };
+    document.addEventListener('keydown', this._keyHandler);
+
     this._els.pointsToggle.addEventListener('change', () => {
+      this._pushUndo();
       this._getConfig().showPoints = this._els.pointsToggle.checked;
       this._saveBlockConfig();
       this._render();
@@ -304,11 +338,14 @@ export class ReportOutput extends HTMLElement {
 
     // Debounced save on input
     let saveTimer;
+    let undoPushed = false;
     pre.addEventListener('input', () => {
+      if (!undoPushed) { this._pushUndo(); undoPushed = true; }
       clearTimeout(saveTimer);
       saveTimer = setTimeout(() => {
         config.editorContent = serializeDOM(pre);
         this._saveBlockConfig();
+        undoPushed = false;
       }, 500);
     }, { signal });
 
@@ -337,6 +374,7 @@ export class ReportOutput extends HTMLElement {
       const blockId = e.dataTransfer.getData('application/pill-block-id');
       if (!blockId) return;
       e.preventDefault();
+      this._pushUndo();
 
       // Insert pill at drop position
       let range;
@@ -435,6 +473,7 @@ export class ReportOutput extends HTMLElement {
       addFieldBtn.addEventListener('click', () => {
         const name = prompt('Field name (e.g., "Vascularity"):');
         if (!name?.trim()) return;
+        this._pushUndo();
 
         const fieldId = `custom_${name.trim().toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
         const display = `{{${fieldId}}}`;
@@ -509,20 +548,24 @@ export class ReportOutput extends HTMLElement {
     popover.style.top = `${rect.bottom - containerRect.top + 4}px`;
 
     // Alias input handlers
+    let aliasUndoPushed = false;
     popover.querySelectorAll('.pill-popover__alias-input').forEach((input) => {
       input.addEventListener('input', () => {
+        if (!aliasUndoPushed) { this._pushUndo(); aliasUndoPushed = true; }
         if (!config.pillStates[blockId].aliases) config.pillStates[blockId].aliases = {};
         config.pillStates[blockId].aliases[input.dataset.optionId] = input.value;
         this._saveBlockConfig();
         // Update the pill's display text to reflect the alias for the current value
         this._updatePillDisplay(pillEl, blockId, config);
       });
+      input.addEventListener('blur', () => { aliasUndoPushed = false; });
     });
 
     // Add custom option
     const addOptBtn = popover.querySelector('[data-action="add-option"]');
     if (addOptBtn) {
       addOptBtn.addEventListener('click', () => {
+        this._pushUndo();
         if (!config.pillStates[blockId].customOptions) config.pillStates[blockId].customOptions = [];
         const newId = `custom_${Date.now()}`;
         config.pillStates[blockId].customOptions.push({ id: newId, label: 'New option' });
@@ -537,6 +580,7 @@ export class ReportOutput extends HTMLElement {
     // Delete custom option
     popover.querySelectorAll('.pill-popover__delete-opt').forEach((btn) => {
       btn.addEventListener('click', () => {
+        this._pushUndo();
         const customId = btn.dataset.customId;
         const opts = config.pillStates[blockId].customOptions || [];
         config.pillStates[blockId].customOptions = opts.filter((o) => o.id !== customId);
@@ -547,6 +591,7 @@ export class ReportOutput extends HTMLElement {
     });
 
     popover.querySelector('[data-action="toggle"]').addEventListener('click', () => {
+      this._pushUndo();
       config.pillStates[blockId].enabled = isDisabled;
       pillEl.classList.toggle('pill--disabled', !isDisabled);
       this._saveBlockConfig();
@@ -554,6 +599,7 @@ export class ReportOutput extends HTMLElement {
     });
 
     popover.querySelector('[data-action="remove"]').addEventListener('click', () => {
+      this._pushUndo();
       pillEl.remove();
       config.editorContent = serializeDOM(this._els.text);
       this._saveBlockConfig();
@@ -633,6 +679,40 @@ export class ReportOutput extends HTMLElement {
     }
   }
 
+  // ===== Undo / Redo =====
+
+  _pushUndo() {
+    const snapshot = JSON.parse(JSON.stringify(this._blockConfig));
+    this._undoStack.push(snapshot);
+    if (this._undoStack.length > 50) this._undoStack.shift();
+    this._redoStack.length = 0;
+    this._updateUndoButtons();
+  }
+
+  _undo() {
+    if (this._undoStack.length === 0) return;
+    // Save current state to redo stack
+    this._redoStack.push(JSON.parse(JSON.stringify(this._blockConfig)));
+    this._blockConfig = this._undoStack.pop();
+    this._saveBlockConfig();
+    this._updateUndoButtons();
+    this._render();
+  }
+
+  _redo() {
+    if (this._redoStack.length === 0) return;
+    this._undoStack.push(JSON.parse(JSON.stringify(this._blockConfig)));
+    this._blockConfig = this._redoStack.pop();
+    this._saveBlockConfig();
+    this._updateUndoButtons();
+    this._render();
+  }
+
+  _updateUndoButtons() {
+    if (this._els?.undoBtn) this._els.undoBtn.disabled = this._undoStack.length === 0;
+    if (this._els?.redoBtn) this._els.redoBtn.disabled = this._redoStack.length === 0;
+  }
+
   // ===== Edit Mode Toggle =====
 
   _toggleEdit() {
@@ -689,6 +769,9 @@ export class ReportOutput extends HTMLElement {
     const key = `blockConfig:${this._toolId}:${this._activeTemplate}`;
     import('../core/storage.js').then(({ removeStored }) => removeStored(key));
     this._blockConfig = null;
+    this._undoStack.length = 0;
+    this._redoStack.length = 0;
+    this._updateUndoButtons();
     this._loadBlockConfig();
     this._els.pointsToggle.checked = this._getConfig().showPoints;
     this._render();
@@ -767,6 +850,70 @@ export class ReportOutput extends HTMLElement {
   }
 
   // ===== Toast =====
+
+  _exportTemplate() {
+    const config = this._getConfig();
+    if (!config) return;
+    const data = {
+      type: 'radiologichq-template',
+      toolId: this._toolId,
+      templateId: this._activeTemplate,
+      config: JSON.parse(JSON.stringify(config)),
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${this._toolId}-${this._activeTemplate}-template.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this._showToast('Template exported!');
+  }
+
+  _importTemplate() {
+    const file = this._els.importTmplFile.files[0];
+    this._els.importTmplFile.value = '';
+    if (!file) return;
+    file.text().then((text) => {
+      try {
+        const data = JSON.parse(text);
+
+        // Support both single-tool and multi-tool export formats
+        if (data.type === 'radiologichq-templates' && Array.isArray(data.templates)) {
+          // Multi-tool export — only import templates matching this tool
+          const matching = data.templates.filter((t) => t.toolId === this._toolId);
+          if (matching.length === 0) {
+            this._showToast('No templates for this tool');
+            return;
+          }
+          for (const tmpl of matching) {
+            setStored(`blockConfig:${tmpl.toolId}:${tmpl.templateId}`, tmpl.config);
+          }
+          this._loadBlockConfig();
+          this._render();
+          this._showToast(`Imported ${matching.length} template(s)!`);
+          return;
+        }
+
+        // Single-tool export
+        if (!data.config || !data.toolId) {
+          this._showToast('Invalid template file');
+          return;
+        }
+        if (data.toolId !== this._toolId) {
+          if (!confirm(`This template is for ${data.toolId}. Import anyway into ${this._toolId}?`)) return;
+        }
+        const templateId = data.templateId || this._activeTemplate;
+        setStored(`blockConfig:${this._toolId}:${templateId}`, data.config);
+        this._loadBlockConfig();
+        this._render();
+        this._showToast('Template imported!');
+      } catch {
+        this._showToast('Invalid file');
+      }
+    });
+  }
 
   _showToast(msg = 'Copied!') {
     const toast = this._els.toast;

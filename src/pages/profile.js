@@ -113,6 +113,12 @@ function init() {
         </div>
       </div>
 
+      <div class="profile-section card" id="renamed-tools-section" style="${Object.keys(getStored('toolNames', {})).length === 0 ? 'display:none' : ''}">
+        <h3>Renamed Tools</h3>
+        <p style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-sm);">Custom tool names. Click to reset to default.</p>
+        <div id="renamed-tools-list" style="display:flex;flex-wrap:wrap;gap:var(--space-xs);"></div>
+      </div>
+
       <div class="profile-section card" id="hidden-tools-section" style="${(getStored('hiddenTools', [])).length === 0 ? 'display:none' : ''}">
         <h3>Hidden Tools</h3>
         <p style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-sm);">These tools are hidden from your landing page. Click to unhide.</p>
@@ -122,10 +128,13 @@ function init() {
       <div class="profile-section card">
         <h3>Data Management</h3>
         <div class="profile-data-actions">
-          <button class="btn" id="export-data">Export My Data</button>
+          <button class="btn" id="export-data">Export All</button>
+          <button class="btn" id="export-templates">Export Templates</button>
+          <button class="btn" id="import-data">Import</button>
+          <input type="file" id="import-file" accept=".json" style="display:none">
           <button class="btn" id="delete-account" style="color:var(--danger);border-color:var(--danger)">Delete Account</button>
         </div>
-        <p class="profile-data-hint">Export downloads all your data as JSON. Delete permanently removes your account and all associated data.</p>
+        <p class="profile-data-hint">Export All downloads everything as JSON. Export Templates exports only your custom report templates. Import restores data from a previous export.</p>
       </div>
 
       <div class="profile-section" style="text-align:center;padding:var(--space-md)">
@@ -183,6 +192,33 @@ function init() {
     }
     renderHiddenTools();
 
+    // Renamed tools management
+    function renderRenamedTools() {
+      const customNames = getStored('toolNames', {});
+      const entries = Object.entries(customNames);
+      const section = page.querySelector('#renamed-tools-section');
+      const list = page.querySelector('#renamed-tools-list');
+      section.style.display = entries.length === 0 ? 'none' : '';
+      list.innerHTML = '';
+      for (const [toolId, customName] of entries) {
+        const tool = toolsRegistry.find((t) => t.id === toolId);
+        if (!tool) continue;
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.style.fontSize = 'var(--text-xs)';
+        btn.textContent = `${tool.name} \u2192 ${customName} \u00d7`;
+        btn.title = `Reset "${customName}" back to "${tool.name}"`;
+        btn.addEventListener('click', () => {
+          const names = getStored('toolNames', {});
+          delete names[toolId];
+          setStored('toolNames', names);
+          renderRenamedTools();
+        });
+        list.appendChild(btn);
+      }
+    }
+    renderRenamedTools();
+
     // Export data
     page.querySelector('#export-data').addEventListener('click', async () => {
       try {
@@ -197,6 +233,102 @@ function init() {
       } catch (err) {
         alert('Export failed: ' + err.message);
       }
+    });
+
+    // Export templates only
+    page.querySelector('#export-templates').addEventListener('click', () => {
+      const templates = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key?.startsWith('radtools:blockConfig:')) continue;
+        const parts = key.replace('radtools:blockConfig:', '').split(':');
+        if (parts.length !== 2) continue;
+        try {
+          templates.push({
+            toolId: parts[0],
+            templateId: parts[1],
+            config: JSON.parse(localStorage.getItem(key)),
+          });
+        } catch { /* skip malformed */ }
+      }
+      if (templates.length === 0) {
+        alert('No custom templates found.');
+        return;
+      }
+      const data = {
+        type: 'radiologichq-templates',
+        templates,
+        exportedAt: new Date().toISOString(),
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `radiologichq-templates-${user.email.split('@')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Import data
+    const importBtn = page.querySelector('#import-data');
+    const importFile = page.querySelector('#import-file');
+    importBtn.addEventListener('click', () => importFile.click());
+    importFile.addEventListener('change', async () => {
+      const file = importFile.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        // Single-tool template export
+        if (data.type === 'radiologichq-template' && data.config && data.toolId) {
+          const confirmed = confirm(`Import ${data.toolId} template (${data.templateId || 'default'})?`);
+          if (!confirmed) return;
+          setStored(`blockConfig:${data.toolId}:${data.templateId || 'ps360'}`, data.config);
+          alert('Template imported!');
+          window.location.reload();
+          return;
+        }
+
+        // Multi-template or full data export
+        if (!data.preferences && !data.templates) {
+          alert('Invalid export file — no preferences or templates found.');
+          return;
+        }
+
+        const dateStr = data.exportedAt ? new Date(data.exportedAt).toLocaleDateString() : 'unknown date';
+        const isTemplatesOnly = data.type === 'radiologichq-templates';
+        const desc = isTemplatesOnly
+          ? `Import ${data.templates.length} template(s) from ${dateStr}?`
+          : `Import data from ${dateStr}?\n\nThis will merge preferences and templates into your current account.`;
+        if (!confirm(desc)) return;
+
+        let prefCount = 0;
+        // Import preferences (full export only)
+        if (data.preferences && typeof data.preferences === 'object') {
+          for (const [key, value] of Object.entries(data.preferences)) {
+            setStored(key, value);
+            prefCount++;
+          }
+        }
+
+        // Import templates
+        let tmplCount = 0;
+        if (Array.isArray(data.templates)) {
+          for (const tmpl of data.templates) {
+            if (tmpl.toolId && tmpl.templateId && tmpl.config) {
+              setStored(`blockConfig:${tmpl.toolId}:${tmpl.templateId}`, tmpl.config);
+              tmplCount++;
+            }
+          }
+        }
+
+        alert(`Import complete!\n\nPreferences: ${prefCount} keys\nTemplates: ${tmplCount}\n\nReload to see changes.`);
+        window.location.reload();
+      } catch (err) {
+        alert('Import failed: ' + err.message);
+      }
+      importFile.value = '';
     });
 
     // Delete account

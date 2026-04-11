@@ -10,6 +10,7 @@ import { calculateMibg } from './calculator.js';
 import { curieTemplates, siopenTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { getStored, setStored , trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 let mode = getStored('mode:curie', 'curie');
 const curieScores = {};

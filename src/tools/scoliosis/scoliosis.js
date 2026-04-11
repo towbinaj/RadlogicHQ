@@ -9,6 +9,7 @@ import { scoliosisDefinition, VERTEBRAE } from './definition.js';
 import { calculateScoliosis } from './calculator.js';
 import { scoliosisTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 function createCurveState(num) {
   return { id: num, label: `Curve ${num}`, direction: null, region: null, angle: null, upperVertebra: null, lowerVertebra: null, apex: null };
@@ -258,8 +259,11 @@ function init() {
           <label>Risser Stage</label>
           <div class="scol-risser-row">
             ${[0, 1, 2, 3, 4, 5].map((n) => `
-              <button class="benign-choice ${formState.risser === n ? 'benign-choice--active' : ''}"
-                data-risser="${n}">${n}</button>
+              <button class="benign-choice scol-risser-btn ${formState.risser === n ? 'benign-choice--active' : ''}"
+                data-risser="${n}">
+                <img class="scol-risser-img" src="/images/scoliosis/risser-${n}.svg" alt="Risser ${n}">
+                <span>${n}</span>
+              </button>
             `).join('')}
           </div>
         </div>

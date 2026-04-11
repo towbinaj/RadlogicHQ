@@ -10,6 +10,7 @@ import { calculateHydronephrosis } from './calculator.js';
 import { parseFindings } from '../../core/parser.js';
 import { hydronephrosisTemplates } from './templates.js';
 import { getStored, setStored , trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 let mode = getStored('mode:hydronephrosis', 'utd-postnatal');
 

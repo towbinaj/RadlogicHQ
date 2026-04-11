@@ -10,6 +10,8 @@ import { calculateSalterHarris } from './calculator.js';
 import { parseFindings } from '../../core/parser.js';
 import { salterHarrisTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
+import { initKeyboardShortcuts } from '../../core/keyboard-shortcuts.js';
+import '../../core/tool-name.js';
 
 function init() {
   trackEvent('tool:salter-harris:opens');
@@ -46,11 +48,13 @@ function init() {
     typeCard.className = 'step-card card';
     typeCard.innerHTML = `
       <div class="step-card__question">Fracture Type (SALTR)</div>
-      <div style="display:flex; flex-direction:column; gap:var(--space-xs);">
+      <div class="sh-type-grid">
         ${salterHarrisDefinition.types.map((t) => `
-          <button class="benign-choice ${formState.type === t.id ? 'benign-choice--active' : ''}"
-            data-type="${t.id}" style="text-align:left; justify-content:flex-start;">
-            ${t.label}<br><span style="font-size:var(--text-xs); color:var(--text-muted);">${t.anatomy}</span>
+          <button class="benign-choice sh-type-btn ${formState.type === t.id ? 'benign-choice--active' : ''}"
+            data-type="${t.id}">
+            ${t.image ? `<img class="sh-option-img" src="${t.image}" alt="${t.label}">` : ''}
+            <span class="sh-type-label">${t.label}</span>
+            <span style="font-size:var(--text-xs); color:var(--text-muted);">${t.anatomy}</span>
           </button>
         `).join('')}
       </div>
@@ -105,6 +109,7 @@ function init() {
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });
   buildUI();
+  initKeyboardShortcuts({ container: stepContainer });
 }
 
 document.addEventListener('DOMContentLoaded', init);

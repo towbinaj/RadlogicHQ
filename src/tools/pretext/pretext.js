@@ -10,6 +10,7 @@ import { calculatePretext } from './calculator.js';
 import { pretextTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 let sizeUnit = getSizeUnit('pretext');
 
@@ -84,7 +85,10 @@ function init() {
       <div class="pretext-sections">
         ${def.sections.map((s) => `
           <button class="pretext-section-btn ${formState[s.id] === 'yes' ? 'pretext-section-btn--active' : ''}"
-            data-section="${s.id}">${s.label}</button>
+            data-section="${s.id}">
+            ${s.image ? `<img class="pretext-option-img" src="${s.image}" alt="${s.label}">` : ''}
+            <span>${s.label}</span>
+          </button>
         `).join('')}
       </div>
     `;

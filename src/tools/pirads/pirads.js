@@ -10,6 +10,7 @@ import { calculatePirads } from './calculator.js';
 import { piradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 let lesions = [createLesionState(1)];
 let activeLesionIndex = 0;

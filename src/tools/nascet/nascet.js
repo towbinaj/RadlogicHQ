@@ -10,6 +10,7 @@ import { calculateNascet } from './calculator.js';
 import { parseFindings } from '../../core/parser.js';
 import { nascetTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 function init() {
   trackEvent('tool:nascet:opens');

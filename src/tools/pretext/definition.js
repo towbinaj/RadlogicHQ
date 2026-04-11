@@ -17,11 +17,11 @@ export const pretextDefinition = {
 
   // Five liver sections
   sections: [
-    { id: 'caudate', label: 'Caudate (C)', cdeElementId: 'RDE2558' },
-    { id: 'rightPosterior', label: 'Right Posterior (RP)', cdeElementId: 'RDE2550' },
-    { id: 'rightAnterior', label: 'Right Anterior (RA)', cdeElementId: 'RDE2550' },
-    { id: 'leftMedial', label: 'Left Medial (LM)', cdeElementId: 'RDE2550' },
-    { id: 'leftLateral', label: 'Left Lateral (LL)', cdeElementId: 'RDE2550' },
+    { id: 'caudate', label: 'Caudate (C)', cdeElementId: 'RDE2558', image: '/images/pretext/caudate.svg' },
+    { id: 'rightPosterior', label: 'Right Posterior (RP)', cdeElementId: 'RDE2550', image: '/images/pretext/right-posterior.svg' },
+    { id: 'rightAnterior', label: 'Right Anterior (RA)', cdeElementId: 'RDE2550', image: '/images/pretext/right-anterior.svg' },
+    { id: 'leftMedial', label: 'Left Medial (LM)', cdeElementId: 'RDE2550', image: '/images/pretext/left-medial.svg' },
+    { id: 'leftLateral', label: 'Left Lateral (LL)', cdeElementId: 'RDE2550', image: '/images/pretext/left-lateral.svg' },
   ],
 
   // Annotation factors

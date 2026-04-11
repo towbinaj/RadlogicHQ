@@ -13,7 +13,7 @@ const PREFIX = 'radtools:';
 
 // --- Sync localStorage → Firestore on write ---
 
-const PREF_KEYS = ['compact', 'sectionOrder:tirads', 'sizeUnit:lirads', 'sizeUnit:nodule-size', 'defaultTemplate', 'defaultUnit', 'mode:curie', 'mode:leglength', 'mode:hydronephrosis', 'mode:hip-dysplasia', 'favorites', 'hiddenTools', 'toolUsage', 'toolOrder', 'toolSort'];
+const PREF_KEYS = ['compact', 'sectionOrder:tirads', 'sizeUnit:lirads', 'sizeUnit:nodule-size', 'defaultTemplate', 'defaultUnit', 'mode:curie', 'mode:leglength', 'mode:hydronephrosis', 'mode:hip-dysplasia', 'favorites', 'hiddenTools', 'toolUsage', 'toolOrder', 'toolSort', 'toolNames'];
 
 /**
  * Get a value from localStorage (synchronous, instant).
@@ -111,4 +111,25 @@ function isPrefKey(key) {
  */
 export function getSizeUnit(toolId) {
   return getStored(`sizeUnit:${toolId}`) ?? getStored('defaultUnit') ?? 'mm';
+}
+
+/**
+ * Get user's custom display name for a tool, or the default name.
+ */
+export function getToolDisplayName(toolId, defaultName) {
+  const customNames = getStored('toolNames', {});
+  return customNames[toolId] || defaultName;
+}
+
+/**
+ * Set (or clear) a custom display name for a tool.
+ */
+export function setToolDisplayName(toolId, name) {
+  const customNames = getStored('toolNames', {});
+  if (name && name.trim()) {
+    customNames[toolId] = name.trim();
+  } else {
+    delete customNames[toolId];
+  }
+  setStored('toolNames', customNames);
 }

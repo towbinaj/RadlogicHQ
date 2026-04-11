@@ -10,6 +10,7 @@ import { calculateBosniak } from './calculator.js';
 import { bosniakTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 let cysts = [createCystState(1)];
 let activeCystIndex = 0;

@@ -10,6 +10,8 @@ import { calculateVurNm } from './calculator.js';
 import { vurNmTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
 import { parseFindings } from '../../core/parser.js';
+import { initKeyboardShortcuts } from '../../core/keyboard-shortcuts.js';
+import '../../core/tool-name.js';
 
 function init() {
   trackEvent('tool:vur-nm:opens');
@@ -80,6 +82,7 @@ function init() {
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });
   buildUI();
+  initKeyboardShortcuts({ container: stepContainer });
 }
 
 document.addEventListener('DOMContentLoaded', init);

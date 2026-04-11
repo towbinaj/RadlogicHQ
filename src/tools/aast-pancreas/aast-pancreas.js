@@ -10,6 +10,7 @@ import { calculateAast } from '../aast-liver/calculator.js';
 import { buildAastTemplates } from '../aast-liver/templates.js';
 import { trackEvent } from '../../core/storage.js';
 import { parseFindings } from '../../core/parser.js';
+import '../../core/tool-name.js';
 
 const definition = aastPancreasDefinition;
 const templates = buildAastTemplates(definition.organ);

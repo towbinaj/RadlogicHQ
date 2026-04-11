@@ -10,6 +10,7 @@ import { calculateLirads } from './calculator.js';
 import { liradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 let observations = [createObsState(1)];
 let activeObsIndex = 0;

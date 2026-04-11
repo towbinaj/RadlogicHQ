@@ -10,6 +10,7 @@ import { calculateLungrads } from './calculator.js';
 import { lungradsTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 let nodules = [createNoduleState(1)];
 let activeNoduleIndex = 0;

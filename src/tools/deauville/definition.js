@@ -21,6 +21,7 @@ export const deauvilleDefinition = {
       tooltip: 'No uptake above background',
       interpretation: 'Complete metabolic response',
       management: 'No residual metabolically active disease.',
+      image: '/images/deauville/score-1.svg',
     },
     {
       id: '2',
@@ -29,6 +30,7 @@ export const deauvilleDefinition = {
       tooltip: 'Uptake less than or equal to mediastinal blood pool',
       interpretation: 'Complete metabolic response',
       management: 'No residual metabolically active disease.',
+      image: '/images/deauville/score-2.svg',
     },
     {
       id: '3',
@@ -37,6 +39,7 @@ export const deauvilleDefinition = {
       tooltip: 'Uptake greater than mediastinal blood pool but less than or equal to liver',
       interpretation: 'Complete metabolic response (in most protocols)',
       management: 'Likely complete response. Interpretation may vary by protocol (interim vs end-of-treatment).',
+      image: '/images/deauville/score-3.svg',
     },
     {
       id: '4',
@@ -45,6 +48,7 @@ export const deauvilleDefinition = {
       tooltip: 'Uptake moderately greater than liver at any site',
       interpretation: 'Partial metabolic response / residual disease',
       management: 'Residual metabolically active disease. Consider treatment modification per protocol.',
+      image: '/images/deauville/score-4.svg',
     },
     {
       id: '5',
@@ -53,6 +57,7 @@ export const deauvilleDefinition = {
       tooltip: 'Uptake markedly greater than liver and/or new sites of disease',
       interpretation: 'No metabolic response / progressive disease',
       management: 'Progressive or treatment-refractory disease.',
+      image: '/images/deauville/score-5.svg',
     },
   ],
 

@@ -10,6 +10,8 @@ import { calculateDeauville } from './calculator.js';
 import { deauvilleTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { trackEvent } from '../../core/storage.js';
+import { initKeyboardShortcuts } from '../../core/keyboard-shortcuts.js';
+import '../../core/tool-name.js';
 
 function esc(str) {
   return (str || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -70,6 +72,7 @@ function init() {
         ${def.scores.map((s) => `
           <button class="deauville-score-card ${formState.score === s.id ? 'deauville-score-card--active' : ''}"
             data-score="${s.id}" data-level="${s.id}" title="${esc(s.tooltip)}">
+            ${s.image ? `<img class="deauville-option-img" src="${s.image}" alt="Score ${s.shortLabel}">` : ''}
             <span class="deauville-score-card__num">${s.shortLabel}</span>
             <span class="deauville-score-card__desc">${s.tooltip}</span>
           </button>
@@ -178,6 +181,7 @@ function init() {
   });
 
   buildUI();
+  initKeyboardShortcuts({ container: stepContainer });
 }
 
 document.addEventListener('DOMContentLoaded', init);

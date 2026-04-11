@@ -10,6 +10,7 @@ import { calculateAspects } from './calculator.js';
 import { aspectsTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
 import { parseFindings } from '../../core/parser.js';
+import '../../core/tool-name.js';
 
 function init() {
   trackEvent('tool:aspects:opens');
@@ -63,8 +64,11 @@ function init() {
       <div class="step-card__question">Regions with early ischemic changes</div>
       <div class="aspects-grid">
         ${aspectsDefinition.regions.map((r) => `
-          <button class="benign-choice ${affected.has(r.id) ? 'benign-choice--active' : ''}"
-            data-region="${r.id}">${r.label}</button>
+          <button class="benign-choice aspects-region-btn ${affected.has(r.id) ? 'benign-choice--active' : ''}"
+            data-region="${r.id}">
+            ${r.image ? `<img class="aspects-option-img" src="${r.image}" alt="${r.label}">` : ''}
+            <span>${r.label}</span>
+          </button>
         `).join('')}
       </div>
     `;

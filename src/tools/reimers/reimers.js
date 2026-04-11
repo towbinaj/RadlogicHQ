@@ -10,6 +10,7 @@ import { calculateReimers } from './calculator.js';
 import { reimersTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { trackEvent } from '../../core/storage.js';
+import '../../core/tool-name.js';
 
 function init() {
   trackEvent('tool:reimers:opens');

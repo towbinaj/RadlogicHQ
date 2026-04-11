@@ -1,1 +1,43 @@
 /* Hip Dysplasia — minimal overrides */
+
+.hd-grade-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-xs);
+}
+
+.hd-grade-btn {
+  flex-direction: column;
+  text-align: center;
+  justify-content: flex-start;
+  padding: 0;
+  overflow: hidden;
+}
+
+.hd-grade-btn .hd-grade-label {
+  padding: var(--space-xs) var(--space-xs) 0;
+}
+
+.hd-grade-btn > span:last-child {
+  padding: 0 var(--space-xs) var(--space-xs);
+}
+
+.hd-option-img {
+  height: 56px;
+  width: 100%;
+  object-fit: contain;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+@media (max-width: 700px) {
+  .hd-grade-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 400px) {
+  .hd-grade-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

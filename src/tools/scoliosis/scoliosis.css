@@ -38,9 +38,24 @@
   gap: var(--space-xs);
 }
 
-.scol-risser-row .benign-choice {
+.scol-risser-btn {
+  flex-direction: column;
   min-width: 40px;
   text-align: center;
+  padding: 0;
+  overflow: hidden;
+}
+
+.scol-risser-btn > span {
+  padding: var(--space-xs);
+}
+
+.scol-risser-img {
+  height: 56px;
+  width: 100%;
+  object-fit: contain;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 
 .scol-detail-input {
