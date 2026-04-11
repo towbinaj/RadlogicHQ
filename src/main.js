@@ -292,6 +292,11 @@ style.textContent = `
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+
+    .tool-card__label {
+      font-size: 0.7rem;
+      padding: 4px 8px;
+    }
   }
 `;
 document.head.appendChild(style);
