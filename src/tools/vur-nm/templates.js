@@ -1,6 +1,6 @@
 const FINDINGS_BLOCKS = [
   { id: 'side', label: 'Side', template: 'Side: {{sideLabel}}', enabled: true, condition: 'sideProvided' },
-  { id: 'grade', label: 'VUR Grade', template: '{{gradeLabel}}: {{description}}', enabled: true, condition: 'gradeProvided' },
+  { id: 'grade', label: 'VUR Grade', template: '{{gradeLabel}}', enabled: true, condition: 'gradeProvided' },
 ];
 
 function bts(blocks, headers, impression) {
@@ -9,7 +9,7 @@ function bts(blocks, headers, impression) {
 
 const SH = { findings: 'FINDINGS:', additionalFindings: 'Other findings:', impression: 'IMPRESSION:' };
 const RH = { findings: '[STRUCTURED REPORT]', additionalFindings: '[OTHER FINDINGS]', impression: '[IMPRESSION]' };
-const IMP = '{{sideLabel}} vesicoureteral reflux, {{gradeLabel}}.';
+const IMP = '{{gradeLabel}}.';
 
 export const vurNmTemplates = {
   ps360: { label: 'PowerScribe 360', ...bts(FINDINGS_BLOCKS, SH, IMP) },

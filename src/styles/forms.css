@@ -108,27 +108,23 @@ input.no-spinner[type="number"] {
 /* Toggle group (Male/Female style) */
 .toggle-group {
   display: inline-flex;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--border-color);
+  gap: var(--space-xs);
 }
 
 .toggle-group__btn {
-  padding: var(--space-sm) var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
   font-family: var(--font-sans);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
   background: var(--bg-surface);
-  border: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
-}
-
-.toggle-group__btn:not(:last-child) {
-  border-right: 1px solid var(--border-color);
+  white-space: nowrap;
 }
 
 .toggle-group__btn:hover {
@@ -1554,3 +1550,7 @@ input.no-spinner[type="number"] {
   .benign-choices { grid-template-columns: 1fr; }
   .ancillary-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* Global compact mode — hides reference images in all tools */
+body.compact .option-card__image,
+body.compact .hd-option-img { display: none; }

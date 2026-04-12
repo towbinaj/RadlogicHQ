@@ -24,7 +24,7 @@ function init() {
   reportEl.definition = vurNmDefinition;
   reportEl.setTemplates(vurNmTemplates);
 
-  const formState = { grade: null, side: null };
+  const formState = { grade: null, side: null, rightGrade: null, leftGrade: null };
   let studyAdditionalFindings = '';
   additionalFindingsEl.addEventListener('input', () => { studyAdditionalFindings = additionalFindingsEl.value; updateReport(); });
 
@@ -35,21 +35,58 @@ function init() {
     sideCard.className = 'card';
     sideCard.innerHTML = `<div class="input-group"><label>Side</label><div class="toggle-group">${vurNmDefinition.sideOptions.map((o) => `<button class="toggle-group__btn ${formState.side === o.id ? 'toggle-group__btn--active' : ''}" data-value="${o.id}">${o.label}</button>`).join('')}</div></div>`;
     sideCard.querySelectorAll('.toggle-group__btn').forEach((btn) => {
-      btn.addEventListener('click', () => { formState.side = btn.dataset.value; sideCard.querySelectorAll('.toggle-group__btn').forEach((b) => b.classList.toggle('toggle-group__btn--active', b === btn)); update(); });
+      btn.addEventListener('click', () => {
+        formState.side = btn.dataset.value;
+        sideCard.querySelectorAll('.toggle-group__btn').forEach((b) => b.classList.toggle('toggle-group__btn--active', b === btn));
+        buildGradeCards();
+        update();
+      });
     });
     stepContainer.appendChild(sideCard);
 
-    const gradeCard = document.createElement('div');
-    gradeCard.className = 'step-card card';
-    gradeCard.innerHTML = `<div class="step-card__question">Nuclear Medicine Grade</div><div style="display:flex; flex-direction:column; gap:var(--space-xs);">${vurNmDefinition.grades.map((g) => `<button class="benign-choice ${formState.grade === g.id ? 'benign-choice--active' : ''}" data-grade="${g.id}" style="text-align:left; justify-content:flex-start;">${g.label} — ${g.description}</button>`).join('')}</div>`;
-    gradeCard.querySelectorAll('.benign-choice').forEach((btn) => {
-      btn.addEventListener('click', () => { formState.grade = btn.dataset.grade; gradeCard.querySelectorAll('.benign-choice').forEach((b) => b.classList.toggle('benign-choice--active', b.dataset.grade === formState.grade)); update(); });
-    });
-    stepContainer.appendChild(gradeCard);
+    buildGradeCards();
     update();
   }
 
-  function update() { const r = calculateVurNm(formState); badgeGrade.textContent = r.grade; badgeGrade.dataset.level = r.level; updateReport(); }
+  function buildGradeCards() {
+    stepContainer.querySelectorAll('.vur-grade-card').forEach((el) => el.remove());
+
+    if (formState.side === 'bilateral') {
+      stepContainer.appendChild(buildGradeCard('Right', 'rightGrade', formState.rightGrade));
+      stepContainer.appendChild(buildGradeCard('Left', 'leftGrade', formState.leftGrade));
+    } else {
+      stepContainer.appendChild(buildGradeCard('Nuclear Medicine Grade', 'grade', formState.grade));
+    }
+  }
+
+  function buildGradeCard(title, field, currentValue) {
+    const card = document.createElement('div');
+    card.className = 'step-card card vur-grade-card';
+    card.innerHTML = `
+      <div class="step-card__question">${title}</div>
+      <div style="display:flex; flex-direction:column; gap:var(--space-xs);">
+        ${vurNmDefinition.grades.map((g) => `
+          <button class="benign-choice ${currentValue === g.id ? 'benign-choice--active' : ''}"
+            data-grade="${g.id}" style="text-align:left; justify-content:flex-start;">${g.label} — ${g.description}</button>
+        `).join('')}
+      </div>
+    `;
+    card.querySelectorAll('.benign-choice').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        formState[field] = btn.dataset.grade;
+        card.querySelectorAll('.benign-choice').forEach((b) => b.classList.toggle('benign-choice--active', b.dataset.grade === formState[field]));
+        update();
+      });
+    });
+    return card;
+  }
+
+  function update() {
+    const r = calculateVurNm(formState);
+    badgeGrade.textContent = r.grade;
+    badgeGrade.dataset.level = r.level;
+    updateReport();
+  }
 
   function updateReport() {
     const data = calculateVurNm(formState);

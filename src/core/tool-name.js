@@ -5,7 +5,12 @@
  * Import this from any tool's JS entry to enable custom naming on that page.
  * The tool ID is detected from the URL path.
  */
-import { getToolDisplayName } from './storage.js';
+import { getToolDisplayName, getStored } from './storage.js';
+
+// Apply compact mode globally on all tool pages
+if (getStored('compact') === 1 || getStored('compact') === '1') {
+  document.body.classList.add('compact');
+}
 
 const pathMatch = window.location.pathname.match(/\/src\/tools\/([^/]+)\//);
 if (pathMatch) {

@@ -90,12 +90,13 @@ function init() {
             </select>
           </div>
           <div class="profile-pref">
-            <span class="profile-pref__label">Compact mode (TI-RADS)</span>
+            <span class="profile-pref__label">Compact mode</span>
             <label class="profile-pref__toggle">
               <input type="checkbox" id="pref-compact" ${getStored('compact') === 1 || getStored('compact') === '1' ? 'checked' : ''}>
               <span>${getStored('compact') === 1 || getStored('compact') === '1' ? 'On' : 'Off'}</span>
             </label>
           </div>
+          <p style="font-size:var(--text-xs);color:var(--text-muted);margin-top:-8px;">Hides reference images in tools to save screen space</p>
           <div class="profile-pref">
             <span class="profile-pref__label">MIBG scoring system</span>
             <select id="pref-curie-mode" class="profile-pref__select">
@@ -237,36 +238,73 @@ function init() {
 
     // Export templates only
     page.querySelector('#export-templates').addEventListener('click', () => {
-      const templates = [];
+      // Gather all custom templates
+      const allTemplates = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (!key?.startsWith('radtools:blockConfig:')) continue;
         const parts = key.replace('radtools:blockConfig:', '').split(':');
         if (parts.length !== 2) continue;
         try {
-          templates.push({
+          allTemplates.push({
             toolId: parts[0],
             templateId: parts[1],
             config: JSON.parse(localStorage.getItem(key)),
           });
         } catch { /* skip malformed */ }
       }
-      if (templates.length === 0) {
+      if (allTemplates.length === 0) {
         alert('No custom templates found.');
         return;
       }
-      const data = {
-        type: 'radiologichq-templates',
-        templates,
-        exportedAt: new Date().toISOString(),
-      };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `radiologichq-templates-${user.email.split('@')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+
+      // Show selection dialog
+      const overlay = document.createElement('div');
+      overlay.className = 'auth-modal-overlay';
+      overlay.style.display = 'flex';
+      const toolNames = {};
+      for (const t of toolsRegistry) toolNames[t.id] = t.name;
+      overlay.innerHTML = `
+        <div class="auth-modal" style="max-width:450px">
+          <div class="auth-modal__brand"><div class="auth-modal__brand-name">Export Templates</div></div>
+          <div class="auth-modal__body">
+            <p style="font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:var(--space-sm);">Select templates to export:</p>
+            <div style="display:flex;flex-direction:column;gap:var(--space-xs);max-height:300px;overflow-y:auto;">
+              ${allTemplates.map((t, i) => `
+                <label style="display:flex;align-items:center;gap:var(--space-xs);font-size:var(--text-sm);cursor:pointer;">
+                  <input type="checkbox" checked data-idx="${i}" style="width:16px;height:16px;accent-color:var(--accent);">
+                  ${toolNames[t.toolId] || t.toolId} (${t.templateId})
+                </label>
+              `).join('')}
+            </div>
+            <div style="display:flex;gap:var(--space-sm);justify-content:center;margin-top:var(--space-md);">
+              <button class="btn btn--primary" id="do-export-templates">Export Selected</button>
+              <button class="btn" id="cancel-export-templates">Cancel</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      overlay.querySelector('#cancel-export-templates').addEventListener('click', () => overlay.remove());
+      overlay.querySelector('#do-export-templates').addEventListener('click', () => {
+        const selected = [...overlay.querySelectorAll('input[type="checkbox"]:checked')]
+          .map((cb) => allTemplates[parseInt(cb.dataset.idx)]);
+        if (selected.length === 0) { alert('No templates selected.'); return; }
+        const data = {
+          type: 'radiologichq-templates',
+          templates: selected,
+          exportedAt: new Date().toISOString(),
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `radiologichq-templates-${user.email.split('@')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        overlay.remove();
+      });
     });
 
     // Import data
