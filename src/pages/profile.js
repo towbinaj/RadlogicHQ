@@ -268,7 +268,7 @@ function init() {
         <div class="auth-modal" style="max-width:450px">
           <div class="auth-modal__brand"><div class="auth-modal__brand-name">Export Templates</div></div>
           <div class="auth-modal__body">
-            <p style="font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:var(--space-sm);">Select templates to export:</p>
+            <p style="font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:var(--space-sm);">Select custom templates to export:</p>
             <div style="display:flex;flex-direction:column;gap:var(--space-xs);max-height:300px;overflow-y:auto;">
               ${allTemplates.map((t, i) => `
                 <label style="display:flex;align-items:center;gap:var(--space-xs);font-size:var(--text-sm);cursor:pointer;">
