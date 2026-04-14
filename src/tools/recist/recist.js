@@ -8,7 +8,7 @@ import { renderEditorContent } from '../../core/pill-editor.js';
 import { recistDefinition } from './definition.js';
 import { calculateRecist } from './calculator.js';
 import { recistTemplates } from './templates.js';
-import { parseFindings } from '../../core/parser.js';
+import { parseSegmentedFindings } from '../../core/parser.js';
 import { trackEvent } from '../../core/storage.js';
 import '../../core/tool-name.js';
 
@@ -245,14 +245,70 @@ function init() {
   parseBtn.addEventListener('click', () => {
     const text = parseInput.value.trim();
     if (!text) return;
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, recistDefinition);
-    for (const key of Object.keys(formState)) delete formState[key];
-    Object.assign(formState, parsed);
-    additionalFindingsEl.value = remainder || '';
+
+    // Item-indexed parsing: "Target 1: ... Target 2: ..." (or numbered
+    // "1. ... 2. ..." / word-form "first target: ...") split into
+    // per-target segments. Each segment's parsed `organ` and `size`
+    // fields populate one target row; `size` routes to `current`
+    // because radiologists typically dictate the current study's
+    // measurements (baseline/nadir carry over from prior reports).
+    //
+    // Top-level study fields (nonTarget, newLesion) are collected
+    // from wherever they appear -- ungrouped text or any segment --
+    // since radiologists commonly state them once after the target
+    // measurements.
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, recistDefinition);
+
+    let matchedFieldCount = 0;
+
+    if (segments.length > 0) {
+      // Multi-target paste: rebuild targets array from segments, cap
+      // at MAX_TARGETS per RECIST 1.1.
+      targets = segments.slice(0, MAX_TARGETS).map((seg) => ({
+        label: `Target ${seg.index}`,
+        organ: seg.formState.organ || '',
+        baseline: null,
+        current: seg.formState.size != null ? seg.formState.size : null,
+        nadir: null,
+      }));
+      matchedFieldCount = segments.reduce((n, s) => n + s.matched.length, 0);
+
+      // Collect study-level fields from anywhere they appear.
+      for (const key of ['nonTarget', 'newLesion']) {
+        for (const src of [...segments.map((s) => s.formState), ungrouped.formState]) {
+          if (src && src[key]) { formState[key] = src[key]; break; }
+        }
+      }
+    } else if (ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
+      // Single-target or no-marker paste: apply study fields to top-level
+      // formState and, if size/organ were parsed, populate the active
+      // target (targets[0]).
+      for (const key of ['nonTarget', 'newLesion']) {
+        if (ungrouped.formState[key]) formState[key] = ungrouped.formState[key];
+      }
+      if (ungrouped.formState.size != null || ungrouped.formState.organ) {
+        targets[0] = {
+          label: targets[0]?.label || 'Target 1',
+          organ: ungrouped.formState.organ || targets[0]?.organ || '',
+          baseline: targets[0]?.baseline ?? null,
+          current: ungrouped.formState.size != null ? ungrouped.formState.size : (targets[0]?.current ?? null),
+          nadir: targets[0]?.nadir ?? null,
+        };
+      }
+      matchedFieldCount = ungrouped.matched.length;
+    }
+
+    const additional = unmatchedSentences
+      .filter((s) => !/^\s*(?:\(\d+\)|\d+\.?)\s*$/.test(s))
+      .join(' ');
+    additionalFindingsEl.value = additional;
     studyAdditionalFindings = additionalFindingsEl.value;
+
     buildUI();
-    const total = matched.length + unmatched.length;
-    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+
+    const targetCount = segments.length > 0 ? Math.min(segments.length, MAX_TARGETS) : 0;
+    const targetSuffix = targetCount > 1 ? ` across ${targetCount} targets` : '';
+    parseStatus.textContent = `Matched ${matchedFieldCount} field(s)${targetSuffix}${unmatchedSentences.length ? ' \u2014 remainder in Additional Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });
