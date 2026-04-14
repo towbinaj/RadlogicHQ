@@ -204,6 +204,7 @@ input.no-spinner[type="number"] {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  flex-wrap: wrap;
 }
 
 .report-output__selector {
@@ -1351,6 +1352,13 @@ input.no-spinner[type="number"] {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
+  /* Let long labels wrap inside the button instead of overflowing the
+     container horizontally on mobile. */
+  max-width: 100%;
+  white-space: normal;
+  word-break: break-word;
+  text-align: left;
+  line-height: 1.3;
 }
 
 .benign-choice:hover {

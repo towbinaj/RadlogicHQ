@@ -294,6 +294,14 @@ h4 { font-size: var(--text-lg); }
   .tool-layout__output {
     position: static;
   }
+
+  /* Leave room at the bottom of every page so the floating Feedback
+     button (bottom-left) and mobile-report-btn "View Report" (bottom-right)
+     don't cover page content. Both floaters are ~44px tall; use 90px to
+     include breathing room. */
+  body {
+    padding-bottom: 90px;
+  }
 }
 
 /* Mobile floating report button */

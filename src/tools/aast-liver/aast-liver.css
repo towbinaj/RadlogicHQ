@@ -8,14 +8,17 @@
 
 .aast-multi-check {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-xs);
   margin-top: var(--space-sm);
   font-size: var(--text-sm);
+  line-height: 1.35;
 }
 
 .aast-multi-check input[type="checkbox"] {
   width: 16px;
   height: 16px;
+  flex: none;
+  margin-top: 2px;
   accent-color: var(--primary);
 }
