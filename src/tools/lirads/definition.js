@@ -158,6 +158,11 @@ export const liradsDefinition = {
     ],
   },
 
+  // Multi-observation pastes like "Observation 1: ... Observation 2: ..."
+  // (or numbered "1. ... 2. ...") split into per-observation segments,
+  // each mapping to its own observation tab.
+  parseSegmentation: { type: 'itemIndex', itemLabel: 'Observation' },
+
   parseRules: {
     'size': {
       pattern: /(\d+)\s*mm/,
