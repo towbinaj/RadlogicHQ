@@ -17,7 +17,7 @@ npm run check-synonyms -- --all
 Vanilla ES6+ modules, no framework. Vite MPA with auto-discovered HTML entry points under `src/tools/*/` and `src/pages/`. Firebase backend (Auth + Firestore) for prefs / templates / saved reports / aggregate analytics. Cloudflare Pages hosting with one Pages Function (`functions/api/feedback.js`) for the in-site feedback widget. Dark reading-room theme by default.
 
 ## Key Directories
-- `src/core/` — framework: engine, renderer, report, pill-editor, parser, storage, auth, auth-state, toast, firebase, clipboard, tool-name, **brand.js** (asset path constants)
+- `src/core/` — framework: engine, renderer, report, pill-editor, parser, storage, auth, auth-state, toast, firebase, clipboard, tool-name
 - `src/components/` — `<report-output>`, `<auth-ui>`, `<feedback-widget>`
 - `src/tools/{toolId}/` — one directory per calculator (42 tools)
 - `src/pages/` — profile, privacy, guide

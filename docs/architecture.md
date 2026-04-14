@@ -59,10 +59,9 @@ RadioLogicHQ/
 │   │   ├── report.js                  # Template engine ({{variable}}, {{#if}})
 │   │   ├── pill-editor.js             # Pill editor data model + serialization
 │   │   ├── parser.js                  # Text parser for paste-to-autofill
-│   │   ├── cde.js                     # CDE mapping registry
 │   │   ├── clipboard.js               # Copy-to-clipboard
 │   │   ├── tool-name.js               # Tool name overrides + auto-imports feedback-widget on tool pages
-│   │   └── brand.js                   # BRAND constants (logo/wordmark/favicon paths)
+│   │   └── keyboard-shortcuts.js      # Number keys / arrows for step cards + tabs (opt-in via initKeyboardShortcuts)
 │   ├── components/
 │   │   ├── report-output.js           # <report-output> — pill editor, copy, save, history, share (+ escapeHtml helper)
 │   │   ├── auth-ui.js                 # <auth-ui> — sign in/up modal

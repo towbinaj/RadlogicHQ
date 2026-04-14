@@ -15,7 +15,6 @@
 - Pill-based WYSIWYG report editor with inline colored tokens (`pill-editor.js`)
 - Template engine with `{{variable}}` and `{{#if}}` conditionals (`report.js`)
 - Text parser engine with per-tool keyword rules (`parser.js`)
-- CDE mapping registry for RadElement Common Data Elements (`cde.js`)
 - Copy-to-clipboard utility with fallback (`clipboard.js`)
 - Smart storage layer — localStorage + background Firestore sync, toast on failure (`storage.js`)
 - Toast notification utility for sync errors (`toast.js`)
