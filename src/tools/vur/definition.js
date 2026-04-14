@@ -22,5 +22,19 @@ export const vurVcugDefinition = {
     { id: 'bilateral', label: 'Bilateral' },
   ],
 
-  parseRules: {},
+  // Dictation-realistic parseRules: radiologists write "grade 3 VUR on the
+  // right" rather than the literal "Grade III" label. Longest-first match
+  // ordering means "grade iii" beats "grade i" when both are substrings.
+  parseRules: {
+    grade: {
+      options: {
+        'I':   ['grade i', 'grade 1', 'grade one'],
+        'II':  ['grade ii', 'grade 2', 'grade two'],
+        'III': ['grade iii', 'grade 3', 'grade three'],
+        'IV':  ['grade iv', 'grade 4', 'grade four'],
+        'V':   ['grade v', 'grade 5', 'grade five'],
+      },
+    },
+  },
+  parseSegmentation: { type: 'laterality' },
 };

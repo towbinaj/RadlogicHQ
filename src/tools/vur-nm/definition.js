@@ -20,5 +20,18 @@ export const vurNmDefinition = {
     { id: 'bilateral', label: 'Bilateral' },
   ],
 
-  parseRules: {},
+  // Dictation-realistic parseRules: adds keyword variants beyond just the
+  // label. "Mild" / "moderate" / "severe" are short and common, but also
+  // accept adjective variants so phrases like "mildly dilated ureter"
+  // route correctly.
+  parseRules: {
+    grade: {
+      options: {
+        'mild':     ['mild', 'minimal', 'mildly dilated'],
+        'moderate': ['moderate', 'moderately dilated'],
+        'severe':   ['severe', 'markedly dilated', 'severely dilated'],
+      },
+    },
+  },
+  parseSegmentation: { type: 'laterality' },
 };

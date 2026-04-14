@@ -9,7 +9,7 @@ import { vurNmDefinition } from './definition.js';
 import { calculateVurNm } from './calculator.js';
 import { vurNmTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
-import { parseFindings } from '../../core/parser.js';
+import { parseFindings, parseSegmentedFindings } from '../../core/parser.js';
 import { initKeyboardShortcuts } from '../../core/keyboard-shortcuts.js';
 import '../../core/tool-name.js';
 
@@ -108,13 +108,41 @@ function init() {
   parseBtn.addEventListener('click', () => {
     const text = parseInput.value.trim();
     if (!text) return;
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, vurNmDefinition);
-    Object.assign(formState, parsed);
-    additionalFindingsEl.value = remainder || '';
+    // Laterality-aware parse — same pattern as AAST Kidney / VUR VCUG.
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, vurNmDefinition);
+
+    formState.rightGrade = null;
+    formState.leftGrade = null;
+    formState.grade = null;
+
+    for (const seg of segments) {
+      if (seg.formState.grade) {
+        if (seg.key === 'right') formState.rightGrade = seg.formState.grade;
+        else if (seg.key === 'left') formState.leftGrade = seg.formState.grade;
+      }
+    }
+
+    if (segments.length === 0 && ungrouped.formState.grade) {
+      if (formState.side === 'right') formState.rightGrade = ungrouped.formState.grade;
+      else if (formState.side === 'left') formState.leftGrade = ungrouped.formState.grade;
+      else formState.grade = ungrouped.formState.grade;
+    }
+
+    if (formState.rightGrade && formState.leftGrade) {
+      formState.side = 'bilateral';
+    } else if (formState.rightGrade) {
+      formState.side = 'right';
+      formState.grade = formState.rightGrade;
+    } else if (formState.leftGrade) {
+      formState.side = 'left';
+      formState.grade = formState.leftGrade;
+    }
+
+    additionalFindingsEl.value = unmatchedSentences.join(' ');
     studyAdditionalFindings = additionalFindingsEl.value;
     buildUI();
-    const total = matched.length + unmatched.length;
-    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+    const totalMatched = segments.reduce((n, s) => n + s.matched.length, 0);
+    parseStatus.textContent = `Matched ${totalMatched} grade(s)${unmatchedSentences.length ? ' -- remainder in Additional Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });
