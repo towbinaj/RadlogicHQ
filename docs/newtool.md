@@ -175,122 +175,64 @@ export const {toolId}Definition = {
 
 ### Parse Rules
 
-**Parse rules are auto-generated from the definition structure.** The parser (`parser.js`) uses `buildParseRules(definition)` to derive rules from:
-- `sections` → keyword rules from option labels (single-select or multi-select)
-- `primaryInputs` with `single-select` → keyword rules from option labels
-- `primaryInputs` with `float`/`integer` → regex from label + unit
-- `categories` with `findings` → multi-select rules from finding labels (AAST style)
-- `categories` flat list → single-select rules from category labels (BI-RADS style)
-- `grades` → keyword rules from grade labels (VUR style)
-- `scores` → keyword rules from score labels + interpretations (Deauville style)
-- Named option groups (e.g., `t2Score`, `dce`) → keyword rules from option labels
-- `sideOptions`, `lateralityOptions`, `modalityOptions` → keyword rules from labels
+**Parse rules are auto-generated from the definition structure.** The parser walks your definition's `sections`, `primaryInputs`, `categories`, `grades`, `scores`, named option groups, `sideOptions`, and related fields to derive keyword rules from option labels. Most tools need no manual `parseRules` — just leave it `{}`.
 
-A **synonym dictionary** in `parser.js` expands label keywords with common radiology variants (e.g., "hypoechoic" → "hypo-echoic", "right" → "right-sided", "present" → "positive"/"identified"/"seen").
-
-**Most tools need no manual `parseRules`** — just leave `parseRules: {}` and the auto-generator handles it.
-
-For tools needing **specialized terminology** not covered by labels/synonyms, add manual overrides. Hand-written rules win on conflict with auto-generated:
+Add manual overrides only for specialized terminology not covered by labels + synonyms. Three rule shapes are accepted:
 
 ```js
 parseRules: {
-  // Regex — extracts numeric value
-  'size': {
-    pattern: /(\d*\.?\d+)\s*mm/,    // Use \d*\.?\d+ not \d+\.?\d*
+  // Pattern — numeric extraction. Use \d*\.?\d+ (not \d+\.?\d*)
+  size: {
+    pattern: /(\d*\.?\d+)\s*mm/,
     group: 1,
     transform: (m) => parseInt(m[1], 10),
   },
 
-  // Single-select keywords — matches longest
-  'featureId': {
+  // Options — single-select, longest match wins across all options
+  featureId: {
     options: {
-      'yes': ['keyword1', 'keyword phrase'],
-      'no': ['no keyword', 'absent'],
+      yes: ['keyword phrase', 'alternate phrasing'],
+      no: ['no keyword', 'absent'],
     },
   },
 
-  // Multi-select keywords — matches ALL found
-  'multiFeatureId': {
+  // Multi — every matching option gets added to the result array
+  multiFeatureId: {
     multi: true,
     options: { ... },
   },
-},
+}
 ```
 
-- Match against original text (not progressively stripped)
-- Remainder goes to Additional Findings, separated by semicolons
-- Section label variants (plural/singular) auto-stripped from remainder
-- Re-parse replaces form state (not appends)
-- To add new synonyms, update the `SYNONYMS` dictionary in `src/core/parser.js`
-- Run `npm run check-synonyms {toolId}` to see which labels have synonym coverage and which don't
-- Run `npm run check-synonyms -- --all` to check all tools at once
+Run `npm run check-synonyms {toolId}` (or `-- --all`) to audit synonym coverage.
+
+**See `docs/parser.md` for the full parser reference** — auto-gen field table, SYNONYMS dictionary internals, rule merge semantics, negative-lookbehind patterns, and common pitfalls (longest-match surprises, substring false-positives, proximity constraints).
 
 ### Segmented Parsing (multi-side / multi-item tools)
 
-Tools that track more than one independent finding set — paired organs (kidney, adrenal, breast), multi-nodule workups (TI-RADS, LI-RADS), multi-lesion response assessment (RECIST, RAPNO) — can opt in to **segmented parsing** so a single paste routes each region to the right side or item.
-
-Opt in by adding `parseSegmentation` to the definition:
+Tools that track more than one independent finding set — paired organs, multi-nodule workups, multi-lesion response assessment — can opt in to **segmented parsing** so a single paste routes each region to the right slot:
 
 ```js
-export const aastKidneyDefinition = {
-  // ...
-  parseSegmentation: { type: 'laterality' },
-  // or:
-  // parseSegmentation: { type: 'itemIndex', itemLabel: 'Nodule' },
-};
+// Paired organs
+parseSegmentation: { type: 'laterality' }
+
+// Multi-item (Nodule 1:, Nodule 2:, 1., 2., first nodule, ...)
+parseSegmentation: { type: 'itemIndex', itemLabel: 'Nodule' }
 ```
 
-Two segmenter types are available in `src/core/parser.js`:
+Then use `parseSegmentedFindings(text, definition)` instead of `parseFindings` in your parse handler. It returns `{ segments, ungrouped, unmatchedSentences }` — the handler routes each `segments[i].formState` to the appropriate part of your state.
 
-- **`'laterality'`** — sentence-based classifier. Each sentence is classified independently as belonging to the right side, left side, or both. Recognizes:
-  - Explicit: `Right kidney`, `Left adrenal`, `the right breast`, `Rt/Lt kidney`, `on the right`, `Right:` / `Left:` prefix
-  - Bilateral (prefix): `bilateral kidneys`, `both kidneys`, `bilaterally`
-  - Bilateral (conjunction): `the right and left kidneys`
-  - Bilateral (postposed): `the kidneys each have`, `the kidneys both show`
-  - Bilateral (copula): `the kidneys are both enlarged`, `kidneys have each`
-  - Bilateral (prepositional): `each of the kidneys`, `both of the kidneys`
-  - Bilateral (distributive singular): `each kidney`
-  - Cross-reference: `contralateral`, `the other kidney`, `the opposite side` → flips the current side for that sentence only
-  - Reinforcement: `ipsilateral`, `the same side/kidney` → keeps the current side
-  - A sentence with no marker inherits the most recent side (sticky attribution)
-  - Bilateral sentences produce entries in **both** `right` and `left` segments — callers only ever see `key: 'right' | 'left'`
-- **`'itemIndex'`** — splits at `Nodule 1`, `Nodule #1`, `Nodule 1:`, `first nodule`, `second nodule`, and numbered line starts `1.` / `(1)` / `2.`. Configurable via `itemLabel` (default `'item'`). Each chunk gets `key: 'item-<N>', index: <N>`.
+**See `docs/parser.md` sections 6–8** for:
+- Laterality segmenter internals (organ list, modifier-word regex, 6 bilateral phrasing families, sticky attribution, contralateral flip)
+- ItemIndex segmenter internals (marker patterns, same-index merging, bare-marker filter idiom)
+- Five canonical handler idioms to pick from based on your tool's state shape:
+  - (a) Item-index drop-in (TI-RADS / lungrads / bosniak style)
+  - (b) Laterality drop-in when state is already bilateral (VUR / reimers)
+  - (c) Laterality with bilateral state refactor (hydronephrosis / hip-dysplasia / KL / fetal-ventricle)
+  - (d) Flow-text bilateral fallback (fetal-ventricle one-sentence bilateral pastes)
+  - (e) Per-target measurement routing (RECIST / mRECIST / RAPNO)
 
-Then use the segmented API in your parse handler:
-
-```js
-import { parseSegmentedFindings } from '../../core/parser.js';
-
-parseBtn.addEventListener('click', () => {
-  const text = parseInput.value.trim();
-  if (!text) return;
-  const { segments, ungrouped, remainder } = parseSegmentedFindings(text, definition);
-
-  for (const seg of segments) {
-    if (seg.key === 'right')      applyToSide('right', seg.formState);
-    else if (seg.key === 'left')  applyToSide('left',  seg.formState);
-    // No 'bilateral' case — bilateral sentences already expanded to both
-  }
-
-  // When no segments were detected, fall back to applying ungrouped to the
-  // currently-active side (or item). This preserves the old single-side
-  // behavior for simple pastes.
-  if (segments.length === 0 && ungrouped.formState) {
-    applyToSide(formState.laterality, ungrouped.formState);
-  }
-});
-```
-
-**Phase 1.1 attribution rules:**
-- Text is split into sentences first (splitting on `. ! ?` followed by whitespace + uppercase, and on newlines; decimals like `2.5 cm` are preserved).
-- Each sentence is classified independently. A sentence with no marker inherits the sticky side set by the most recent prior sentence that did have one.
-- `bilateral` / `both kidneys` applies to both sides but does NOT change the sticky side — an explicit side later can still take over.
-- `contralateral` / `the other kidney` flips the side **for that sentence only**. The next sentence with no marker still inherits the original sticky side, not the flipped one.
-- `ipsilateral` / `same side` reinforces the current sticky side.
-- Text before the first side-bearing sentence goes to `ungrouped` (good for report headers like `"CT abdomen performed with IV contrast."`).
-- When both `right` and `left` appear in the same clause as a conjunction (`"the right and left kidneys both show..."`), the whole sentence is treated as bilateral.
-
-**Note on `selectedFindings`:** For tools with `categories → findings` (AAST pattern), `parseFindings` returns `selectedFindings` as an **array**, not a Set. The tool's formState typically uses a Set, so convert on the way in: `formState.right.selectedFindings = new Set(parsed.selectedFindings || [])`. See `src/tools/aast-kidney/aast-kidney.js` `applyParsedToSide()` for the canonical pattern.
+**AAST Set/array mismatch:** `parseFindings` returns `selectedFindings` as an array, but AAST tool `formState` uses a `Set`. Convert on the way in: `new Set(parsed.selectedFindings || [])`. See `src/tools/aast-kidney/aast-kidney.js` `applyParsedToSide()` and `docs/parser.md` section 11 for the canonical pattern.
 
 ---
 
