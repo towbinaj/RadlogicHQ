@@ -120,9 +120,15 @@ const SYNONYMS = {
   'type v': ['type 5'],
 
   // --- Common modalities ---
+  // Bare initialisms like 'us' and 'mr' are intentionally NOT included
+  // because the parser uses substring (not word-boundary) matching:
+  // 'us' would fire inside 's(us)picion', 'gluteus', 'musculus', etc.,
+  // and 'mr' inside 'MRSA', 'MRCP'. Tools that need 'US' / 'MR'
+  // abbreviation detection should add a regex-pattern rule with
+  // explicit \b boundaries in their own parseRules.
   mammography: ['mammo', 'mammogram'],
-  ultrasound: ['us', 'sonography', 'sonographic'],
-  mri: ['mr', 'magnetic resonance'],
+  ultrasound: ['sonography', 'sonographic'],
+  mri: ['magnetic resonance'],
 
   // --- Hydronephrosis ---
   hydronephrosis: ['hydroureteronephrosis', 'collecting system dilation', 'pelvicaliectasis', 'pyelectasis'],
