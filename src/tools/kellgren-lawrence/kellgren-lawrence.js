@@ -7,7 +7,7 @@ import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
 import { klDefinition } from './definition.js';
 import { calculateKL } from './calculator.js';
-import { parseFindings } from '../../core/parser.js';
+import { parseSegmentedFindings } from '../../core/parser.js';
 import { klTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
 import { initKeyboardShortcuts } from '../../core/keyboard-shortcuts.js';
@@ -24,7 +24,13 @@ function init() {
   reportEl.definition = klDefinition;
   reportEl.setTemplates(klTemplates);
 
-  const formState = { grade: null, joint: null, side: null };
+  // Joint stays study-level (the whole exam is one joint type).
+  // The flat `grade` is used in single-side mode; `rightGrade`/
+  // `leftGrade` take over when side === 'bilateral'.
+  const formState = {
+    grade: null, joint: null, side: null,
+    rightGrade: null, leftGrade: null,
+  };
   let studyAdditionalFindings = '';
   additionalFindingsEl.addEventListener('input', () => { studyAdditionalFindings = additionalFindingsEl.value; updateReport(); });
 
@@ -59,22 +65,46 @@ function init() {
     `;
     metaCard.querySelectorAll('.toggle-group__btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        formState[btn.dataset.field] = btn.dataset.value;
-        metaCard.querySelectorAll(`.toggle-group__btn[data-field="${btn.dataset.field}"]`).forEach((b) =>
-          b.classList.toggle('toggle-group__btn--active', b === btn));
-        update();
+        const field = btn.dataset.field;
+        formState[field] = btn.dataset.value;
+        // Side changes toggle between single-card and two-card layouts,
+        // so rebuild the whole UI. Joint changes stay in-place.
+        if (field === 'side') {
+          buildUI();
+        } else {
+          metaCard.querySelectorAll(`.toggle-group__btn[data-field="${field}"]`).forEach((b) =>
+            b.classList.toggle('toggle-group__btn--active', b === btn));
+          update();
+        }
       });
     });
     stepContainer.appendChild(metaCard);
 
-    // Grade selection
+    // Grade card(s): one in single-side mode, two in bilateral.
+    if (formState.side === 'bilateral') {
+      stepContainer.appendChild(buildGradeCard('Right knee/joint', 'rightGrade'));
+      stepContainer.appendChild(buildGradeCard('Left knee/joint', 'leftGrade'));
+    } else {
+      stepContainer.appendChild(buildGradeCard('OA Grade', 'grade'));
+    }
+
+    update();
+  }
+
+  /**
+   * Build one grade card. Used both for single-side mode (`gradeKey`
+   * ='grade') and for each side in bilateral mode ('rightGrade' /
+   * 'leftGrade'). The grade list is the same across all cards.
+   */
+  function buildGradeCard(title, gradeKey) {
+    const def = klDefinition;
     const gradeCard = document.createElement('div');
     gradeCard.className = 'step-card card';
     gradeCard.innerHTML = `
-      <div class="step-card__question">OA Grade</div>
+      <div class="step-card__question">${title}</div>
       <div style="display:flex; flex-direction:column; gap:var(--space-xs);">
         ${def.grades.map((g) => `
-          <button class="benign-choice ${formState.grade === g.id ? 'benign-choice--active' : ''}"
+          <button class="benign-choice ${formState[gradeKey] === g.id ? 'benign-choice--active' : ''}"
             data-grade="${g.id}" style="text-align:left; justify-content:flex-start;">
             ${g.label}<br><span style="font-size:var(--text-xs); color:var(--text-muted);">${g.findings}</span>
           </button>
@@ -83,14 +113,12 @@ function init() {
     `;
     gradeCard.querySelectorAll('.benign-choice').forEach((btn) => {
       btn.addEventListener('click', () => {
-        formState.grade = btn.dataset.grade;
-        gradeCard.querySelectorAll('.benign-choice').forEach((b) => b.classList.toggle('benign-choice--active', b.dataset.grade === formState.grade));
+        formState[gradeKey] = btn.dataset.grade;
+        gradeCard.querySelectorAll('.benign-choice').forEach((b) => b.classList.toggle('benign-choice--active', b.dataset.grade === formState[gradeKey]));
         update();
       });
     });
-    stepContainer.appendChild(gradeCard);
-
-    update();
+    return gradeCard;
   }
 
   function update() {
@@ -120,13 +148,66 @@ function init() {
   parseBtn.addEventListener('click', () => {
     const text = parseInput.value.trim();
     if (!text) return;
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, klDefinition);
-    Object.assign(formState, parsed);
-    additionalFindingsEl.value = remainder || '';
+
+    // Laterality-aware parse. Segmenter splits sentences by side;
+    // each side's grade routes to rightGrade / leftGrade. Joint is
+    // study-level (one joint type per exam) so we collect it from
+    // any segment or ungrouped.
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, klDefinition);
+
+    // Reset grade fields before applying.
+    formState.grade = null;
+    formState.rightGrade = null;
+    formState.leftGrade = null;
+
+    const sidesTouched = new Set();
+    for (const seg of segments) {
+      if (seg.key === 'right') {
+        if (seg.formState.grade) formState.rightGrade = seg.formState.grade;
+        sidesTouched.add('right');
+      } else if (seg.key === 'left') {
+        if (seg.formState.grade) formState.leftGrade = seg.formState.grade;
+        sidesTouched.add('left');
+      }
+    }
+
+    // Study-level: joint comes from anywhere it appears.
+    for (const src of [...segments.map((s) => s.formState), ungrouped.formState]) {
+      if (src && src.joint) { formState.joint = src.joint; break; }
+    }
+
+    // No-segment fallback: apply ungrouped to flat fields (old behavior).
+    if (segments.length === 0 && ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
+      if (ungrouped.formState.grade) formState.grade = ungrouped.formState.grade;
+      if (ungrouped.formState.side) formState.side = ungrouped.formState.side;
+    }
+
+    // Auto-switch side based on segments.
+    if (sidesTouched.has('right') && sidesTouched.has('left')) {
+      formState.side = 'bilateral';
+    } else if (sidesTouched.has('right')) {
+      formState.side = 'right';
+      formState.grade = formState.rightGrade;
+    } else if (sidesTouched.has('left')) {
+      formState.side = 'left';
+      formState.grade = formState.leftGrade;
+    }
+
+    const additional = unmatchedSentences
+      .filter((s) => !/^\s*(?:\(\d+\)|\d+\.?)\s*$/.test(s))
+      .join(' ');
+    additionalFindingsEl.value = additional;
     studyAdditionalFindings = additionalFindingsEl.value;
+
     buildUI();
-    const total = matched.length + unmatched.length;
-    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+
+    const totalMatched = segments.reduce((n, s) => n + s.matched.length, 0)
+      + (segments.length === 0 ? ungrouped.matched.length : 0);
+    const routingParts = [];
+    if (sidesTouched.has('right')) routingParts.push('right');
+    if (sidesTouched.has('left')) routingParts.push('left');
+    const routing = routingParts.length === 2 ? 'both sides' : routingParts[0] || 'active side';
+    parseStatus.textContent = `Matched ${totalMatched} field(s) to ${routing}${unmatchedSentences.length ? ' \u2014 remainder in Additional Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });
