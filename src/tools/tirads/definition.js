@@ -215,6 +215,10 @@ export const tiradsDefinition = {
 
   additionalInputs: [],
 
+  // Multi-nodule pastes like "Nodule 1: ... Nodule 2: ..." split into
+  // per-nodule segments so each maps to its own nodule tab.
+  parseSegmentation: { type: 'itemIndex', itemLabel: 'Nodule' },
+
   parseRules: {
     'nodule-size': {
       pattern: /(\d*\.?\d+)\s*cm/,
