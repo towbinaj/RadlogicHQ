@@ -652,7 +652,32 @@ function escapeRegex(str) {
 // so "bilateral kidneys" doesn't get misclassified as "left kidney"
 // because it contains "left" as a substring. (Actually "bilateral" doesn't
 // contain "left" but keep the ordering for safety with future patterns.)
-const BILATERAL_RE = /\b(?:bilateral|both)\s+(?:kidneys|sides|adrenals|ovaries|breasts|lungs|hips|organs)\b|\bbilaterally\b|\b(?:right\s+and\s+left|left\s+and\s+right)\s+(?:kidneys|adrenals|ovaries|breasts|lungs|hips|sides|organs)\b/i;
+// Bilateral marker patterns. The alternations cover:
+//   a) Prefix plural:   "bilateral kidneys", "both kidneys", "bilaterally"
+//   b) Conjunction:     "the right and left kidneys (both show...)"
+//   c) Postposed plural: "the kidneys each have", "the kidneys both show"
+//   d) Copula plural:   "the kidneys are both enlarged", "kidneys have each"
+//   e) Prepositional:   "each of the kidneys", "both of the kidneys"
+//   f) Distributive singular: "each kidney", "both kidneys"
+// Organ list is kept in sync with RIGHT_RE / LEFT_RE.
+const BILATERAL_RE = new RegExp(
+  [
+    // a) Prefix: "bilateral kidneys", "both kidneys"
+    String.raw`\b(?:bilateral|both)\s+(?:kidneys|sides|adrenals|ovaries|breasts|lungs|hips|organs)\b`,
+    String.raw`\bbilaterally\b`,
+    // b) Conjunction: "right and left kidneys"
+    String.raw`\b(?:right\s+and\s+left|left\s+and\s+right)\s+(?:kidneys|adrenals|ovaries|breasts|lungs|hips|sides|organs)\b`,
+    // c) Postposed: "kidneys each", "kidneys both"
+    String.raw`\b(?:kidneys|adrenals|ovaries|breasts|lungs|hips)\s+(?:each|both)\b`,
+    // d) Copula: "kidneys are/have/show/demonstrate both|each"
+    String.raw`\b(?:kidneys|adrenals|ovaries|breasts|lungs|hips)\s+(?:are|have|show|shows|demonstrate|demonstrates|contain|reveal|exhibit)\s+(?:each|both)\b`,
+    // e) Prepositional: "each of the kidneys", "both of the kidneys"
+    String.raw`\b(?:each|both)\s+of\s+(?:the\s+)?(?:kidneys|adrenals|ovaries|breasts|lungs|hips)\b`,
+    // f) Distributive singular: "each kidney"
+    String.raw`\beach\s+(?:kidney|adrenal|ovary|breast|lung|hip)\b`,
+  ].join('|'),
+  'i'
+);
 const RIGHT_RE = /\b(?:the\s+)?right\s+(?:kidney|adrenal|ovary|breast|lung|hip|side|organ)s?\b|\bon\s+the\s+right\b|\brt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|side)\b|(?:^|\n)\s*(?:the\s+)?right\s*:/i;
 const LEFT_RE = /\b(?:the\s+)?left\s+(?:kidney|adrenal|ovary|breast|lung|hip|side|organ)s?\b|\bon\s+the\s+left\b|\blt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|side)\b|(?:^|\n)\s*(?:the\s+)?left\s*:/i;
 

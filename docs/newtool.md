@@ -244,7 +244,12 @@ Two segmenter types are available in `src/core/parser.js`:
 
 - **`'laterality'`** — sentence-based classifier. Each sentence is classified independently as belonging to the right side, left side, or both. Recognizes:
   - Explicit: `Right kidney`, `Left adrenal`, `the right breast`, `Rt/Lt kidney`, `on the right`, `Right:` / `Left:` prefix
-  - Bilateral: `bilateral kidneys`, `both kidneys`, `bilaterally`, `the right and left kidneys`
+  - Bilateral (prefix): `bilateral kidneys`, `both kidneys`, `bilaterally`
+  - Bilateral (conjunction): `the right and left kidneys`
+  - Bilateral (postposed): `the kidneys each have`, `the kidneys both show`
+  - Bilateral (copula): `the kidneys are both enlarged`, `kidneys have each`
+  - Bilateral (prepositional): `each of the kidneys`, `both of the kidneys`
+  - Bilateral (distributive singular): `each kidney`
   - Cross-reference: `contralateral`, `the other kidney`, `the opposite side` → flips the current side for that sentence only
   - Reinforcement: `ipsilateral`, `the same side/kidney` → keeps the current side
   - A sentence with no marker inherits the most recent side (sticky attribution)

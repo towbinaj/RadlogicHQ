@@ -599,6 +599,63 @@ describe('segmentByLaterality (Phase 1.1 — sentence-based)', () => {
     expect(r.segments).toHaveLength(2);
     expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
   });
+
+  // --- Postposed / distributive bilateral phrasings ---
+
+  it('recognizes "the kidneys each have..." as bilateral', () => {
+    const text = 'The kidneys each have a small subcapsular hematoma.';
+    const r = segmentByLaterality(text);
+    expect(r.segments).toHaveLength(2);
+    expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
+    expect(r.segments[0].text).toContain('small subcapsular hematoma');
+    expect(r.segments[1].text).toContain('small subcapsular hematoma');
+  });
+
+  it('recognizes "the kidneys both have..." as bilateral', () => {
+    const text = 'The kidneys both have perirenal stranding.';
+    const r = segmentByLaterality(text);
+    expect(r.segments).toHaveLength(2);
+    expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
+  });
+
+  it('recognizes "the kidneys are both enlarged" as bilateral (copula form)', () => {
+    const text = 'The kidneys are both enlarged with scattered cysts.';
+    const r = segmentByLaterality(text);
+    expect(r.segments).toHaveLength(2);
+    expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
+  });
+
+  it('recognizes "each kidney has..." (distributive singular) as bilateral', () => {
+    const text = 'Each kidney has a small subcapsular hematoma.';
+    const r = segmentByLaterality(text);
+    expect(r.segments).toHaveLength(2);
+    expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
+  });
+
+  it('recognizes "each of the kidneys" (prepositional) as bilateral', () => {
+    const text = 'Each of the kidneys shows a perirenal hematoma.';
+    const r = segmentByLaterality(text);
+    expect(r.segments).toHaveLength(2);
+    expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
+  });
+
+  it('recognizes "both of the kidneys" as bilateral', () => {
+    const text = 'Both of the kidneys are normal in size.';
+    const r = segmentByLaterality(text);
+    expect(r.segments).toHaveLength(2);
+    expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
+  });
+
+  it('mixes postposed bilateral with a unilateral follow-up', () => {
+    const text = 'The kidneys each have a subcapsular hematoma. The right kidney additionally has a 2 cm laceration.';
+    const r = segmentByLaterality(text);
+    const right = r.segments.find((s) => s.key === 'right');
+    const left = r.segments.find((s) => s.key === 'left');
+    expect(right.text).toContain('subcapsular hematoma');
+    expect(left.text).toContain('subcapsular hematoma');
+    expect(right.text).toContain('2 cm laceration');
+    expect(left.text).not.toContain('2 cm laceration');
+  });
 });
 
 describe('segmentByItemIndex', () => {

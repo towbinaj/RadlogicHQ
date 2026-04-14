@@ -41,7 +41,14 @@ Tools that track more than one independent finding set (paired organs, multi-nod
 - **Ungrouped fallback**: when `segments.length === 0`, the tool should apply `ungrouped.formState` to the currently-active side (or item) so simple single-side pastes still work.
 - **Decimals like "2.5 cm"** are preserved because the sentence splitter requires an uppercase letter after the period. Abbreviations with a trailing period followed by a capitalized word (`"Dr. Smith reported..."`) could misfire but rarely appear in findings text.
 - **Adding new laterality patterns**: edit `RIGHT_RE`, `LEFT_RE`, and `BILATERAL_RE` at the top of the segmentation section in `parser.js`. Add organ-specific matches (e.g. `right adrenal`, `left breast`) — the existing array already covers kidney, adrenal, ovary, breast, lung, hip.
-- **Tests live in `src/core/parser.test.js`** — 26 cases covering `segmentByLaterality` (including contralateral flip, sticky attribution, interleaved bouncing, partial bilateral, conjunction form), `segmentByItemIndex`, and `parseSegmentedFindings`. Every new segmentation bug should land with a failing test first.
+- **Tests live in `src/core/parser.test.js`** — 33 cases covering `segmentByLaterality` (including contralateral flip, sticky attribution, interleaved bouncing, partial bilateral, conjunction form, postposed/copula/distributive/prepositional bilateral phrasings), `segmentByItemIndex`, and `parseSegmentedFindings`. Every new segmentation bug should land with a failing test first.
+- **Bilateral phrasings** currently recognized (all added to `BILATERAL_RE` in `parser.js`):
+  - **Prefix**: `bilateral kidneys`, `both kidneys`, `bilaterally`
+  - **Conjunction**: `the right and left kidneys`
+  - **Postposed**: `the kidneys each have`, `the kidneys both show`
+  - **Copula**: `the kidneys are both enlarged`, `kidneys have each`
+  - **Prepositional**: `each of the kidneys`, `both of the kidneys`
+  - **Distributive singular**: `each kidney`
 
 ## Brand Assets
 
