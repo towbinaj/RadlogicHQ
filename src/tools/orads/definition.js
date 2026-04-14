@@ -97,6 +97,11 @@ export const oradsDefinition = {
     ],
   },
 
+  // Multi-mass pastes like "Mass 1: ... Mass 2: ..." (or numbered
+  // "1. ... 2. ...") split into per-mass segments so each maps to
+  // its own mass tab.
+  parseSegmentation: { type: 'itemIndex', itemLabel: 'Mass' },
+
   parseRules: {
     'size': {
       pattern: /(\d*\.?\d+)\s*(?:mm|cm)/,

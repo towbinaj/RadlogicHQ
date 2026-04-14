@@ -82,6 +82,11 @@ export const piradsDefinition = {
     ],
   },
 
+  // Multi-lesion pastes like "Lesion 1: ... Lesion 2: ..." (or numbered
+  // "1. ... 2. ...") split into per-lesion segments so each maps to
+  // its own lesion tab.
+  parseSegmentation: { type: 'itemIndex', itemLabel: 'Lesion' },
+
   parseRules: {
     'size': {
       pattern: /(\d*\.?\d+)\s*mm/,
