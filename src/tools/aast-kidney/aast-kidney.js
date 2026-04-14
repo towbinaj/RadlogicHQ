@@ -9,7 +9,7 @@ import { aastKidneyDefinition } from './definition.js';
 import { calculateAast } from '../aast-liver/calculator.js';
 import { buildKidneyTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
-import { parseFindings } from '../../core/parser.js';
+import { parseFindings, parseSegmentedFindings } from '../../core/parser.js';
 import '../../core/tool-name.js';
 
 const definition = aastKidneyDefinition;
@@ -244,22 +244,91 @@ function init() {
     reportEl.updateReport(data);
   }
 
-  // Parse-to-autofill writes into the currently-selected side. For bilateral,
-  // defaults to the right side; user can manually redistribute.
+  // Parse-to-autofill with laterality segmentation.
+  // - Bilateral paste → splits right/left, switches tool to bilateral mode
+  // - Single-side paste → routes to that side, sets laterality
+  // - Ungrouped text (no laterality markers) → routes to the currently-
+  //   selected side (or right if in bilateral mode)
   const parseBtn = document.getElementById('parse-btn');
   const parseInput = document.getElementById('parse-input');
   const parseStatus = document.getElementById('parse-status');
+
+  function applyParsedToSide(side, parsedFormState) {
+    // parseFindings returns selectedFindings as an array; our sideState
+    // uses a Set. Normalize on the way in and replace the existing Set
+    // (replace semantics match the old single-side parse behavior).
+    if (Array.isArray(parsedFormState.selectedFindings)) {
+      formState[side].selectedFindings = new Set(parsedFormState.selectedFindings);
+    }
+    if ('multipleInjuries' in parsedFormState) {
+      formState[side].multipleInjuries = !!parsedFormState.multipleInjuries;
+    }
+  }
+
   parseBtn.addEventListener('click', () => {
     const text = parseInput.value.trim();
     if (!text) return;
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, aastKidneyDefinition);
-    const targetSide = formState.laterality === 'left' ? 'left' : 'right';
-    Object.assign(formState[targetSide], parsed);
-    additionalFindingsEl.value = remainder || '';
+
+    const { segments, ungrouped, remainder } = parseSegmentedFindings(text, aastKidneyDefinition);
+
+    const sidesTouched = new Set();
+    let bilateralSawContent = false;
+
+    for (const seg of segments) {
+      if (seg.key === 'right') {
+        applyParsedToSide('right', seg.formState);
+        sidesTouched.add('right');
+      } else if (seg.key === 'left') {
+        applyParsedToSide('left', seg.formState);
+        sidesTouched.add('left');
+      } else if (seg.key === 'bilateral') {
+        // "Both kidneys show subcapsular hematoma" — apply to both sides
+        applyParsedToSide('right', seg.formState);
+        applyParsedToSide('left', seg.formState);
+        sidesTouched.add('right');
+        sidesTouched.add('left');
+        bilateralSawContent = true;
+      }
+    }
+
+    // No laterality markers anywhere → apply ungrouped to currently-active side
+    // (right by default in bilateral mode).
+    if (segments.length === 0 && ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
+      const targetSide = formState.laterality === 'left' ? 'left' : 'right';
+      applyParsedToSide(targetSide, ungrouped.formState);
+      sidesTouched.add(targetSide);
+    }
+
+    // Switch laterality to match what we parsed
+    if (sidesTouched.has('right') && sidesTouched.has('left')) {
+      formState.laterality = 'bilateral';
+    } else if (sidesTouched.has('right')) {
+      formState.laterality = bilateralSawContent ? 'bilateral' : 'right';
+    } else if (sidesTouched.has('left')) {
+      formState.laterality = bilateralSawContent ? 'bilateral' : 'left';
+    }
+
+    // Remainder → Additional Findings. Include any ungrouped-but-unmatched
+    // text too, so the user still sees everything we couldn't place.
+    const additionalParts = [];
+    if (remainder) additionalParts.push(remainder);
+    if (segments.length > 0 && ungrouped.text && !ungrouped.matched.length) {
+      // Ungrouped text was present alongside laterality segments but we
+      // didn't match anything in it — preserve it in Additional Findings.
+      additionalParts.push(ungrouped.text);
+    }
+    additionalFindingsEl.value = additionalParts.filter(Boolean).join('; ');
     studyAdditionalFindings = additionalFindingsEl.value;
+
     buildUI();
-    const total = matched.length + unmatched.length;
-    parseStatus.textContent = `Matched ${matched.length}/${total} to ${targetSide} kidney${remainder ? ' -- remainder in Additional Findings' : ''}`;
+
+    // Status message reflects what actually happened
+    const totalMatched = segments.reduce((n, s) => n + s.matched.length, 0) + ungrouped.matched.length;
+    const routingParts = [];
+    if (sidesTouched.has('right')) routingParts.push('right');
+    if (sidesTouched.has('left')) routingParts.push('left');
+    const routing = routingParts.length === 2 ? 'both sides' : routingParts[0] || 'active side';
+    parseStatus.textContent = `Matched ${totalMatched} finding(s) to ${routing}${additionalParts.length ? ' -- remainder in Additional Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });

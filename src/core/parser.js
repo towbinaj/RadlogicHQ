@@ -617,3 +617,260 @@ export function parseFindings(text, definition) {
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+// ============================================================
+// SEGMENTATION LAYER (Phase 1)
+//
+// parseSegmentedFindings() takes a findings-text blob and a definition,
+// and — if the definition opts in via `parseSegmentation` — splits the
+// text into regions by laterality or item index before running the
+// existing parseFindings() on each region.
+//
+// Tools that don't opt in (no `parseSegmentation` field) behave exactly
+// as before: the whole text is parsed as a single region via parseFindings.
+//
+// Return shape:
+//   {
+//     segments: [
+//       { key, label, index?, text, formState, matched, unmatched, remainder },
+//       ...
+//     ],
+//     ungrouped: { text, formState, matched, unmatched, remainder },
+//     remainder: 'combined remainder from all segments'
+//   }
+//
+// `segments[i].formState` is the usual flat parseFindings output for that
+// segment's text. The caller decides how to route it (e.g. AAST Kidney
+// routes `key: 'right'` → formState.right, `key: 'left'` → formState.left).
+//
+// Text with no markers goes into `ungrouped` so the caller can decide
+// whether to apply it to the currently-active side/item or leave it alone.
+// ============================================================
+
+// Laterality marker patterns, in priority order (longer/more specific first).
+// Each entry produces 0+ markers pointing at the start of a new segment.
+const LATERALITY_MARKERS = [
+  // "bilateral kidneys", "both kidneys", "bilateral", "both sides"
+  { re: /\b(?:bilateral|both)\s+(?:kidneys|sides|adrenals|ovaries|breasts|lungs|hips|organs)\b/gi, key: 'bilateral' },
+  { re: /\bbilaterally\b/gi, key: 'bilateral' },
+
+  // "Right kidney", "Right adrenal", "the right kidney:", etc.
+  { re: /\b(?:the\s+)?right\s+(?:kidney|adrenal|ovary|breast|lung|hip|side|organ)s?\b\s*:?/gi, key: 'right' },
+  { re: /\b(?:the\s+)?left\s+(?:kidney|adrenal|ovary|breast|lung|hip|side|organ)s?\b\s*:?/gi, key: 'left' },
+
+  // "On the right" / "on the left"
+  { re: /\bon\s+the\s+right\b/gi, key: 'right' },
+  { re: /\bon\s+the\s+left\b/gi, key: 'left' },
+
+  // Radiology shorthand: Rt / Lt + organ
+  { re: /\brt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|side)\b/gi, key: 'right' },
+  { re: /\blt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|side)\b/gi, key: 'left' },
+];
+
+/**
+ * Find all laterality marker positions in `text` and return a sorted list.
+ * Each marker: { pos: number, endPos: number, key: 'right'|'left'|'bilateral' }
+ */
+function findLateralityMarkers(text) {
+  const markers = [];
+  for (const { re, key } of LATERALITY_MARKERS) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      markers.push({ pos: m.index, endPos: m.index + m[0].length, key });
+    }
+  }
+  markers.sort((a, b) => a.pos - b.pos);
+  // Drop markers whose position is inside a prior marker's span (covers overlap
+  // between "right kidney" and "right side" regexes on the same phrase)
+  const deduped = [];
+  for (const m of markers) {
+    const last = deduped[deduped.length - 1];
+    if (last && m.pos < last.endPos) continue;
+    deduped.push(m);
+  }
+  return deduped;
+}
+
+/**
+ * Segment text by laterality markers. Implements the "most recent marker"
+ * attribution rule: text between marker N and marker N+1 belongs to marker N's
+ * side; text before the first marker is ungrouped.
+ *
+ * If the same key appears multiple times (e.g. "Right kidney: X. Left kidney:
+ * Y. Right kidney: Z"), the segments are merged in order. Phase 1.1 can add
+ * smarter interleaving detection.
+ */
+export function segmentByLaterality(text) {
+  const markers = findLateralityMarkers(text);
+  if (markers.length === 0) {
+    return { segments: [], ungroupedText: text.trim() };
+  }
+
+  const ungroupedText = text.slice(0, markers[0].pos).trim();
+
+  // Build raw segments in source order, then merge same-key segments
+  const raw = [];
+  for (let i = 0; i < markers.length; i++) {
+    const start = markers[i].endPos;
+    const end = i + 1 < markers.length ? markers[i + 1].pos : text.length;
+    const segText = text.slice(start, end).trim();
+    if (segText) raw.push({ key: markers[i].key, text: segText });
+  }
+
+  const mergedMap = new Map();
+  for (const seg of raw) {
+    const prev = mergedMap.get(seg.key);
+    mergedMap.set(seg.key, prev ? prev + '\n' + seg.text : seg.text);
+  }
+
+  const segments = [];
+  for (const [key, segText] of mergedMap) {
+    const label = key.charAt(0).toUpperCase() + key.slice(1);
+    segments.push({ key, label, text: segText });
+  }
+
+  return { segments, ungroupedText };
+}
+
+const WORD_TO_NUMBER = {
+  first: 1, second: 2, third: 3, fourth: 4, fifth: 5,
+  sixth: 6, seventh: 7, eighth: 8, ninth: 9, tenth: 10,
+};
+
+/**
+ * Segment text by numbered item markers (Nodule 1, Nodule 2, etc).
+ * `itemLabel` is the word that precedes the number (default: "item"),
+ * e.g. 'Nodule', 'Target', 'Observation', 'Lesion'.
+ */
+export function segmentByItemIndex(text, itemLabel = 'item') {
+  const label = escapeRegex(itemLabel);
+  const markers = [];
+
+  // "Nodule 1", "nodule #1", "nodule 1:"
+  const rxExplicit = new RegExp(`\\b${label}\\s*#?\\s*(\\d+)\\s*:?`, 'gi');
+  let m;
+  while ((m = rxExplicit.exec(text)) !== null) {
+    markers.push({ pos: m.index, endPos: m.index + m[0].length, index: parseInt(m[1], 10) });
+  }
+
+  // "First nodule", "second nodule"
+  const rxWord = new RegExp(`\\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\\s+${label}\\b`, 'gi');
+  while ((m = rxWord.exec(text)) !== null) {
+    const idx = WORD_TO_NUMBER[m[1].toLowerCase()];
+    if (idx) markers.push({ pos: m.index, endPos: m.index + m[0].length, index: idx });
+  }
+
+  // Numbered line starts: "1." "(1)" "2." "(2)"
+  const rxLine = /(?:^|\n)\s*(?:\((\d+)\)|(\d+)\.)\s/g;
+  while ((m = rxLine.exec(text)) !== null) {
+    const idx = parseInt(m[1] || m[2], 10);
+    // Advance past the leading newline so we don't claim it as the marker
+    const pos = m.index + (text[m.index] === '\n' ? 1 : 0);
+    markers.push({ pos, endPos: m.index + m[0].length, index: idx });
+  }
+
+  markers.sort((a, b) => a.pos - b.pos);
+
+  // Drop overlapping markers
+  const deduped = [];
+  for (const mk of markers) {
+    const last = deduped[deduped.length - 1];
+    if (last && mk.pos < last.endPos) continue;
+    deduped.push(mk);
+  }
+
+  if (deduped.length === 0) {
+    return { segments: [], ungroupedText: text.trim() };
+  }
+
+  const ungroupedText = text.slice(0, deduped[0].pos).trim();
+  const raw = [];
+  for (let i = 0; i < deduped.length; i++) {
+    const start = deduped[i].endPos;
+    const end = i + 1 < deduped.length ? deduped[i + 1].pos : text.length;
+    const segText = text.slice(start, end).trim();
+    if (segText) raw.push({ index: deduped[i].index, text: segText });
+  }
+
+  // Merge same-index segments
+  const mergedMap = new Map();
+  for (const seg of raw) {
+    const prev = mergedMap.get(seg.index);
+    mergedMap.set(seg.index, prev ? prev + '\n' + seg.text : seg.text);
+  }
+
+  const segments = [];
+  for (const [index, segText] of mergedMap) {
+    segments.push({ key: `item-${index}`, index, label: `${itemLabel} ${index}`, text: segText });
+  }
+  segments.sort((a, b) => a.index - b.index);
+
+  return { segments, ungroupedText };
+}
+
+/**
+ * Parse a findings blob into segmented + ungrouped regions, each with its
+ * own parseFindings() output. Driven by `definition.parseSegmentation`:
+ *
+ *   parseSegmentation: { type: 'laterality' }
+ *   parseSegmentation: { type: 'itemIndex', itemLabel: 'Nodule' }
+ *
+ * If no `parseSegmentation` is set, the whole text goes to `ungrouped` and
+ * `segments` is empty — effectively equivalent to calling parseFindings
+ * directly, for backward compatibility.
+ */
+export function parseSegmentedFindings(text, definition) {
+  const extracted = extractText(text) || '';
+  const config = definition.parseSegmentation;
+
+  let segmenterResult;
+  if (!config || !config.type) {
+    segmenterResult = { segments: [], ungroupedText: extracted };
+  } else if (config.type === 'laterality') {
+    segmenterResult = segmentByLaterality(extracted);
+  } else if (config.type === 'itemIndex') {
+    segmenterResult = segmentByItemIndex(extracted, config.itemLabel || 'item');
+  } else {
+    segmenterResult = { segments: [], ungroupedText: extracted };
+  }
+
+  // Run parseFindings on each segment
+  const segments = segmenterResult.segments.map((seg) => {
+    const parsed = parseFindings(seg.text, definition);
+    return {
+      key: seg.key,
+      label: seg.label,
+      ...(seg.index != null ? { index: seg.index } : {}),
+      text: seg.text,
+      formState: parsed.formState,
+      matched: parsed.matched,
+      unmatched: parsed.unmatched,
+      remainder: parsed.remainder,
+    };
+  });
+
+  const ungroupedBlob = segmenterResult.ungroupedText || '';
+  const ungroupedParsed = ungroupedBlob
+    ? parseFindings(ungroupedBlob, definition)
+    : { formState: {}, matched: [], unmatched: [], remainder: '' };
+
+  const ungrouped = {
+    text: ungroupedBlob,
+    formState: ungroupedParsed.formState,
+    matched: ungroupedParsed.matched,
+    unmatched: ungroupedParsed.unmatched,
+    remainder: ungroupedParsed.remainder,
+  };
+
+  const allRemainders = [
+    ...segments.map((s) => s.remainder).filter(Boolean),
+    ungrouped.remainder,
+  ].filter(Boolean);
+
+  return {
+    segments,
+    ungrouped,
+    remainder: allRemainders.join('; '),
+  };
+}

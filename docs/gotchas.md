@@ -28,10 +28,23 @@ Non-obvious things that will bite you when working on specific parts of the app.
 - **Hand-written `parseRules` override auto-generated on conflict.** Use them only for disease-specific terminology. ~30 tools have manual overrides.
 - **Two synonym layers**: cross-tool (`SYNONYMS` dict in `parser.js`) and tool-specific (`parseRules` in each `definition.js`).
 - **Run `npm run check-synonyms {toolId}`** to audit coverage; add missing synonyms to `SYNONYMS` or `parseRules` as needed.
+- **`selectedFindings` type mismatch for AAST tools**: `parseFindings` returns `selectedFindings` as an **array**, but tool formState usually uses a Set. Tools that call `parseFindings` on AAST-style definitions must convert to a Set before merging into formState (see `src/tools/aast-kidney/aast-kidney.js` `applyParsedToSide()`). Directly `Object.assign`-ing the parsed result replaces the Set with an array and breaks the UI's `.has()` checks — a latent bug in most AAST tools that only doesn't fire because auto-generated rules rarely match AAST's long specific finding labels.
+
+## Segmented parsing — multi-side & multi-item tools
+
+Tools that track more than one independent finding set (paired organs, multi-nodule, multi-lesion) can opt in to the segmentation layer in `src/core/parser.js`. It splits the input text into regions *before* running the per-region parser.
+
+- **Opt-in via `definition.parseSegmentation`**: `{ type: 'laterality' }` or `{ type: 'itemIndex', itemLabel: 'Nodule' }`. No field → old single-pass behavior.
+- **`parseSegmentedFindings(text, definition)`** returns `{ segments, ungrouped, remainder }`. Each segment has its own `formState`, `matched`, `unmatched`, `remainder`.
+- **Attribution rule**: text between marker N and marker N+1 belongs to marker N. Text before the first marker goes to `ungrouped`. Segments with the same key are merged in source order.
+- **Ungrouped fallback**: when `segments.length === 0`, the tool should apply `ungrouped.formState` to the currently-active side (or item) so simple single-side pastes still work.
+- **Phase 1 limitations**: no cross-reference pronoun handling, no sentence-level disambiguation, no interleaved "bouncing" detection. These are planned for Phase 1.1 when needed.
+- **Adding new laterality patterns**: edit the `LATERALITY_MARKERS` array in `parser.js`. Add organ-specific matches (e.g. `right adrenal`, `left breast`) — the existing array already covers kidney, adrenal, ovary, breast, lung, hip.
+- **Tests live in `src/core/parser.test.js`** — 17 cases covering `segmentByLaterality`, `segmentByItemIndex`, `parseSegmentedFindings`. Every new segmentation bug should land with a failing test first.
 
 ## Brand Assets
 
-- **Use `BRAND` constants from `src/core/brand.js`** (`logoWhite`, `wordmarkWhite`, etc.) instead of hardcoding `/brand/foo.png` paths. Single source of truth; a future rename only touches one file.
+- Asset files live in `public/brand/` (see `docs/brand.md` for the inventory).
 - **Header wordmark srcset**: The header `<img>` uses `srcset` with 400w / 800w / 1200w variants. If you bump `.site-header__wordmark { height }`, update the `sizes` attribute (currently `"172px"`, matching ~5.36:1 aspect at 32px tall) across all 52 HTML files or the browser picks the wrong variant.
 
 ## HL7 safety in report output

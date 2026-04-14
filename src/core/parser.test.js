@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { parseFindings, buildParseRules } from './parser.js';
+import {
+  parseFindings,
+  buildParseRules,
+  parseSegmentedFindings,
+  segmentByLaterality,
+  segmentByItemIndex,
+} from './parser.js';
 
 describe('parseFindings', () => {
   it('returns empty result for empty text', () => {
@@ -433,5 +439,185 @@ describe('parseFindings with auto-generated rules', () => {
     };
     const result = parseFindings('Complete metabolic response on PET', def);
     expect(result.formState.score).toBe('3');
+  });
+});
+
+// ============================================================
+// Segmentation layer
+// ============================================================
+
+describe('segmentByLaterality', () => {
+  it('returns no segments and full text as ungrouped when no markers', () => {
+    const r = segmentByLaterality('Subcapsular hematoma with perirenal extension');
+    expect(r.segments).toEqual([]);
+    expect(r.ungroupedText).toBe('Subcapsular hematoma with perirenal extension');
+  });
+
+  it('splits a simple right/left report into two segments', () => {
+    const text = 'Right kidney: subcapsular hematoma. Left kidney: 2 cm laceration.';
+    const r = segmentByLaterality(text);
+    expect(r.segments.length).toBe(2);
+    expect(r.segments[0].key).toBe('right');
+    expect(r.segments[0].text).toContain('subcapsular hematoma');
+    expect(r.segments[1].key).toBe('left');
+    expect(r.segments[1].text).toContain('2 cm laceration');
+  });
+
+  it('captures text before first marker as ungrouped', () => {
+    const text = 'CT abdomen performed. Right kidney: hematoma.';
+    const r = segmentByLaterality(text);
+    expect(r.ungroupedText).toContain('CT abdomen performed');
+    expect(r.segments).toHaveLength(1);
+    expect(r.segments[0].key).toBe('right');
+  });
+
+  it('handles "bilateral" and "both kidneys" as a bilateral marker', () => {
+    const text = 'Bilateral kidneys show scattered hematomas.';
+    const r = segmentByLaterality(text);
+    expect(r.segments).toHaveLength(1);
+    expect(r.segments[0].key).toBe('bilateral');
+  });
+
+  it('attributes mid-segment findings to the most recent marker (Phase 1 rule)', () => {
+    const text = 'Right kidney: grade 3 laceration. Subcapsular hematoma throughout.';
+    const r = segmentByLaterality(text);
+    // "Subcapsular hematoma throughout" joins the right segment, not ungrouped
+    expect(r.segments).toHaveLength(1);
+    expect(r.segments[0].key).toBe('right');
+    expect(r.segments[0].text).toContain('Subcapsular hematoma');
+  });
+
+  it('merges multiple segments with the same key', () => {
+    const text = 'Right kidney: X. Left kidney: Y. Right kidney: also Z.';
+    const r = segmentByLaterality(text);
+    expect(r.segments).toHaveLength(2);
+    const right = r.segments.find((s) => s.key === 'right');
+    expect(right.text).toContain('X');
+    expect(right.text).toContain('Z');
+  });
+
+  it('matches radiology shorthand Rt/Lt', () => {
+    const r = segmentByLaterality('Rt kidney: hematoma. Lt kidney: laceration.');
+    expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
+  });
+
+  it('matches "on the right" / "on the left"', () => {
+    const r = segmentByLaterality('On the right, subcapsular hematoma. On the left, 2 cm laceration.');
+    expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
+  });
+});
+
+describe('segmentByItemIndex', () => {
+  it('splits "Nodule 1:" / "Nodule 2:" into separate segments', () => {
+    const text = 'Nodule 1: 2.5 cm solid hypoechoic. Nodule 2: 1.2 cm spongiform.';
+    const r = segmentByItemIndex(text, 'Nodule');
+    expect(r.segments).toHaveLength(2);
+    expect(r.segments[0].index).toBe(1);
+    expect(r.segments[0].text).toContain('solid hypoechoic');
+    expect(r.segments[1].index).toBe(2);
+    expect(r.segments[1].text).toContain('spongiform');
+  });
+
+  it('matches word-form "first nodule" / "second nodule"', () => {
+    const r = segmentByItemIndex('First nodule is 2 cm. Second nodule is 1 cm.', 'nodule');
+    expect(r.segments).toHaveLength(2);
+    expect(r.segments[0].index).toBe(1);
+    expect(r.segments[1].index).toBe(2);
+  });
+
+  it('matches numbered line starts like "1." and "(2)"', () => {
+    const text = `Findings:
+1. Hypoechoic 2 cm nodule.
+2. Isoechoic 1 cm nodule.`;
+    const r = segmentByItemIndex(text, 'nodule');
+    expect(r.segments).toHaveLength(2);
+    expect(r.segments[0].index).toBe(1);
+    expect(r.segments[1].index).toBe(2);
+  });
+
+  it('returns no segments and full text as ungrouped when no markers', () => {
+    const r = segmentByItemIndex('Just one solid nodule in the right lobe', 'nodule');
+    expect(r.segments).toEqual([]);
+    expect(r.ungroupedText).toContain('Just one solid nodule');
+  });
+
+  it('merges same-index segments', () => {
+    const r = segmentByItemIndex('Nodule 1: first mention. Nodule 1: additional note.', 'nodule');
+    expect(r.segments).toHaveLength(1);
+    expect(r.segments[0].text).toContain('first mention');
+    expect(r.segments[0].text).toContain('additional note');
+  });
+});
+
+describe('parseSegmentedFindings', () => {
+  const kidneyDef = {
+    parseRules: {},
+    parseSegmentation: { type: 'laterality' },
+    categories: [
+      {
+        id: 'hematoma',
+        label: 'Hematoma',
+        findings: [
+          { id: 'sub-nonexpanding', label: 'Subcapsular, nonexpanding', grade: 1 },
+          { id: 'perirenal-nonexpanding', label: 'Perirenal, nonexpanding', grade: 2 },
+        ],
+      },
+      {
+        id: 'laceration',
+        label: 'Laceration',
+        findings: [
+          { id: 'lac-lt1', label: '<1 cm depth, no urinary extravasation', grade: 2 },
+        ],
+      },
+    ],
+  };
+
+  it('returns segments + ungrouped for a bilateral kidney paste', () => {
+    const text = 'Right kidney: perirenal, nonexpanding hematoma. Left kidney: subcapsular, nonexpanding hematoma.';
+    const r = parseSegmentedFindings(text, kidneyDef);
+    expect(r.segments).toHaveLength(2);
+    const right = r.segments.find((s) => s.key === 'right');
+    const left = r.segments.find((s) => s.key === 'left');
+    expect(right.formState.selectedFindings).toContain('perirenal-nonexpanding');
+    expect(left.formState.selectedFindings).toContain('sub-nonexpanding');
+  });
+
+  it('falls back to ungrouped when no laterality markers are present', () => {
+    const text = 'Subcapsular, nonexpanding hematoma';
+    const r = parseSegmentedFindings(text, kidneyDef);
+    expect(r.segments).toHaveLength(0);
+    expect(r.ungrouped.formState.selectedFindings).toContain('sub-nonexpanding');
+  });
+
+  it('parses the whole text as ungrouped when definition opts out', () => {
+    const def = { ...kidneyDef, parseSegmentation: undefined };
+    const text = 'Subcapsular, nonexpanding hematoma';
+    const r = parseSegmentedFindings(text, def);
+    expect(r.segments).toHaveLength(0);
+    expect(r.ungrouped.formState.selectedFindings).toContain('sub-nonexpanding');
+  });
+
+  it('supports itemIndex segmentation type', () => {
+    const def = {
+      parseRules: {},
+      parseSegmentation: { type: 'itemIndex', itemLabel: 'Nodule' },
+      sections: [
+        {
+          id: 'composition',
+          label: 'Composition',
+          options: [
+            { id: 'solid', label: 'Solid' },
+            { id: 'cystic', label: 'Cystic' },
+          ],
+        },
+      ],
+    };
+    const text = 'Nodule 1: solid hypoechoic. Nodule 2: cystic spongiform.';
+    const r = parseSegmentedFindings(text, def);
+    expect(r.segments).toHaveLength(2);
+    expect(r.segments[0].index).toBe(1);
+    expect(r.segments[0].formState.composition).toBe('solid');
+    expect(r.segments[1].index).toBe(2);
+    expect(r.segments[1].formState.composition).toBe('cystic');
   });
 });

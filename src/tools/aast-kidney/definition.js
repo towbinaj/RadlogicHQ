@@ -50,4 +50,5 @@ export const aastKidneyDefinition = {
   ],
 
   parseRules: {},
+  parseSegmentation: { type: 'laterality' },
 };

@@ -225,6 +225,59 @@ parseRules: {
 - Run `npm run check-synonyms {toolId}` to see which labels have synonym coverage and which don't
 - Run `npm run check-synonyms -- --all` to check all tools at once
 
+### Segmented Parsing (multi-side / multi-item tools)
+
+Tools that track more than one independent finding set — paired organs (kidney, adrenal, breast), multi-nodule workups (TI-RADS, LI-RADS), multi-lesion response assessment (RECIST, RAPNO) — can opt in to **segmented parsing** so a single paste routes each region to the right side or item.
+
+Opt in by adding `parseSegmentation` to the definition:
+
+```js
+export const aastKidneyDefinition = {
+  // ...
+  parseSegmentation: { type: 'laterality' },
+  // or:
+  // parseSegmentation: { type: 'itemIndex', itemLabel: 'Nodule' },
+};
+```
+
+Two segmenter types are available in `src/core/parser.js`:
+
+- **`'laterality'`** — splits text at `Right kidney`, `Left kidney`, `Bilateral kidneys`, `Rt/Lt kidney`, `on the right / left`, `both kidneys` and similar phrases. Each chunk goes to its own segment with `key: 'right' | 'left' | 'bilateral'`. Text before the first marker → `ungrouped`.
+- **`'itemIndex'`** — splits at `Nodule 1`, `Nodule #1`, `Nodule 1:`, `first nodule`, `second nodule`, and numbered line starts `1.` / `(1)` / `2.`. Configurable via `itemLabel` (default `'item'`). Each chunk gets `key: 'item-<N>', index: <N>`.
+
+Then use the segmented API in your parse handler:
+
+```js
+import { parseSegmentedFindings } from '../../core/parser.js';
+
+parseBtn.addEventListener('click', () => {
+  const text = parseInput.value.trim();
+  if (!text) return;
+  const { segments, ungrouped, remainder } = parseSegmentedFindings(text, definition);
+
+  for (const seg of segments) {
+    if (seg.key === 'right')      applyToSide('right', seg.formState);
+    else if (seg.key === 'left')  applyToSide('left',  seg.formState);
+    else if (seg.key === 'bilateral') { /* apply to both */ }
+  }
+
+  // When no segments were detected, fall back to applying ungrouped to the
+  // currently-active side (or item). This preserves the old single-side
+  // behavior for simple pastes.
+  if (segments.length === 0 && ungrouped.formState) {
+    applyToSide(formState.laterality, ungrouped.formState);
+  }
+});
+```
+
+**Phase 1 attribution rules:**
+- Text between marker N and marker N+1 belongs to marker N (most-recent-marker rule).
+- Text before the first marker → `ungrouped`.
+- Multiple markers with the same key (e.g. `Right kidney: X ... Right kidney: Z`) are merged in source order.
+- **Phase 1.1 (not yet implemented)** will handle bouncing back and forth mid-sentence and cross-reference pronouns ("the contralateral kidney...") more gracefully.
+
+**Note on `selectedFindings`:** For tools with `categories → findings` (AAST pattern), `parseFindings` returns `selectedFindings` as an **array**, not a Set. The tool's formState typically uses a Set, so convert on the way in: `formState.right.selectedFindings = new Set(parsed.selectedFindings || [])`. See `src/tools/aast-kidney/aast-kidney.js` `applyParsedToSide()` for the canonical pattern.
+
 ---
 
 ## 4. Calculator File (`calculator.js`)
