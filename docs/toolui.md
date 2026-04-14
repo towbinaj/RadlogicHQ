@@ -2,7 +2,7 @@
 
 Reference this when styling new tools to maintain visual consistency across RadioLogicHQ. All values use CSS variables from `src/styles/variables.css`. Shared styles live in `src/styles/forms.css`.
 
-*Last updated: 2026-04-11*
+*Last updated: 2026-04-14*
 
 ---
 
@@ -42,6 +42,7 @@ Reference this when styling new tools to maintain visual consistency across Radi
 - **Layout**: flex row, title left, badge(s) right
 - **Title**: `var(--text-xl)`, weight 600
 - **Reference link**: superscript `Ref`, `var(--text-xs)`, accent color, full citation in `title` tooltip
+- **Validation badge**: injected by `src/core/tool-name.js` after the Ref link — red warning triangle if the tool is not in `VALIDATED_TOOLS` (default), green check circle if it is. 22px, hover tooltip explains status. See *Validation Badges* section below.
 - **Badge**: inline, `var(--space-xs) var(--space-md)` padding, label + value in a row
 - **Badge label**: `var(--text-xs)`, uppercase, muted
 - **Badge value**: `var(--text-lg)`, weight 700
@@ -173,13 +174,25 @@ Reference this when styling new tools to maintain visual consistency across Radi
 - **Title**: `var(--text-base)`, weight 600
 - **Controls**: flex row — template selector, Edit, Copy
 
-### Report Text
+### Report Text (view mode)
 - **Padding**: `var(--space-sm) var(--space-md)`, max-height 400px scrollable
 - **Font**: `var(--font-mono)`, `var(--text-sm)`, `line-height: 1.6`, `pre-wrap`
+- Rendered from the tool's template; in edit mode this same `<pre>` becomes the pill editor surface.
 
-### Edit Mode (WYSIWYG)
-- Report text becomes editable lines: drag handle + checkbox + contenteditable text
-- Edit bar below: "Show points" toggle, Reset to Default, Done
+### Edit Mode — Pill Editor
+The editor is **pill-based WYSIWYG**, not line-based. See `src/components/report-output.js` and `src/core/pill-editor.js` for the data model.
+
+- **Editor surface**: the `.report-output__text` `<pre>` gains the `pill-editor` class and becomes `contentEditable`. Users type free text around inline pill tokens.
+- **Pill tokens**: `.pill` spans with `contentEditable="false"`, colored background per pill kind, each representing a structured data field (e.g. `{{composition}}`). Clicking a pill opens a popover; dragging a pill moves it.
+- **Pill palette panel**: `.report-output__pill-palette` shows on the right side during edit. Groups are *Findings / Scores / Other*, each with `.pill-palette__item` draggable entries. Current live value is previewed via `.pill-palette__item-value` (truncated to 20 chars, HTML-escaped via `escapeHtml`).
+- **Pill popover**: `.pill-popover` — opened with the pencil icon on a selected pill. Lets the user:
+  - Edit display aliases per option value
+  - Toggle the pill's visibility in the report
+  - Add custom options (`+ New field` in the palette creates new pill types)
+  - Remove custom options
+- **Edit bar**: below the report — "Show points" toggle (point-based tools), "Save as Template", "Reset to Default", "Done".
+- **Serialization**: DOM → `editorContent` array of `{ type: 'text' | 'pill', ... }` nodes via `serializeDOM()`. `editorContent` is created lazily on first edit; before that, rendering falls back to the block-based template.
+- **Leak prevention**: the editor uses an `AbortController` to drop event listeners on re-render — don't remove this without an equivalent cleanup.
 
 ### Copy Toast
 - Fixed bottom-right, success color, opacity transition
@@ -241,6 +254,46 @@ Reference this when styling new tools to maintain visual consistency across Radi
 [data-level="5"]                    { color: var(--danger); }    /* Red */
 [data-level="6"], [data-level="7"]  { color: var(--danger); }    /* Red (LR-M, LR-TIV) */
 ```
+
+---
+
+## Validation Badges
+
+Every tool shows a validation status badge next to its name on the landing card and in the tool page hero.
+
+### Placement
+- **Tool card** (`src/main.js` `renderCard()`): injected before the tool's display name inside `<h2 class="tool-card__title">`.
+- **Tool page hero** (`src/core/tool-name.js`): injected into `.tool-hero__text h1`, inserted *after* the `.tool-hero__ref` link (or at end of h1 if no ref link). Runs in `tool-name.js` so every tool gets it for free without per-tool wiring.
+
+### Sizing (from `src/styles/base.css`)
+- `.validation-badge` — 18px × 18px default, `cursor: help`
+- `.tool-hero__text .validation-badge` — 22px × 22px, `margin-left: var(--space-sm)` for extra prominence on tool pages
+- `.tool-card__title .validation-badge` — 18px, `margin-right: 6px`, `translateY(-1px)` for baseline alignment
+
+### Variants
+- **`.validation-badge--warn`** — `color: var(--danger)` (red). Icon: warning triangle with exclamation mark. Hover tooltip: *"Not yet validated. This tool has not been clinically reviewed or tested by the RadioLogicHQ team. Independently verify all scores and recommendations before any clinical use."*
+- **`.validation-badge--ok`** — `color: var(--success)` (green). Icon: check circle. Hover tooltip: *"Clinically validated. This tool has been reviewed and tested by the RadioLogicHQ team against its reference literature."*
+
+### Controlling validation status
+
+All validation state lives in a single `VALIDATED_TOOLS` Set in `src/data/tools-registry.js`. Default is empty (all tools unvalidated). To flip a tool to validated:
+
+```js
+export const VALIDATED_TOOLS = new Set([
+  'tirads',  // add a tool ID here
+]);
+```
+
+The `isValidated(toolId)` helper reads the set, and `validationBadgeHtml(toolId)` returns the appropriate SVG snippet with the right class, title, and aria-label. Both helpers are exported from `tools-registry.js`. Use `validationBadgeHtml()` anywhere you need to render the badge — don't build the SVG by hand.
+
+### Criteria for flipping a tool to validated
+
+Documented in the comments above `VALIDATED_TOOLS`:
+- Unit tests present and passing
+- Scoring logic reviewed against the primary reference paper
+- Report output reviewed by a practicing radiologist
+- Parse rules tested with real-world finding text
+- Edge cases and boundary values verified
 
 ---
 
