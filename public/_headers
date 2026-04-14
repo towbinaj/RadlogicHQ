@@ -1,0 +1,26 @@
+# Cloudflare Pages applies these headers to every response.
+# Tightened CSP is the primary defense against XSS; everything else is
+# defense-in-depth hardening.
+#
+# CSP notes:
+#   - script-src is strict ('self' + Google APIs for Firebase Auth);
+#     no 'unsafe-inline' or 'unsafe-eval' for scripts.
+#   - style-src allows 'unsafe-inline' because several components (e.g.
+#     feedback-widget, auth-ui) inject <style> blocks at runtime. Could
+#     be tightened later by moving those into dedicated .css files.
+#   - connect-src whitelists Firebase Auth + Firestore endpoints.
+#   - frame-src allows accounts.google.com (OAuth popup) and the Firebase
+#     Auth helper iframe at radiologichq.firebaseapp.com.
+#   - frame-ancestors 'none' blocks clickjacking via iframe embedding.
+#
+# If you add a new third-party script or API, update connect-src / script-src
+# accordingly or the browser will block the request.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://apis.google.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://accounts.google.com; frame-src 'self' https://accounts.google.com https://radiologichq.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin-allow-popups

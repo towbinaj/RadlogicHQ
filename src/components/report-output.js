@@ -9,6 +9,20 @@ import {
 } from '../core/pill-editor.js';
 
 /**
+ * HTML-escape a string so it is safe to interpolate into innerHTML.
+ * Used for any user-controlled content that ends up in a template literal
+ * assigned to .innerHTML. Do NOT rely on partial escapes.
+ */
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * <report-output> Web Component
  * Report display with pill-based WYSIWYG editor.
  */
@@ -441,9 +455,9 @@ export class ReportOutput extends HTMLElement {
         for (const item of items) {
           const value = this._templateData ? renderReport(item.display, this._templateData) : '';
           const truncValue = value.length > 20 ? value.substring(0, 17) + '...' : value;
-          h += `<div class="pill-palette__item" draggable="true" data-block-id="${item.blockId}" data-display="${item.display}">
-            <span class="pill-palette__item-label">${item.label}</span>
-            ${truncValue ? `<span class="pill-palette__item-value">${truncValue}</span>` : ''}
+          h += `<div class="pill-palette__item" draggable="true" data-block-id="${escapeHtml(item.blockId)}" data-display="${escapeHtml(item.display)}">
+            <span class="pill-palette__item-label">${escapeHtml(item.label)}</span>
+            ${truncValue ? `<span class="pill-palette__item-value">${escapeHtml(truncValue)}</span>` : ''}
           </div>`;
         }
         h += '</div></div>';
@@ -523,7 +537,7 @@ export class ReportOutput extends HTMLElement {
     if (section?.options || customOptions.length > 0) {
       const allOptions = [...(section?.options || []), ...customOptions.map((co) => ({ id: co.id, label: co.label, custom: true }))];
       html += '<div class="pill-popover__aliases">';
-      html += `<div class="pill-popover__aliases-title">${section?.label || blockId} display text</div>`;
+      html += `<div class="pill-popover__aliases-title">${escapeHtml(section?.label || blockId)} display text</div>`;
       for (const opt of allOptions) {
         const alias = aliases[opt.id] ?? opt.label;
         const escaped = alias.replace(/</g, '&lt;').replace(/>/g, '&gt;');

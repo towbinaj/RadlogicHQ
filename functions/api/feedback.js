@@ -39,11 +39,58 @@ function escapeMd(s) {
   return String(s).replace(/[`*_<>]/g, (c) => '\\' + c);
 }
 
+// Best-effort per-IP rate limit.
+// Module-level state in a Cloudflare Pages Function persists across requests
+// that hit the same worker instance (typically within the same PoP for a
+// short window). It is NOT a global distributed counter — a determined
+// attacker can work around it by routing through different PoPs — but it
+// raises the cost of casual flooding significantly. For strict global
+// limiting, upgrade to Cloudflare KV or Durable Objects.
+const RATE_LIMIT_MAX = 5;       // submissions per window per IP
+const RATE_LIMIT_WINDOW = 60_000; // 1 minute
+const rateMap = new Map();
+
+function checkRateLimit(ip) {
+  if (!ip || ip === 'unknown') return true; // can't limit what we can't identify
+  const now = Date.now();
+  const entry = rateMap.get(ip);
+  if (!entry || now >= entry.resetAt) {
+    rateMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  entry.count += 1;
+  if (entry.count > RATE_LIMIT_MAX) return false;
+  return true;
+}
+
+// Prevent the Map from growing unbounded — clean up every 5 minutes
+// of invocations by pruning expired entries.
+let lastPrune = 0;
+function pruneRateMap() {
+  const now = Date.now();
+  if (now - lastPrune < 5 * 60_000) return;
+  lastPrune = now;
+  for (const [k, v] of rateMap) {
+    if (now >= v.resetAt) rateMap.delete(k);
+  }
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
   if (!env.GITHUB_TOKEN) {
     return json({ error: 'Server not configured (missing GITHUB_TOKEN).' }, 500);
+  }
+
+  // Per-IP rate limit: 5 submissions per minute per IP (see checkRateLimit
+  // for caveats about distributed enforcement).
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  pruneRateMap();
+  if (!checkRateLimit(ip)) {
+    return json(
+      { error: 'Too many submissions. Please wait a minute and try again.' },
+      429
+    );
   }
 
   let payload;
@@ -79,10 +126,6 @@ export async function onRequestPost(context) {
   if (email && email.length > 200) {
     return json({ error: 'Email too long.' }, 400);
   }
-
-  // Lightweight per-IP rate limit via Cloudflare's request metadata.
-  // Cloudflare also enforces global limits; this is a per-IP soft cap.
-  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
 
   // Build issue body
   const lines = [];
@@ -120,8 +163,9 @@ export async function onRequestPost(context) {
   );
 
   if (!ghRes.ok) {
-    const detail = await ghRes.text().catch(() => '');
-    console.error('GitHub API error', ghRes.status, detail);
+    // Log status only — do not log the response body, which may echo tokens
+    // or other sensitive info from misconfigurations.
+    console.error('GitHub API error', ghRes.status);
     return json(
       { error: `GitHub rejected the issue (HTTP ${ghRes.status}). Try again later.` },
       502
