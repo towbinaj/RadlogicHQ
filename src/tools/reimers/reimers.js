@@ -8,7 +8,7 @@ import { renderEditorContent } from '../../core/pill-editor.js';
 import { reimersDefinition } from './definition.js';
 import { calculateReimers } from './calculator.js';
 import { reimersTemplates } from './templates.js';
-import { parseFindings } from '../../core/parser.js';
+import { parseSegmentedFindings } from '../../core/parser.js';
 import { trackEvent } from '../../core/storage.js';
 import '../../core/tool-name.js';
 
@@ -176,14 +176,52 @@ function init() {
   parseBtn.addEventListener('click', () => {
     const text = parseInput.value.trim();
     if (!text) return;
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, reimersDefinition);
+
+    // Laterality-aware parse. The segmenter splits sentences by side;
+    // each side's m1 / m2 extraction routes to rightM1/rightM2 or
+    // leftM1/leftM2. Coxa valga is study-level (not per-side) so we
+    // collect it from any segment or ungrouped.
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, reimersDefinition);
+
+    // Replace semantics: clear all fields before applying.
     for (const key of Object.keys(formState)) delete formState[key];
-    Object.assign(formState, parsed);
-    additionalFindingsEl.value = remainder || '';
+
+    let matchedFieldCount = 0;
+
+    for (const seg of segments) {
+      if (seg.key === 'right') {
+        if (seg.formState.m1 != null) formState.rightM1 = seg.formState.m1;
+        if (seg.formState.m2 != null) formState.rightM2 = seg.formState.m2;
+      } else if (seg.key === 'left') {
+        if (seg.formState.m1 != null) formState.leftM1 = seg.formState.m1;
+        if (seg.formState.m2 != null) formState.leftM2 = seg.formState.m2;
+      }
+      matchedFieldCount += seg.matched.length;
+    }
+
+    // Study-level fields: coxaValga comes from anywhere it appears.
+    for (const src of [...segments.map((s) => s.formState), ungrouped.formState]) {
+      if (src && src.coxaValga) { formState.coxaValga = src.coxaValga; break; }
+    }
+
+    // No segments? Fall back to ungrouped. A single "M1 8 M2 40"
+    // paste with no side marker doesn't have a natural target hip;
+    // we don't attempt to infer one -- the user can type the values
+    // directly into whichever side they need.
+    if (segments.length === 0 && ungrouped.formState) {
+      if (ungrouped.formState.coxaValga) formState.coxaValga = ungrouped.formState.coxaValga;
+      matchedFieldCount = ungrouped.matched.length;
+    }
+
+    const additional = unmatchedSentences
+      .filter((s) => !/^\s*(?:\(\d+\)|\d+\.?)\s*$/.test(s))
+      .join(' ');
+    additionalFindingsEl.value = additional;
     studyAdditionalFindings = additionalFindingsEl.value;
+
     buildUI();
-    const total = matched.length + unmatched.length;
-    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Other Findings' : ''}`;
+
+    parseStatus.textContent = `Matched ${matchedFieldCount} field(s)${unmatchedSentences.length ? ' \u2014 remainder in Other Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });
