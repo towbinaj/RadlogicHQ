@@ -187,10 +187,9 @@
 
 Immediate follow-ups now that the custom domain is live:
 
-- [ ] **Add `GITHUB_TOKEN` to Cloudflare Pages env vars (Secret)** — blocks the
-  in-site feedback widget. Fine-grained PAT, scoped to `towbinaj/radlogichq`
-  with `Issues: Read and write`. Add at Cloudflare dashboard → Pages →
-  radlogichq → Settings → Variables and Secrets, then trigger a redeploy.
+- [x] **`GITHUB_TOKEN` added to Cloudflare Pages env vars (Secret)** —
+  feedback widget verified end-to-end via issue #3 (title prefix, labels,
+  metadata, honeypot, rate limit, PII-free IP hashing all working).
 - [ ] **Submit sitemap to Google Search Console** — property for
   `radiologichq.com`, then Sitemaps → enter `sitemap.xml`.
 - [x] **Verified OG / Twitter card previews**.
