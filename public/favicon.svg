@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220">
-  <title>RadioLogic HQ</title>
-  <rect width="220" height="220" rx="32" fill="#1a1a2e"/>
-  <path d="M 55 35 L 55 185 M 55 35 L 85 35 M 55 185 L 85 185" stroke="#ffffff" stroke-width="6" stroke-linecap="square" fill="none"/>
-  <path d="M 165 35 L 165 185 M 165 35 L 135 35 M 165 185 L 135 185" stroke="#ffffff" stroke-width="6" stroke-linecap="square" fill="none"/>
-  <text x="110" y="148" text-anchor="middle" font-size="115" font-family="Georgia, 'Times New Roman', serif" fill="#ffffff">R</text>
-</svg>

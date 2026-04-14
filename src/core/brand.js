@@ -20,6 +20,9 @@ export const BRAND = {
   wordmarkBlack: `${base}/wordmark-black.png`,
   wordmarkBlue:  `${base}/wordmark-blue.png`,
 
-  // SVG favicon (navy tile + white [R]) lives at site root
-  favicon: '/favicon.svg',
+  // Favicons (logo-r-white composited onto #1a1a2e tile) at site root
+  favicon32:       '/favicon-32.png',
+  favicon192:      '/favicon-192.png',
+  favicon512:      '/favicon-512.png',
+  appleTouchIcon:  '/apple-touch-icon.png',
 };
