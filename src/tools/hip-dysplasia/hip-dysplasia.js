@@ -9,7 +9,7 @@ import { hipDysplasiaDefinition } from './definition.js';
 import { calculateHipDysplasia } from './calculator.js';
 import { hipDysplasiaTemplates } from './templates.js';
 import { getStored, setStored , trackEvent } from '../../core/storage.js';
-import { parseFindings } from '../../core/parser.js';
+import { parseSegmentedFindings } from '../../core/parser.js';
 import '../../core/tool-name.js';
 
 let mode = getStored('mode:hip-dysplasia', 'graf');
@@ -26,7 +26,15 @@ function init() {
   reportEl.definition = hipDysplasiaDefinition;
   reportEl.setTemplates(hipDysplasiaTemplates);
 
-  const formState = { grade: null, side: null, alpha: null, beta: null };
+  // Single-side fields (grade, alpha, beta) are used when side is
+  // 'right' or 'left'. In bilateral mode the per-side fields take
+  // over so each hip carries its own grade + Graf angles.
+  const formState = {
+    grade: null, side: null, alpha: null, beta: null,
+    rightGrade: null, leftGrade: null,
+    rightAlpha: null, leftAlpha: null,
+    rightBeta: null, leftBeta: null,
+  };
   let studyAdditionalFindings = '';
   additionalFindingsEl.addEventListener('input', () => { studyAdditionalFindings = additionalFindingsEl.value; updateReport(); });
 
@@ -36,7 +44,17 @@ function init() {
       const tab = document.createElement('button');
       tab.className = `obs-tab ${mode === m.id ? 'active' : ''}`;
       tab.textContent = m.label;
-      tab.addEventListener('click', () => { mode = m.id; setStored('mode:hip-dysplasia', mode); formState.grade = null; renderModeTabs(); buildUI(); });
+      tab.addEventListener('click', () => {
+        mode = m.id;
+        setStored('mode:hip-dysplasia', mode);
+        // Grades are mode-specific (Graf types vs AAOS categories)
+        // so clear all grade fields when switching modes.
+        formState.grade = null;
+        formState.rightGrade = null;
+        formState.leftGrade = null;
+        renderModeTabs();
+        buildUI();
+      });
       modeTabsEl.appendChild(tab);
     });
   }
@@ -44,38 +62,80 @@ function init() {
   function buildUI() {
     stepContainer.innerHTML = '';
 
-    // Side
+    // --- Side selector (angles moved into per-side cards below) ---
     const sideCard = document.createElement('div');
     sideCard.className = 'card';
-    const angleHtml = mode === 'graf' ? `
-      <div class="input-group" style="max-width:100px;"><label for="alpha-angle">Alpha \u00b0</label><input type="number" id="alpha-angle" class="no-spinner" min="0" max="90" step="0.1" value="${formState.alpha ?? ''}" placeholder="\u00b0"></div>
-      <div class="input-group" style="max-width:100px;"><label for="beta-angle">Beta \u00b0</label><input type="number" id="beta-angle" class="no-spinner" min="0" max="90" step="0.1" value="${formState.beta ?? ''}" placeholder="\u00b0"></div>
-    ` : '';
     sideCard.innerHTML = `
-      <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap; align-items:end;">
-        <div class="input-group"><label>Side</label><div class="toggle-group">${hipDysplasiaDefinition.sideOptions.map((o) => `<button class="toggle-group__btn ${formState.side === o.id ? 'toggle-group__btn--active' : ''}" data-value="${o.id}">${o.label}</button>`).join('')}</div></div>
-        ${angleHtml}
+      <div class="input-group">
+        <label>Side</label>
+        <div class="toggle-group">${hipDysplasiaDefinition.sideOptions.map((o) => `<button class="toggle-group__btn ${formState.side === o.id ? 'toggle-group__btn--active' : ''}" data-value="${o.id}">${o.label}</button>`).join('')}</div>
       </div>
     `;
     sideCard.querySelectorAll('.toggle-group__btn').forEach((btn) => {
-      btn.addEventListener('click', () => { formState.side = btn.dataset.value; sideCard.querySelectorAll('.toggle-group__btn').forEach((b) => b.classList.toggle('toggle-group__btn--active', b === btn)); update(); });
+      btn.addEventListener('click', () => {
+        formState.side = btn.dataset.value;
+        buildUI();
+      });
     });
-    if (mode === 'graf') {
-      sideCard.querySelector('#alpha-angle')?.addEventListener('input', (e) => { formState.alpha = e.target.value !== '' ? parseFloat(e.target.value) : null; update(); });
-      sideCard.querySelector('#beta-angle')?.addEventListener('input', (e) => { formState.beta = e.target.value !== '' ? parseFloat(e.target.value) : null; update(); });
-    }
     stepContainer.appendChild(sideCard);
 
-    // Classification
-    const grades = mode === 'graf' ? hipDysplasiaDefinition.grafTypes : hipDysplasiaDefinition.aaosCategories;
-    const gradeCard = document.createElement('div');
-    gradeCard.className = 'step-card card';
-    gradeCard.innerHTML = `<div class="step-card__question">${mode === 'graf' ? 'Graf Type' : 'AAOS Classification'}</div><div class="hd-grade-grid">${grades.map((g) => `<button class="benign-choice hd-grade-btn ${formState.grade === g.id ? 'benign-choice--active' : ''}" data-grade="${g.id}">${g.image ? `<img class="hd-option-img" src="${g.image}" alt="${g.label}">` : ''}<span class="hd-grade-label">${g.label}</span><span style="font-size:var(--text-xs); color:var(--text-muted);">${g.description}</span></button>`).join('')}</div>`;
-    gradeCard.querySelectorAll('.benign-choice').forEach((btn) => {
-      btn.addEventListener('click', () => { formState.grade = btn.dataset.grade; gradeCard.querySelectorAll('.benign-choice').forEach((b) => b.classList.toggle('benign-choice--active', b.dataset.grade === formState.grade)); update(); });
-    });
-    stepContainer.appendChild(gradeCard);
+    // --- Grade card(s): one in single-side mode, two in bilateral ---
+    if (formState.side === 'bilateral') {
+      stepContainer.appendChild(buildGradeCard('Right hip', 'rightGrade', 'rightAlpha', 'rightBeta'));
+      stepContainer.appendChild(buildGradeCard('Left hip', 'leftGrade', 'leftAlpha', 'leftBeta'));
+    } else {
+      stepContainer.appendChild(buildGradeCard(
+        mode === 'graf' ? 'Graf Type' : 'AAOS Classification',
+        'grade', 'alpha', 'beta',
+      ));
+    }
+
     update();
+  }
+
+  /**
+   * Build one grade + angles card. Used both for single-side mode
+   * (`gradeKey`='grade', `alphaKey`='alpha', `betaKey`='beta') and
+   * for each hip in bilateral mode (side-prefixed keys).
+   */
+  function buildGradeCard(title, gradeKey, alphaKey, betaKey) {
+    const grades = mode === 'graf' ? hipDysplasiaDefinition.grafTypes : hipDysplasiaDefinition.aaosCategories;
+    const card = document.createElement('div');
+    card.className = 'step-card card';
+
+    const angleHtml = mode === 'graf' ? `
+      <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap; margin-bottom:var(--space-sm);">
+        <div class="input-group" style="max-width:100px;"><label>Alpha \u00b0</label><input type="number" class="no-spinner hd-alpha-input" min="0" max="90" step="0.1" value="${formState[alphaKey] ?? ''}" placeholder="\u00b0"></div>
+        <div class="input-group" style="max-width:100px;"><label>Beta \u00b0</label><input type="number" class="no-spinner hd-beta-input" min="0" max="90" step="0.1" value="${formState[betaKey] ?? ''}" placeholder="\u00b0"></div>
+      </div>
+    ` : '';
+
+    card.innerHTML = `
+      <div class="step-card__question">${title}</div>
+      ${angleHtml}
+      <div class="hd-grade-grid">${grades.map((g) => `<button class="benign-choice hd-grade-btn ${formState[gradeKey] === g.id ? 'benign-choice--active' : ''}" data-grade="${g.id}">${g.image ? `<img class="hd-option-img" src="${g.image}" alt="${g.label}">` : ''}<span class="hd-grade-label">${g.label}</span><span style="font-size:var(--text-xs); color:var(--text-muted);">${g.description}</span></button>`).join('')}</div>
+    `;
+
+    if (mode === 'graf') {
+      card.querySelector('.hd-alpha-input')?.addEventListener('input', (e) => {
+        formState[alphaKey] = e.target.value !== '' ? parseFloat(e.target.value) : null;
+        update();
+      });
+      card.querySelector('.hd-beta-input')?.addEventListener('input', (e) => {
+        formState[betaKey] = e.target.value !== '' ? parseFloat(e.target.value) : null;
+        update();
+      });
+    }
+
+    card.querySelectorAll('.benign-choice').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        formState[gradeKey] = btn.dataset.grade;
+        card.querySelectorAll('.benign-choice').forEach((b) => b.classList.toggle('benign-choice--active', b.dataset.grade === formState[gradeKey]));
+        update();
+      });
+    });
+
+    return card;
   }
 
   function update() { const r = calculateHipDysplasia(formState, mode); badgeType.textContent = r.grade; badgeType.dataset.level = r.level; updateReport(); }
@@ -100,13 +160,77 @@ function init() {
   parseBtn.addEventListener('click', () => {
     const text = parseInput.value.trim();
     if (!text) return;
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, hipDysplasiaDefinition);
-    Object.assign(formState, parsed);
-    additionalFindingsEl.value = remainder || '';
+
+    // Laterality-aware parse. Segmenter splits sentences by side,
+    // then we route each segment's grade / alpha / beta to the
+    // per-side fields. Single-side pastes fall through to the
+    // ungrouped bucket and fill the flat fields.
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, hipDysplasiaDefinition);
+
+    // Reset all grade / angle fields before applying.
+    formState.grade = null;
+    formState.alpha = null;
+    formState.beta = null;
+    formState.rightGrade = null;
+    formState.leftGrade = null;
+    formState.rightAlpha = null;
+    formState.leftAlpha = null;
+    formState.rightBeta = null;
+    formState.leftBeta = null;
+
+    const sidesTouched = new Set();
+    for (const seg of segments) {
+      if (seg.key === 'right') {
+        if (seg.formState.grade) formState.rightGrade = seg.formState.grade;
+        if (seg.formState.alpha != null) formState.rightAlpha = seg.formState.alpha;
+        if (seg.formState.beta != null) formState.rightBeta = seg.formState.beta;
+        sidesTouched.add('right');
+      } else if (seg.key === 'left') {
+        if (seg.formState.grade) formState.leftGrade = seg.formState.grade;
+        if (seg.formState.alpha != null) formState.leftAlpha = seg.formState.alpha;
+        if (seg.formState.beta != null) formState.leftBeta = seg.formState.beta;
+        sidesTouched.add('left');
+      }
+    }
+
+    // Single-side / no-marker: fall back to ungrouped.
+    if (segments.length === 0 && ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
+      if (ungrouped.formState.grade) formState.grade = ungrouped.formState.grade;
+      if (ungrouped.formState.alpha != null) formState.alpha = ungrouped.formState.alpha;
+      if (ungrouped.formState.beta != null) formState.beta = ungrouped.formState.beta;
+      if (ungrouped.formState.side) formState.side = ungrouped.formState.side;
+    }
+
+    // Auto-switch side based on segments.
+    if (sidesTouched.has('right') && sidesTouched.has('left')) {
+      formState.side = 'bilateral';
+    } else if (sidesTouched.has('right')) {
+      formState.side = 'right';
+      formState.grade = formState.rightGrade;
+      formState.alpha = formState.rightAlpha;
+      formState.beta = formState.rightBeta;
+    } else if (sidesTouched.has('left')) {
+      formState.side = 'left';
+      formState.grade = formState.leftGrade;
+      formState.alpha = formState.leftAlpha;
+      formState.beta = formState.leftBeta;
+    }
+
+    const additional = unmatchedSentences
+      .filter((s) => !/^\s*(?:\(\d+\)|\d+\.?)\s*$/.test(s))
+      .join(' ');
+    additionalFindingsEl.value = additional;
     studyAdditionalFindings = additionalFindingsEl.value;
+
     buildUI();
-    const total = matched.length + unmatched.length;
-    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+
+    const totalMatched = segments.reduce((n, s) => n + s.matched.length, 0)
+      + (segments.length === 0 ? ungrouped.matched.length : 0);
+    const routingParts = [];
+    if (sidesTouched.has('right')) routingParts.push('right');
+    if (sidesTouched.has('left')) routingParts.push('left');
+    const routing = routingParts.length === 2 ? 'both sides' : routingParts[0] || 'active side';
+    parseStatus.textContent = `Matched ${totalMatched} field(s) to ${routing}${unmatchedSentences.length ? ' \u2014 remainder in Additional Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });

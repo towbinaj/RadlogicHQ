@@ -39,6 +39,11 @@ export const hipDysplasiaDefinition = {
     { id: 'bilateral', label: 'Bilateral' },
   ],
 
+  // Bilateral pastes like "Right hip: Graf Type Ib. Left hip: Graf
+  // Type IIc." split into per-side segments so each hip carries its
+  // own grade + alpha/beta angles independently.
+  parseSegmentation: { type: 'laterality' },
+
   parseRules: {
     grade: {
       options: {
