@@ -169,169 +169,67 @@ Sections 6–7 cover the two segmenter types; section 8 covers the handler idiom
 
 ## 6. Laterality segmenter
 
-The laterality segmenter splits text into `right` and `left` regions
-by classifying each sentence independently against three regex
-patterns at the top of `parser.js`: `BILATERAL_RE`, `RIGHT_RE`,
-`LEFT_RE`.
+Splits text into `right` / `left` regions by classifying each sentence against three regexes in `parser.js`: `BILATERAL_RE`, `RIGHT_RE`, `LEFT_RE`. All three share an **organ anchor list** and must stay in sync — look for the "Organ list is kept in sync" comment when extending.
 
-### Organ list
+**Anchor list** (Phase 1 + Phase 2): kidney, adrenal, ovary, breast, lung, hip, side, organ, knee, shoulder, elbow, wrist, ankle, hand, foot, joint, ventricle. Adding a new anchor is a parser.js edit to all three regexes.
 
-All three regexes share an organ anchor list. A sentence only counts
-as "right-sided" or "left-sided" if the side word is followed by an
-organ name from this list:
-
-**Abdominal/pelvic/thoracic** (Phase 1): kidney, adrenal, ovary,
-breast, lung, hip, side, organ
-
-**MSK joints** (Phase 2 added in commits `ee55036`/`6e6515b`):
-knee, shoulder, elbow, wrist, ankle, hand, foot, joint, ventricle
-
-To add a new anchor for a new tool, edit the three regexes together
-— they must stay in sync or bilateral detection desyncs from
-left/right detection. Look for the "Organ list is kept in sync"
-comment in `parser.js`.
-
-### Modifier word between side and organ
-
-`RIGHT_RE` and `LEFT_RE` allow one **optional modifier word** between
-the side word and the organ anchor:
-
-```js
-/\b(?:the\s+)?right\s+(?:\w+\s+)?(?:kidney|...|ventricle|...)s?\b/
-```
-
-This lets natural phrasings match without adding every combination
-to the anchor list:
-
-- `right lateral ventricle` ✓ (fetal-ventricle)
-- `right upper lobe lung` ✓
-- `right main pulmonary artery` — doesn't match because `artery` isn't
-  in the anchor list, but `lung` is absent here anyway
-- `right arm bone fracture with knee findings` — matches on the
-  `knee` anchor, correct for an MSK tool
-
-The anchor word is still the disambiguator. Adding `(?:\w+\s+)?`
-widens acceptable phrasings without broadening false-positive risk.
+**Modifier word:** `RIGHT_RE`/`LEFT_RE` allow one optional word between the side and the anchor via `(?:\w+\s+)?`, so `right lateral ventricle`, `right upper lobe lung`, `left middle lobe` all match. The anchor is still the disambiguator; widening to multiple modifier words raises false-positive risk.
 
 ### Bilateral phrasings
 
-`BILATERAL_RE` recognizes six families of "both sides" dictation
-patterns. Sentences matching any of these produce entries in **both**
-the right and left segments; callers never see a `'bilateral'` key:
+`BILATERAL_RE` recognizes six families. Matching sentences produce entries in **both** segments — callers never see a `'bilateral'` key:
 
 | Form | Example |
 |---|---|
 | Prefix plural | `bilateral kidneys`, `both knees` |
-| `bilaterally` adverb | `the kidneys are enlarged bilaterally` |
-| Conjunction | `the right and left kidneys`, `left and right breasts` |
-| Postposed plural | `the kidneys each have`, `the knees both show` |
-| Copula | `the kidneys are both enlarged`, `knees have each` |
+| Adverb | `the kidneys are enlarged bilaterally` |
+| Conjunction | `the right and left kidneys` |
+| Postposed | `the kidneys each have`, `the knees both show` |
+| Copula | `the kidneys are both enlarged` |
 | Prepositional | `each of the kidneys`, `both of the breasts` |
 | Distributive singular | `each kidney`, `each knee` |
 
-When both `right <organ>` and `left <organ>` appear in the same
-sentence as a conjunction ("the right and left kidneys both show
-..."), the entire sentence is treated as bilateral. This is checked
-**after** `BILATERAL_RE` via a separate `hasRight && hasLeft` fallback
-in `classifySentenceLaterality`.
+A sentence containing both `right <organ>` and `left <organ>` (conjunction-like, e.g. `"the right and left kidneys both show..."`) is also treated as bilateral via a `hasRight && hasLeft` fallback in `classifySentenceLaterality` after `BILATERAL_RE`.
 
 ### Sentence splitter
 
-`splitSentences(text)` is the tokenizer. It splits on:
+`splitSentences` splits on `.`/`!`/`?` + whitespace + **uppercase letter**, or on newlines. The uppercase requirement preserves decimals like `"2.5 cm"` (next char lowercase). `"Dr. Smith"` abbreviations can split incorrectly but rarely appear in findings. Tools with non-standard delimiters (semicolons, comma-joined clauses) may miss segmentation — see idiom (d) in section 8 for the fallback.
 
-- Period / `!` / `?` followed by whitespace **and an uppercase letter**
-- Newlines (any count)
+### Sticky attribution rules
 
-The uppercase-letter requirement is deliberate: it preserves decimal
-measurements like `"2.5 cm"` (the next char is lowercase) while still
-splitting real sentence boundaries. The cost is that `"Dr. Smith"`
-style abbreviations followed by capitalized names will split
-incorrectly, but these rarely appear in findings text.
+Sentences walked in order with a `currentSide` sticky state:
 
-Decimals like `0.5`, `1.2`, `12.5` are always preserved. If a tool
-uses non-standard sentence delimiters (e.g., semicolons or comma-
-joined clauses for per-side measurements), the segmenter may miss
-them — see section 8 idiom (d) for the flow-text fallback pattern.
+- **Explicit marker** (`right kidney`, `Left:`) — sets `currentSide`, routes here.
+- **No marker** — inherits `currentSide`. If no sticky yet, goes to `ungrouped`.
+- **`contralateral` / `the other kidney` / `opposite side`** — flips for **this sentence only**; sticky unchanged.
+- **`ipsilateral` / `same side`** — reinforces current sticky.
+- **Bilateral sentence** — routes to both sides; does NOT change `currentSide`.
 
-### Sticky attribution + contralateral flip
-
-Sentences are walked in order, maintaining a `currentSide` sticky
-state:
-
-1. A sentence with an **explicit** right/left marker sets
-   `currentSide` and gets routed to that side.
-2. A sentence with **no marker** inherits `currentSide`. If there's
-   no sticky side yet (text before the first marker), the sentence
-   goes to `ungrouped`.
-3. A sentence with `contralateral`, `the other kidney`, or `the
-   opposite side` **flips the side for that sentence only**.
-   `currentSide` stays pointing at the previous explicit side, so
-   the next plain sentence still inherits the original side — not
-   the flipped one.
-4. A sentence with `ipsilateral` or `the same side` reinforces
-   `currentSide` (routes the sentence there without changing the
-   sticky state).
-5. A `bilateral` sentence routes to both sides but **does not**
-   change `currentSide` — an explicit side later in the text can
-   still take over.
-
-`ungrouped` collects everything before the first side-bearing
-sentence. This is where report headers like `"CT abdomen performed
-with IV contrast"` land, and tools route it to whichever bucket
-their handler defines as the default (usually the currently-active
-side or a no-op fallback).
+`ungrouped` holds text before the first side-bearing sentence (typical home for report headers like `"CT abdomen with IV contrast"`).
 
 ---
 
 ## 7. ItemIndex segmenter
 
-The item-index segmenter splits text by numbered item markers:
+Splits text by numbered item markers. `itemLabel` defaults to `'item'` but should match the tool's canonical term (Nodule, Cyst, Lesion, Mass, Observation, Target).
 
 ```js
 parseSegmentation: { type: 'itemIndex', itemLabel: 'Nodule' }
 ```
 
-`itemLabel` defaults to `'item'` but should be set to the tool's
-canonical term (Nodule, Cyst, Lesion, Mass, Observation, Target).
-
-### Marker patterns
-
-Three marker forms are recognized by `segmentByItemIndex`:
+**Three marker forms** recognized by `segmentByItemIndex`:
 
 | Form | Example | Regex |
 |---|---|---|
-| Explicit | `Nodule 1`, `nodule #1`, `Nodule 1:` | `\b${label}\s*#?\s*(\d+)\s*:?` (case-insensitive) |
-| Word form | `first nodule`, `second nodule`, ... `tenth nodule` | `\b(first\|second\|...\|tenth)\s+${label}\b` |
-| Numbered line | `1.`, `(2)`, `3.` at line start | `(?:^\|\n)\s*(?:\((\d+)\)\|(\d+)\.)\s` |
+| Explicit | `Nodule 1`, `nodule #1`, `Nodule 1:` | `\b${label}\s*#?\s*(\d+)\s*:?` |
+| Word form | `first nodule`, …, `tenth nodule` | `\b(first\|…\|tenth)\s+${label}\b` |
+| Numbered line | `1.`, `(2)` at line start | `(?:^\|\n)\s*(?:\((\d+)\)\|(\d+)\.)\s` |
 
-All three produce segments keyed `item-<N>` with an `index: N` field.
-The handler typically maps the index directly to a label like
-`Nodule ${seg.index}`.
-
-The word form is case-insensitive and bounded by word boundaries,
-so `"the nodule is first seen"` does NOT match (no `first nodule` in
-that order).
-
-The numbered-line form is anchored to start-of-text or newline so
-inline `"1."` in flowing prose doesn't get mis-segmented. But it
-does leak the bare marker (`"1."`, `"2."`) into the downstream
-sentence splitter as an extra short sentence — see the bare-marker
-filter idiom below.
-
-### Same-index deduping
-
-If the same index appears more than once (e.g., `"Nodule 1: ...
-Nodule 1: additional note"`), the two chunks are **merged** into a
-single segment for that index, text concatenated with a newline.
-This is usually what you want for follow-up pastes where a nodule
-is re-mentioned.
+All three produce segments keyed `item-<N>` with `index: N`. Word form is word-bounded so `"the nodule is first seen"` doesn't match. Same-index chunks are merged (concatenated with newline) — useful for follow-up pastes that re-mention a nodule.
 
 ### Bare-marker filter idiom
 
-Numbered-line markers (`"1."`, `"2."`) get consumed by the
-segmenter but can leak back into `unmatchedSentences` as fragments
-that should NOT show up in Additional Findings. Every item-index
-handler in the codebase filters them out before joining:
+Numbered-line markers (`"1."`, `"2."`) can leak back into `unmatchedSentences` as short fragments. Every item-index handler filters them:
 
 ```js
 const additional = unmatchedSentences
@@ -339,9 +237,7 @@ const additional = unmatchedSentences
   .join(' ');
 ```
 
-The regex matches any sentence that's nothing but whitespace + a
-numbered marker (`"1"`, `"1."`, `"(2)"`). Real content sentences are
-always longer than this, so the filter never drops useful text.
+The regex matches only pure whitespace + number; real content is always longer.
 
 ---
 
