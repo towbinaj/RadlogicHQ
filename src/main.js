@@ -1,6 +1,7 @@
 import './styles/base.css';
 import './styles/forms.css';
 import './components/auth-ui.js';
+import './components/feedback-widget.js';
 import { toolsRegistry, getModalityLabel, getActiveLabels, MODALITIES } from './data/tools-registry.js';
 import { loadSharedTemplate } from './core/user-data.js';
 import { isLoggedIn } from './core/auth.js';

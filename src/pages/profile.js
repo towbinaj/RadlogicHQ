@@ -2,6 +2,7 @@ import '../styles/base.css';
 import '../styles/forms.css';
 import './profile.css';
 import '../components/auth-ui.js';
+import '../components/feedback-widget.js';
 import { onAuthChange, getUser, signOut, deleteAccount } from '../core/auth.js';
 import { getSavedReports, getPreferences, exportAllUserData, deleteAllUserData } from '../core/user-data.js';
 import { getStored, setStored } from '../core/storage.js';

@@ -6,6 +6,7 @@
  * The tool ID is detected from the URL path.
  */
 import { getToolDisplayName, getStored } from './storage.js';
+import '../components/feedback-widget.js';
 
 // Apply compact mode globally on all tool pages
 if (getStored('compact') === 1 || getStored('compact') === '1') {

@@ -1,6 +1,7 @@
 import '../styles/base.css';
 import '../styles/forms.css';
 import '../components/auth-ui.js';
+import '../components/feedback-widget.js';
 
 document.getElementById('guide-content').innerHTML = `
 <h1>User Guide</h1>

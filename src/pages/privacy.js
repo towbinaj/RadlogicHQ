@@ -1,6 +1,7 @@
 import '../styles/base.css';
 import '../styles/forms.css';
 import '../components/auth-ui.js';
+import '../components/feedback-widget.js';
 
 document.getElementById('privacy-content').innerHTML = `
 <h1>Privacy Policy</h1>
