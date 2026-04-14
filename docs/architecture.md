@@ -9,11 +9,12 @@ RadioLogicHQ is a collection of 42 radiology calculators that output structured 
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Vanilla ES6+ modules, Web Components, HTML5, CSS3 |
-| Build | Vite 8 (MPA mode — auto-discovers HTML entries from src/tools/ and src/pages/) |
+| Build | Vite 8.0.8 (MPA mode — auto-discovers HTML entries from src/tools/ and src/pages/) |
 | Test | Vitest (co-located *.test.js files) |
 | Backend | Firebase (Firestore + Auth) |
-| Auth | Email/password + Google OAuth + forgot password |
-| Hosting | Cloudflare Pages (auto-deploy from GitHub) |
+| Auth | Email/password + Google OAuth + forgot password + change password |
+| Serverless | Cloudflare Pages Functions (`functions/api/feedback.js` — creates GitHub issues from the in-site feedback widget) |
+| Hosting | Cloudflare Pages (auto-deploy from GitHub), custom domain `radiologichq.com` |
 | Fonts | Inter (self-hosted woff2 — no CDN) |
 | Data | RadElement CDE sets (bundled JSON) |
 
@@ -31,7 +32,14 @@ Browser
             ├── saved_reports/{id}
             └── analytics_aggregate/{counterId}
 
-Cloudflare Pages → serves dist/ → auto-deploys on git push
+Browser → <feedback-widget> modal
+      └── POST /api/feedback → Cloudflare Pages Function
+            └── GitHub Issues API (towbinaj/radlogichq) via GITHUB_TOKEN secret
+
+Cloudflare Pages → serves dist/ + public/ → auto-deploys on git push to main
+      ├── Custom domain: radiologichq.com (+ www redirect)
+      ├── Security headers from public/_headers (CSP, HSTS, X-Frame-Options)
+      └── Runtime: Pages Functions under functions/ directory
 ```
 
 ## Project Structure
@@ -41,43 +49,62 @@ RadioLogicHQ/
 ├── src/
 │   ├── core/                          # Shared framework
 │   │   ├── firebase.js                # Firebase client init
-│   │   ├── auth.js                    # Auth (sign in/up/out, Google, forgot, delete)
-│   │   ├── auth-state.js             # Shared auth state (breaks circular dep between auth ↔ user-data)
-│   │   ├── user-data.js              # Firestore CRUD (prefs, templates, reports, analytics, export, delete)
+│   │   ├── auth.js                    # Auth (sign in/up/out, Google, forgot, delete, updateUserPassword)
+│   │   ├── auth-state.js              # Shared auth state (breaks circular dep between auth ↔ user-data)
+│   │   ├── user-data.js               # Firestore CRUD (prefs, templates, reports, analytics, export, delete)
 │   │   ├── storage.js                 # Smart storage: localStorage + Firestore sync + toast on failure
-│   │   ├── toast.js                   # Lightweight toast notification (Firestore sync errors)
+│   │   ├── toast.js                   # Lightweight toast notification
 │   │   ├── engine.js                  # Point-based score calculator
-│   │   ├── renderer.js               # Form builder from tool definitions
+│   │   ├── renderer.js                # Form builder from tool definitions
 │   │   ├── report.js                  # Template engine ({{variable}}, {{#if}})
-│   │   ├── pill-editor.js            # Pill editor data model + serialization
+│   │   ├── pill-editor.js             # Pill editor data model + serialization
 │   │   ├── parser.js                  # Text parser for paste-to-autofill
 │   │   ├── cde.js                     # CDE mapping registry
-│   │   └── clipboard.js              # Copy-to-clipboard
+│   │   ├── clipboard.js               # Copy-to-clipboard
+│   │   ├── tool-name.js               # Tool name overrides + auto-imports feedback-widget on tool pages
+│   │   └── brand.js                   # BRAND constants (logo/wordmark/favicon paths)
 │   ├── components/
-│   │   ├── report-output.js           # <report-output> — pill editor, copy, save, history, share
-│   │   └── auth-ui.js                # <auth-ui> — sign in/up modal
-│   ├── tools/                             # 42 tool directories
+│   │   ├── report-output.js           # <report-output> — pill editor, copy, save, history, share (+ escapeHtml helper)
+│   │   ├── auth-ui.js                 # <auth-ui> — sign in/up modal
+│   │   └── feedback-widget.js         # <feedback-widget> — floating bug-report button, self-inserts on import
+│   ├── tools/                         # 42 tool directories
 │   │   ├── tirads/                    # TI-RADS (point-based)
 │   │   ├── lirads/                    # LI-RADS (decision-tree)
 │   │   ├── aast-liver/                # AAST Liver (shared calculator for all AAST organs)
 │   │   ├── bone-age/                  # Bone Age G&P (shared calculator for Sontag)
 │   │   └── ...                        # 38 more tool directories
 │   ├── pages/
-│   │   ├── profile.html/js/css        # User profile, preferences, data management
-│   │   └── privacy.html/js            # Privacy policy
+│   │   ├── profile.html/js/css        # User profile, preferences, password change, data management
+│   │   ├── privacy.html/js            # Privacy policy
+│   │   └── guide.html/js              # User guide
 │   ├── styles/
 │   │   ├── variables.css              # CSS custom properties (dark theme)
-│   │   ├── base.css                   # Global resets, layout, self-hosted fonts
+│   │   ├── base.css                   # Global resets, layout, site-header (wordmark sizing)
 │   │   └── forms.css                  # All shared styles (report, auth, pills, palette)
 │   ├── data/
 │   │   ├── tools-registry.js          # Central tool metadata + labels
 │   │   └── cde-sets/                  # Bundled CDE JSON
 │   └── assets/
 │       └── fonts/                     # Self-hosted Inter woff2 (GDPR)
-├── public/images/{toolId}/            # SVG reference diagrams
+├── functions/
+│   └── api/
+│       └── feedback.js                # Cloudflare Pages Function → GitHub Issues API (uses GITHUB_TOKEN secret)
+├── public/
+│   ├── _headers                       # Cloudflare Pages response headers (CSP, HSTS, X-Frame-Options, etc.)
+│   ├── favicon-32.png                 # Browser tab icon (navy tile + white [R])
+│   ├── favicon-192.png                # Android/PWA icon
+│   ├── favicon-512.png                # High-DPI / OpenGraph image
+│   ├── apple-touch-icon.png           # iOS home-screen icon (180×180)
+│   ├── sitemap.xml                    # SEO (52 URLs)
+│   ├── robots.txt                     # SEO (allow *, disallow /api/)
+│   ├── brand/                         # Brand assets
+│   │   ├── logo-r-{white,black,blue}.png
+│   │   ├── wordmark-{white,black,blue}.png           # full-res masters
+│   │   └── wordmark-{white,black,blue}-{400,800,1200}.png   # srcset variants
+│   └── images/{toolId}/               # Reference SVG diagrams per tool
 ├── firestore.rules                    # Firestore security rules
 ├── wrangler.jsonc                     # Cloudflare Pages config
-├── .env.local                         # Firebase config (gitignored)
+├── .env.local                         # Firebase VITE_* env vars (gitignored; mirrored in Cloudflare Pages env vars)
 └── docs/                              # This documentation
 ```
 
@@ -184,11 +211,34 @@ Click "Sign In" → Modal opens
 - Users can only read/write their own profiles, preferences, templates, reports
 - Shared templates readable by anyone (via shareCode)
 - Analytics counters publicly readable/writable (aggregate only, no PII)
+- Verified by OWASP audit — no IDOR or over-permissive rules
+
+### HTTP Security Headers (`public/_headers`)
+- **Content-Security-Policy**: strict `script-src 'self'` + Google APIs (OAuth + Firebase); `connect-src` whitelists Firebase Auth / Firestore endpoints; `frame-ancestors 'none'`; `style-src 'self' 'unsafe-inline'` (relaxation for runtime-injected component styles)
+- **Strict-Transport-Security**: 1y preload
+- **X-Frame-Options**: DENY (clickjacking)
+- **X-Content-Type-Options**: nosniff
+- **Referrer-Policy**: strict-origin-when-cross-origin
+- **Permissions-Policy**: camera, microphone, geolocation, interest-cohort all disabled
+- **COOP**: same-origin-allow-popups (needed for Google OAuth popup)
+
+### XSS Defense
+- `escapeHtml()` helper in `src/components/report-output.js` wraps any user-controlled content that lands in `innerHTML` template literals (pill palette truncValue, item labels, section labels)
+- CSP is the defense-in-depth layer that would contain any future XSS
+
+### Feedback Pipeline (`functions/api/feedback.js`)
+- Honeypot field rejects naive bots silently
+- Length validation: subject 3–100, body 10–2000
+- Per-IP rate limit: 5 submissions per 60s (best-effort, module-level Map)
+- PII-free logging: IPs are SHA-256 hashed and truncated to 12 chars before going into the issue body
+- Markdown escape on all user text to prevent injection into the rendered GitHub issue
+- GITHUB_TOKEN stored as Cloudflare Pages Secret (not Plaintext)
 
 ### HIPAA
-- No PHI stored anywhere
+- No PHI stored anywhere intentionally
 - PHI disclaimer on every report output
 - No individual timestamps or IP logging
+- Free-text form fields are a theoretical PHI surface — UI warning is the only control, not a technical block
 - See `docs/compliance.md`
 
 ### GDPR

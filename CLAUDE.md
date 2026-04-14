@@ -17,15 +17,20 @@ npm run check-synonyms -- --all  # Check all tools
 - Dark radiology reading room theme by default
 
 ## Key Directories
-- `src/core/` — Shared framework (engine, renderer, report/pill-editor, auth, auth-state, storage, toast, parser, Firebase client)
-- `src/components/` — Web Components (report-output with pill editor, auth-ui modal)
+- `src/core/` — Shared framework (engine, renderer, report/pill-editor, auth, auth-state, storage, toast, parser, Firebase client, `brand.js` constants)
+- `src/components/` — Web Components (`report-output` with pill editor, `auth-ui` modal, `feedback-widget` floating bug-report button)
 - `src/tools/{toolId}/` — One directory per calculator tool (42 tools)
-- `src/pages/` — Non-tool pages (profile, privacy)
+- `src/pages/` — Non-tool pages (profile, privacy, guide)
 - `src/styles/` — CSS: variables.css, base.css, forms.css (shared styles)
 - `src/data/` — Tools registry, CDE sets
 - `src/assets/fonts/` — Self-hosted Inter font (GDPR: no Google Fonts CDN)
+- `public/brand/` — Logo + wordmark PNGs (white/black/blue, with responsive srcset variants `-400/-800/-1200`)
 - `public/images/{toolId}/` — Reference SVG images per tool
-- `docs/` — architecture.md, state.md, newtool.md, toolui.md, compliance.md
+- `public/favicon-{32,192,512}.png` + `public/apple-touch-icon.png` — favicon set (navy tile + white [R] mark)
+- `public/_headers` — Cloudflare Pages headers file (CSP, HSTS, X-Frame-Options, etc. — the primary XSS defense)
+- `public/sitemap.xml`, `public/robots.txt` — SEO
+- `functions/api/` — Cloudflare Pages Functions. Only one right now: `feedback.js` (handles `/api/feedback` → creates GitHub issues via the `GITHUB_TOKEN` env var)
+- `docs/` — architecture.md, state.md, newtool.md, toolui.md, compliance.md, brand.md
 
 ## Tools (42 active)
 
@@ -118,11 +123,13 @@ Helper: `getSizeUnit(toolId)` falls back to `defaultUnit` then 'mm'.
 - All favorites/hidden state syncs to Firestore
 
 ## Authentication
-- Firebase Auth: email/password + Google OAuth + forgot password
+- Firebase Auth: email/password + Google OAuth + forgot password + **change password** (profile page)
 - `<auth-ui>` modal on all pages — AcademiQR-inspired design
 - Signup requires privacy policy consent checkbox
 - Header shows username when logged in, links to profile
 - Anonymous users can use all tools (auth required only for saving)
+- Google OAuth requires `radiologichq.com` + `www.radiologichq.com` in Firebase Console → Authentication → Settings → Authorized domains (separate from Cloudflare custom domains and CSP whitelist)
+- Password change (`updateUserPassword` in `auth.js`) re-authenticates via `EmailAuthProvider.credential()` before calling `updatePassword()` — Firebase requires recent auth for sensitive ops
 
 ## Data Flow
 - **Logged out**: localStorage only (current behavior)
@@ -141,9 +148,19 @@ Helper: `getSizeUnit(toolId)` falls back to `defaultUnit` then 'mm'.
 - editorContent serialized as array of text/pill nodes
 - Backward compatible: falls back to block-based rendering if no editorContent
 
+## Feedback Widget
+- `<feedback-widget>` floating button (bottom-left on every page), imports auto-insert the element into `<body>`
+- Modal with type (bug/feature/question), subject, body, optional email; honeypot field catches bots
+- POSTs to `/api/feedback` → `functions/api/feedback.js` (Cloudflare Pages Function)
+- Function validates input, checks per-IP rate limit (5/min), escapes markdown, posts to GitHub Issues API using `GITHUB_TOKEN` env var
+- `GITHUB_TOKEN` is a fine-grained PAT scoped to `towbinaj/radlogichq` with `Issues: Read and write`, stored as a Cloudflare Pages **Secret** (not Plaintext)
+- Import is wired via `main.js`, `tool-name.js` (covers all tool pages), and the 3 sub-page entry files
+
 ## Compliance
-- **HIPAA**: No PHI stored. PHI disclaimer on reports. No individual timestamps. Aggregate-only analytics.
+- **HIPAA**: No PHI stored. PHI disclaimer on reports. No individual timestamps. Aggregate-only analytics. Free-text fields could theoretically hold PHI — only a UI warning prevents it, not a technical control.
 - **GDPR**: Self-hosted fonts. Privacy policy page. Account deletion + data export. Consent at signup.
+- **Security headers**: CSP (strict script-src, Firebase Auth/Firestore whitelisted), HSTS preload, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy, COOP — all in `public/_headers`
+- **XSS**: User-supplied content inserted via innerHTML (notably in the pill palette render) passes through `escapeHtml()` helper in `report-output.js`. When writing new `innerHTML` template strings, escape any data that touches user input.
 - See `docs/compliance.md` for full details
 
 ## Conventions
@@ -186,3 +203,11 @@ See `docs/newtool.md` for the complete checklist.
 - Hand-written `parseRules` override auto-generated on conflict — use for disease-specific terminology (30 tools have these)
 - Two synonym layers: cross-tool (SYNONYMS dict in `parser.js`) and tool-specific (`parseRules` in each `definition.js`)
 - Run `npm run check-synonyms {toolId}` to check coverage; add missing synonyms to `SYNONYMS` or `parseRules` as needed
+- **CSP in `public/_headers`**: Any new third-party script, analytics service, image CDN, or API call must be added to the appropriate CSP directive (`script-src`, `connect-src`, `img-src`) or the browser will block it. Test in an incognito window after deploy; CSP violations appear in the DevTools Console as "Refused to ... because it violates the following Content Security Policy directive".
+- **Brand assets**: Use the `BRAND` constants from `src/core/brand.js` (logoWhite, wordmarkWhite, etc.) rather than hardcoding `/brand/foo.png` paths — single source of truth if files are renamed.
+- **Header wordmark srcset**: The header `<img>` uses `srcset` with 400w/800w/1200w variants. If you bump the CSS height (`.site-header__wordmark { height }`), update `sizes` attribute across all 52 HTML files to match the new rendered width.
+- **Pages Functions are separate from Vite**: `functions/` is deployed by Cloudflare Pages directly, not bundled by Vite. Env vars for Functions (like `GITHUB_TOKEN`) live in Cloudflare Pages dashboard → Settings → Variables and Secrets (not `.env.local`).
+- **Runtime env vars vs build-time**: `VITE_FIREBASE_*` vars are inlined into the client bundle at build time (they're public). Function env vars like `GITHUB_TOKEN` are server-side only and must be set as Cloudflare Pages **Secrets** (not Plaintext).
+- **Google OAuth requires Firebase Authorized Domains**: Separate from the CSP whitelist. Add `radiologichq.com` at Firebase Console → Authentication → Settings → Authorized domains, or you'll get `auth/unauthorized-domain` on sign-in attempts.
+- **`escapeHtml()` helper** in `src/components/report-output.js` — use it any time you interpolate user-controlled data into an `innerHTML` template literal. The pill palette currently uses it for truncValue, item labels, and section labels.
+- **Vite updates**: Run `npm audit` after any dep upgrade. Vite has a history of dev-server CVEs (path traversal via `server.fs.deny` bypass, etc.). Production is unaffected (static files) but dev machines matter.

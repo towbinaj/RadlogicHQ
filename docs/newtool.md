@@ -320,13 +320,29 @@ export const {toolId}Templates = {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{Tool Name} | RadioLogicHQ</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <meta name="description" content="{Tool Name} calculator with structured report output for PowerScribe and RadAI.">
+  <link rel="canonical" href="https://radiologichq.com/src/tools/{toolId}/{toolId}.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="RadioLogicHQ">
+  <meta property="og:title" content="{Tool Name} | RadioLogicHQ">
+  <meta property="og:description" content="{Tool Name} calculator with structured report output for PowerScribe and RadAI.">
+  <meta property="og:url" content="https://radiologichq.com/src/tools/{toolId}/{toolId}.html">
+  <meta property="og:image" content="https://radiologichq.com/favicon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{Tool Name} | RadioLogicHQ">
+  <meta name="twitter:description" content="{Tool Name} calculator with structured report output for PowerScribe and RadAI.">
+  <meta name="twitter:image" content="https://radiologichq.com/favicon-512.png">
 </head>
 <body>
   <header class="site-header">
     <div class="container">
-      <a href="/" class="site-header__logo">RadioLogicHQ</a>
+      <a href="/" class="site-header__logo"><img src="/brand/wordmark-white-400.png" srcset="/brand/wordmark-white-400.png 400w, /brand/wordmark-white-800.png 800w, /brand/wordmark-white-1200.png 1200w" sizes="172px" alt="RadioLogic HQ" class="site-header__wordmark"></a>
       <nav class="site-header__nav">
         <a href="/">All Tools</a>
+        <auth-ui></auth-ui>
       </nav>
     </div>
   </header>
@@ -377,6 +393,18 @@ export const {toolId}Templates = {
 ---
 
 ## 7. Page Controller (`{toolId}.js`)
+
+**Required imports (get you the full chrome for free):**
+```js
+import '../../styles/base.css';
+import '../../styles/forms.css';
+import './{toolId}.css';
+import '../../components/report-output.js';
+import '../../components/auth-ui.js';
+import '../../core/tool-name.js';   // auto-imports feedback-widget, custom tool names, compact mode
+```
+The feedback widget (floating bottom-left "Feedback" button → GitHub Issues)
+auto-inserts itself from `tool-name.js`. No additional wiring needed.
 
 **Key responsibilities:**
 - Import styles (`base.css`, `forms.css`, tool CSS) and `report-output.js` component
@@ -515,7 +543,12 @@ Landing page renders automatically from the registry — no HTML edits needed.
 - [ ] Synonym coverage checked (`npm run check-synonyms {toolId}`) — add missing synonyms to `SYNONYMS` in `parser.js` if needed
 - [ ] CDE set ID and element IDs correct per radelement.org
 - [ ] Tool registered in `tools-registry.js` with body parts, modalities, specialties
+- [ ] HTML `<head>` includes favicon + canonical + OG + Twitter meta tags (copy from another tool page if unsure)
+- [ ] Canonical URL reflects the correct `/src/tools/{toolId}/{toolId}.html` path
+- [ ] Header uses `<img class="site-header__wordmark" srcset=...>` — not the old text `RadioLogicHQ` span
+- [ ] Tool is listed in `public/sitemap.xml` (regenerate the sitemap if adding more than one tool at a time; the generator script is a one-liner in `python3` — see the commit that introduced `public/sitemap.xml`)
+- [ ] Any new third-party script/API/CDN used by this tool is added to the CSP in `public/_headers` (connect-src / script-src / img-src as appropriate)
 
 ---
 
-*Last updated: 2026-04-11. Update this doc each time a new tool is built or the framework changes.*
+*Last updated: 2026-04-14. Update this doc each time a new tool is built or the framework changes.*
