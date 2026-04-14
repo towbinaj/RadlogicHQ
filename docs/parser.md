@@ -342,48 +342,16 @@ The transform returns an object — `formState[inputId]` accepts any type. Handl
 
 ## 9. Testing
 
-Parser tests live in `src/core/parser.test.js` — **79 tests** as of
-this writing, covering:
+Parser tests live in `src/core/parser.test.js` — **79 tests** covering `parseFindings` rule shapes, `buildParseRules` auto-gen, `SYNONYMS` expansion, `extractText` (plain/XML/RadAI formats), `splitSentences` edge cases, `segmentByLaterality` (sticky attribution, contralateral flip, all six bilateral families), `segmentByItemIndex` (all three marker forms, same-index merging), and `parseSegmentedFindings` end-to-end.
 
-- `parseFindings` basic rules (pattern / options / multi)
-- `buildParseRules` auto-generation against sample definitions
-- `SYNONYMS` substring expansion
-- `extractText` (plain / XML / RadAI structured report formats)
-- `splitSentences` edge cases (decimals, newlines, abbreviations)
-- `segmentByLaterality` — sticky attribution, contralateral flip,
-  interleaved sentence bouncing, partial bilateral, conjunction
-  form, postposed/copula/distributive/prepositional bilateral
-  phrasings
-- `segmentByItemIndex` — explicit / word form / numbered line,
-  same-index merging, `itemLabel` configurability
-- `parseSegmentedFindings` — the `parseSegmentation` opt-in path
-  + per-segment `parseFindings` invocation
-
-**Test-first for segmenter bugs.** Every new segmentation failure
-mode that ships should land with a failing test in this file
-before the fix lands. The laterality segmenter in particular has
-fiddly sentence-classification rules where a regression in one
-pattern can silently break a different pattern — the test suite
-is the only thing that catches this.
-
-**Run locally:**
+**Test-first for segmenter bugs.** Laterality classification is fiddly enough that a regression in one pattern silently breaks another — the test suite is the only thing that catches this. Every new segmentation failure mode should land with a failing test before the fix.
 
 ```sh
-npm run test:run           # full suite (all 165 tests, <1s)
-npx vitest parser          # just parser tests
+npm run test:run                      # full suite (165 tests)
+npx vitest parser                     # just parser tests
+npm run check-synonyms <toolId>       # synonym audit for one tool
+npm run check-synonyms -- --all       # audit every tool
 ```
-
-**Synonym audit:**
-
-```sh
-npm run check-synonyms tirads        # one tool
-npm run check-synonyms -- --all       # every tool
-```
-
-Reports which labels have synonym coverage and which don't.
-Labels with no synonyms still work for parsing (the label itself
-is always included as a keyword), but adding synonyms improves
-robustness against dictation variants.
 
 ---
 
@@ -438,15 +406,10 @@ have a `side` or `laterality` field:
 
 ## 11. Common pitfalls / FAQ
 
-### "My `parseFindings` call corrupted an AAST tool's state"
+### AAST `selectedFindings` Set/array mismatch
 
-`parseFindings` returns `selectedFindings` as an **array**, but
-AAST tool `formState` uses a `Set`. Directly `Object.assign`-ing
-the parsed result replaces the Set with an array and breaks the
-UI's `.has()` checks — a latent bug in most AAST tools that
-doesn't fire only because the auto-generated rules rarely match
-AAST's long specific finding labels.
-
+**Symptom:** pasting into an AAST tool clears selections or breaks `.has()` checks.
+**Cause:** `parseFindings` returns `selectedFindings` as an array; AAST `formState` uses a Set. `Object.assign` replaces the Set with an array.
 **Fix:** convert on the way in.
 
 ```js
@@ -455,144 +418,49 @@ if (Array.isArray(parsed.selectedFindings)) {
 }
 ```
 
-See `src/tools/aast-kidney/aast-kidney.js` `applyParsedToSide()`
-for the canonical implementation.
+Canonical pattern in `src/tools/aast-kidney/aast-kidney.js` `applyParsedToSide()`. Latent in other AAST tools; only doesn't fire because auto-gen rules rarely match AAST's specific long finding labels.
 
-### "Adding `'us'` as a synonym for Ultrasound broke everything"
+### Short initialisms in SYNONYMS match inside common words
 
-This is the incident that led to removing `'us'` and `'mr'` from
-SYNONYMS in commit `12e80bc`. The parser uses substring matching,
-not word boundaries, so `'us'` fires inside `'s(us)picion'`,
-`'gluteus'`, `'musculus'`, `'fibr(us)'`, and many other common
-words.
+**Symptom:** BI-RADS reports with "moderate suspicion" auto-set `modality: 'us'`.
+**Cause:** parser uses substring matching, not `\b` boundaries. `'us'` matches inside `s(us)picion`, `gluteus`, `musculus`, `fibrous`, …
+**Fix:** `'us'` and `'mr'` removed from SYNONYMS in commit `12e80bc`. For bare abbreviation detection, add a word-bounded regex rule to the tool's own `parseRules`: `pattern: /\bUS\b(?!\w)/`.
 
-**Don't add short initialisms to SYNONYMS.** If your tool
-genuinely needs to detect bare `"US"` or `"MR"` in dictations,
-add a regex-pattern rule with explicit `\b` boundaries in the
-tool's own `parseRules`:
+### Longest-match picks the wrong option across competing keywords
 
-```js
-modality: {
-  pattern: /\bUS\b(?!\w)/,    // Word-bounded "US"
-  transform: () => 'us',
-}
-```
+**Symptom:** `"part-solid nodule"` dictation parses as `noduleType: 'solid'`.
+**Cause:** longest-match wins across **all** options in a single rule. `'solid nodule'` (12 chars) in `solid` beats `'part-solid'` (10 chars) in `partSolid`.
+**Fix:** add an equally-long or longer variant to the correct option first. Lungrads/fleischner fix in commit `6a0f7dd` added `'part-solid nodule'` (17 chars) to the `partSolid` keywords. Bit: lungrads and fleischner, Batch A rollout.
 
-### "Longest-match picked the wrong option"
+**General rule:** when adding a short keyword, check that no competing option has a longer substring-overlapping keyword. Add a longer variant to your option if one does.
 
-Longest-match is calculated across **all options in a single
-rule**. If option A has a keyword `'solid nodule'` (12 chars) and
-option B has `'part-solid'` (10 chars), parsing `"part-solid
-nodule"` picks A — the longer keyword wins even though the
-shorter one is semantically more specific.
+### Bare `'cystic'` overlapping with `'mixed cystic and solid'`
 
-This bit lungrads and fleischner during Batch A rollout when
-`"part-solid nodule"` dictations were parsed as `solid` instead
-of `partSolid`. The fix was to add a longer keyword to partSolid:
+**Symptom:** adding `'cystic'` to the `cystic` option doesn't break `"mixed cystic and solid"` dictations.
+**Why it's safe:** longest-match rule. `'mixed cystic and solid'` (22 chars) wins over `'cystic'` (6 chars) when both match. Bare `cystic` only triggers when nothing longer matches (`"1.5 cm cystic nodule"` → `cystic`). Shipped as the TI-RADS "cystic gap fix" in commit `7a40ffd`.
 
-```js
-partSolid: [
-  'part-solid nodule',  // 17 chars — longer than 'solid nodule' (12)
-  'part solid nodule',
-  'part-solid',
-  'part solid',
-],
-```
+The inline comment in `src/tools/tirads/definition.js` documents this invariant — don't shorten competing keywords without revisiting it.
 
-**General rule:** when you add a keyword that's a substring of a
-keyword in a competing option, add an equally-long or longer
-variant to the correct option first.
+### HU extraction rule matching numbers across comma-separated phrases
 
-### "Bare `'cystic'` now matches inside `'mixed cystic and solid'`"
+**Symptom:** adrenal-washout paste "unenhanced 8 HU, portal venous 70 HU, delayed 35 HU" leaks the `8` into the `enhanced` bucket.
+**Cause:** the number→label branch of the pattern allowed a comma between the number and the phase label, letting `"8 HU, … unenhanced"` match across the phrase boundary.
+**Fix:** require whitespace-only connection (`\s+`, not `\s*,?\s*`) between number and label. Full three-phase pattern set in `src/tools/adrenal-washout/definition.js`; incident history in commit `43f89d5`.
 
-This one's safe because of the same longest-match rule. TI-RADS
-has:
+### Tabs show stale count after parse rebuilds item array
 
-```js
-cystic: ['cystic or almost completely cystic', 'predominantly cystic', 'cystic'],
-mixed:  ['mixed cystic and solid', 'partially cystic'],
-```
+**Symptom:** item-index tool parses correctly, `formState` is right, but the tab row still shows the old count.
+**Cause:** forgot to call `renderItemTabs()` before `buildUI()` at the end of the handler.
+**Fix:** the idiom-(a) ending is always `renderItemTabs(); buildUI();` in that order. See section 8 idiom (a).
 
-Parsing `"mixed cystic and solid nodule"` finds:
+### Laterality segmenter isn't picking up a new organ
 
-- `'cystic'` (6 chars) in the `cystic` option ✓
-- `'mixed cystic and solid'` (22 chars) in the `mixed` option ✓
+**Symptom:** `"Right wrist: Grade 2. Left wrist: Grade 1."` doesn't split — both sides land in `ungrouped`.
+**Cause:** organ anchor list in `RIGHT_RE`/`LEFT_RE`/`BILATERAL_RE` doesn't include the organ.
+**Fix:** add the anchor to all three regexes (search for "Organ list is kept in sync" in `parser.js`). Add a failing test in `parser.test.js` first. The Phase 2 MSK rollout (knee/shoulder/elbow/wrist/ankle/hand/foot/joint/ventricle) is the canonical reference — commits `ee55036` and `6e6515b`.
 
-Longest wins → `mixed`. Bare `cystic` only triggers when nothing
-longer matches (e.g., `"1.5 cm cystic nodule"` → `cystic`). This
-is the TI-RADS "cystic gap fix" from commit `7a40ffd`.
+### Modifier-word regex too narrow for multi-word qualifiers
 
-The inline comment in `src/tools/tirads/definition.js` documents
-this invariant explicitly so future editors don't accidentally
-shorten the competing keywords.
-
-### "My HU extraction rule is matching numbers across commas"
-
-Adrenal-washout's three HU phases (`unenhanced`, `enhanced`,
-`delayed`) need tight proximity constraints between the phase
-label and the number, or they match across phrase boundaries.
-
-**Wrong:**
-
-```js
-unenhanced: {
-  pattern: /\b(?:unenhanced|...)\b[\s:]*(-?\d+)\s*hu|(-?\d+)\s*hu\s*,?\s*(?:on\s+)?\bunenhanced\b/i,
-  //                                                        ^^^^^^^
-  // This allows comma + whitespace between the number and the label,
-  // so "8 HU, portal venous" leaks the "8" into the unenhanced bucket
-  // because "8 HU, ... unenhanced" still matches.
-}
-```
-
-**Right:** require whitespace-only connection in the number → label
-branch (no comma separator):
-
-```js
-unenhanced: {
-  pattern: /\b(?:unenhanced|...)\b[\s:]*(-?\d+)\s*hu|(-?\d+)\s*hu\s+(?:on\s+|at\s+)?\bunenhanced\b/i,
-  //                                                        ^^^
-  // \s+ only, no comma; phrase-level proximity preserved.
-}
-```
-
-See `src/tools/adrenal-washout/definition.js` for the full three-
-phase pattern set and commit `43f89d5` for the incident history.
-
-### "My parse handler rebuilds the state array and the tabs don't update"
-
-After the handler finishes, you need to call both `renderItemTabs()`
-and `buildUI()` (in that order). A common regression is forgetting
-the tab re-render — the state is correct but the tab row still
-shows the old count. See any of the idiom-(a) tools for the
-canonical ending:
-
-```js
-renderItemTabs();
-buildUI();
-```
-
-### "The laterality segmenter isn't picking up my tool's organ"
-
-The organ list in `RIGHT_RE` / `LEFT_RE` / `BILATERAL_RE` is a
-fixed vocabulary. Sentences like `"Right wrist: Grade 2"` won't
-segment if `wrist` isn't in the list.
-
-**Fix:** add the anchor to all three regexes (search for "Organ
-list is kept in sync" in `parser.js`). Add a failing test in
-`src/core/parser.test.js` for the new anchor first, then update
-the regex until it passes. The Phase 2 MSK rollout (knee /
-shoulder / elbow / wrist / ankle / hand / foot / joint / ventricle)
-is the canonical reference for this.
-
-### "The modifier word regex lets through too much"
-
-`(?:\w+\s+)?` between the side word and the organ anchor allows
-**one** optional word. This is deliberately narrow — two or more
-intervening words won't match. Phrases like `"right posterior
-upper lobe lung"` would not be recognized as right-sided without
-additional tweaks.
-
-If a tool genuinely needs multi-word modifiers, widen the regex
-to `(?:\w+\s+){0,3}?` (non-greedy, up to 3 words). Test carefully:
-widening raises false-positive risk for unrelated sentences that
-happen to contain both a side word and an organ anchor far apart.
+**Symptom:** `"right posterior upper lobe lung"` doesn't segment as right-sided.
+**Cause:** `(?:\w+\s+)?` allows only **one** optional modifier word between the side and the organ anchor.
+**Fix (cautious):** widen to `(?:\w+\s+){0,3}?` (non-greedy, up to 3). Test carefully — widening raises false-positive risk when a sentence contains a side word and an organ anchor far apart.
