@@ -748,6 +748,95 @@ describe('parseSegmentedFindings', () => {
     expect(r.ungrouped.formState.selectedFindings).toContain('sub-nonexpanding');
   });
 
+  // Real-world dictation patterns against the actual AAST Kidney definition
+  // with its hand-written parseRules. These are the sentences that were
+  // failing in live use before the manual rules were added.
+  describe('realistic AAST Kidney dictation', () => {
+    // Inline the relevant subset of the AAST kidney definition so the test
+    // doesn't depend on the full tool file.
+    const aastKidneyLike = {
+      parseRules: {
+        selectedFindings: {
+          multi: true,
+          options: {
+            'sub-nonexpanding': ['subcapsular hematoma', 'sub-capsular hematoma'],
+            'perirenal-nonexpanding': ['perirenal hematoma', 'perinephric hematoma'],
+            'lac-gt1': ['deep laceration', 'large laceration'],
+            'contained': ['pseudoaneurysm', 'contained vascular injury'],
+            'shattered': ['shattered kidney', 'shattered', 'fragmented kidney'],
+            'active-beyond': ['active bleeding beyond gerota', 'retroperitoneal bleeding'],
+          },
+        },
+      },
+      parseSegmentation: { type: 'laterality' },
+      categories: [
+        { id: 'h', findings: [
+          { id: 'sub-nonexpanding', label: 'Subcapsular, nonexpanding', grade: 1 },
+          { id: 'perirenal-nonexpanding', label: 'Perirenal, nonexpanding', grade: 2 },
+        ]},
+        { id: 'l', findings: [
+          { id: 'lac-gt1', label: '>1 cm depth', grade: 3 },
+        ]},
+        { id: 'v', findings: [
+          { id: 'contained', label: 'Contained vascular injury', grade: 3 },
+          { id: 'active-beyond', label: 'Active bleeding beyond', grade: 4 },
+        ]},
+        { id: 'cs', findings: [
+          { id: 'shattered', label: 'Shattered kidney', grade: 5 },
+        ]},
+      ],
+    };
+
+    it('"kidneys each have a subcapsular hematoma" routes to both sides', () => {
+      const text = 'The kidneys each have a 1.5 cm subcapsular hematoma.';
+      const r = parseSegmentedFindings(text, aastKidneyLike);
+      expect(r.segments).toHaveLength(2);
+      for (const seg of r.segments) {
+        expect(seg.formState.selectedFindings).toContain('sub-nonexpanding');
+      }
+    });
+
+    it('distributive bilateral + unilateral follow-up', () => {
+      const text = 'The kidneys each have a subcapsular hematoma. The right kidney additionally shows a deep laceration with a pseudoaneurysm.';
+      const r = parseSegmentedFindings(text, aastKidneyLike);
+      const right = r.segments.find((s) => s.key === 'right');
+      const left = r.segments.find((s) => s.key === 'left');
+      expect(right.formState.selectedFindings).toEqual(
+        expect.arrayContaining(['sub-nonexpanding', 'lac-gt1', 'contained'])
+      );
+      expect(left.formState.selectedFindings).toEqual(['sub-nonexpanding']);
+    });
+
+    it('contralateral flip with different findings per side', () => {
+      const text = 'The right kidney has a subcapsular hematoma. The contralateral kidney shows a perirenal hematoma.';
+      const r = parseSegmentedFindings(text, aastKidneyLike);
+      const right = r.segments.find((s) => s.key === 'right');
+      const left = r.segments.find((s) => s.key === 'left');
+      expect(right.formState.selectedFindings).toContain('sub-nonexpanding');
+      expect(left.formState.selectedFindings).toContain('perirenal-nonexpanding');
+      expect(right.formState.selectedFindings).not.toContain('perirenal-nonexpanding');
+      expect(left.formState.selectedFindings).not.toContain('sub-nonexpanding');
+    });
+
+    it('"shattered" with unilateral subcapsular on the other side', () => {
+      const text = 'The right kidney is shattered. The left kidney shows a subcapsular hematoma.';
+      const r = parseSegmentedFindings(text, aastKidneyLike);
+      const right = r.segments.find((s) => s.key === 'right');
+      const left = r.segments.find((s) => s.key === 'left');
+      expect(right.formState.selectedFindings).toContain('shattered');
+      expect(left.formState.selectedFindings).toContain('sub-nonexpanding');
+    });
+
+    it('"on the right" with active bleeding phrasing', () => {
+      const text = 'Active bleeding beyond gerota fascia on the right. Left kidney: perirenal hematoma.';
+      const r = parseSegmentedFindings(text, aastKidneyLike);
+      const right = r.segments.find((s) => s.key === 'right');
+      const left = r.segments.find((s) => s.key === 'left');
+      expect(right.formState.selectedFindings).toContain('active-beyond');
+      expect(left.formState.selectedFindings).toContain('perirenal-nonexpanding');
+    });
+  });
+
   it('supports itemIndex segmentation type', () => {
     const def = {
       parseRules: {},
