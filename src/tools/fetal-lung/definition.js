@@ -14,9 +14,9 @@ export const fetalLungDefinition = {
   name: 'Fetal Lung Volume',
 
   severityCategories: [
-    { min: 0, max: 25, label: 'Severe', description: 'O/E TFLV <25% — survival ~35\u201356%', color: 'danger' },
-    { min: 25, max: 35, label: 'Moderate', description: 'O/E TFLV 25\u201335% — survival ~56%', color: 'warning' },
-    { min: 35, max: Infinity, label: 'Mild', description: 'O/E TFLV >35% — survival ~90%', color: 'success' },
+    { min: 0, max: 25, label: 'Severe', description: 'O/E TFLV <25% — survival approx 35\u201356%', color: 'danger' },
+    { min: 25, max: 35, label: 'Moderate', description: 'O/E TFLV 25\u201335% — survival approx 56%', color: 'warning' },
+    { min: 35, max: Infinity, label: 'Mild', description: 'O/E TFLV >35% — survival approx 90%', color: 'success' },
   ],
 
   sideOptions: [

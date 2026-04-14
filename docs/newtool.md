@@ -304,6 +304,30 @@ export const {toolId}Templates = {
 | `showPoints` | No | Whether this block has points |
 | `condition` | No | Only render if this data key is truthy |
 
+### 🔴 HL7 safety — characters to avoid in templates and labels
+
+Report text is copied into dictation systems (PS360, PowerScribe One, RadAI
+Omni) and ultimately flows through HL7 v2 ORU messages. These characters
+are HL7 v2 structural delimiters and **will corrupt the message** if they
+appear in OBX-5 content:
+
+| Forbidden | HL7 role | Use instead |
+|---|---|---|
+| `\|` | field separator | `;` or `(parens)` or a newline |
+| `~` | field-repetition separator | write `approx` instead of `~` |
+| `^` | component separator | `-` |
+| `&` | subcomponent separator | `and` |
+| `\\` | escape character | `/` or omit |
+
+**Never write `' \| Points: {{x}}'` in a template.** Match the existing
+TI-RADS PS360 pattern: `' ({{x}} pts)'`.
+
+Non-ASCII characters (em-dash `—`, en-dash `–`, `≥`, `≤`, `°`, `×`, `±`,
+`→`) are sanitized to ASCII equivalents by `src/core/clipboard.js` on
+copy (so `≥3 mm` becomes `>=3 mm` in the pasted text). Prefer ASCII in
+new templates anyway — it's one less layer to reason about — but the
+backstop is there.
+
 ### Impression variable
 
 - Point-based tools: use `{{noduleSummaries}}` (built by page controller)
@@ -548,6 +572,7 @@ Landing page renders automatically from the registry — no HTML edits needed.
 - [ ] Header uses `<img class="site-header__wordmark" srcset=...>` — not the old text `RadioLogicHQ` span
 - [ ] Tool is listed in `public/sitemap.xml` (regenerate the sitemap if adding more than one tool at a time; the generator script is a one-liner in `python3` — see the commit that introduced `public/sitemap.xml`)
 - [ ] Any new third-party script/API/CDN used by this tool is added to the CSP in `public/_headers` (connect-src / script-src / img-src as appropriate)
+- [ ] **HL7 safety**: no `|`, `~`, `^`, `&`, or `\` in any template strings, option labels, or tooltips that flow into the rendered report. See the "HL7 safety" callout in section 5 for the full list. Grep: `grep -n "[\|~^&]" src/tools/{toolId}/*.js`
 
 ---
 

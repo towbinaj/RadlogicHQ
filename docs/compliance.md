@@ -36,6 +36,14 @@ RadioLogicHQ is designed as a **clinical reference tool**, not a medical record 
 - **Free-text input fields** in calculator forms (nodule descriptions, notes, textareas) could theoretically contain PHI if a user pastes patient data into them. The only control is the PHI disclaimer — there is no server-side PHI pattern detection. If HIPAA coverage becomes a hard requirement, adding regex-based MRN/DOB/name detection at the Firestore write layer (or the `saveReport` call site) would close this gap.
 - **Saved report text** in Firestore is sourced from the rendered report output, which includes whatever the user types into free-text fields. Same residual risk as above.
 
+### Clinical-safety: HL7 interface compatibility
+Report text copied from the calculator is ultimately transmitted through hospital HL7 v2 ORU interfaces. Two classes of characters were identified in the 2026-04-14 HL7 audit that could corrupt those messages:
+
+- **HL7 v2 structural delimiters** (`|`, `~`, `^`, `&`, `\`) appearing in template strings, option labels, or tooltips. Found in TI-RADS (5 `|` in `pointsTemplate`), fetal-lung (3 `~` as "approximately"), nirads (5 `~` as "approximately"), and 6 tools using `&` in compound labels. **All 25 occurrences fixed in commit for this audit** — templates rewritten to use safe equivalents (`(Points: ...)`, `approx`, `and`).
+- **Non-ASCII characters** (em/en-dashes, `≥`, `≤`, `°`, `×`, `±`, `→`) appearing in 29+ tools. Modern HL7 v2.5+ handles UTF-8 fine via `MSH-18`, but legacy v2.3/v2.4 interfaces without UTF-8 declaration silently mangle these to `?`. **Mitigation: `src/core/clipboard.js` `asciiSafe()` normalizes all non-ASCII to ASCII equivalents on copy** (e.g. `≥` → `>=`, `—` → `--`, `°` → ` deg`, `×` → ` x `). On-screen display is unchanged; only the copied text is sanitized. 20 unit tests in `src/core/clipboard.test.js` lock in the transformations.
+
+Documented in `docs/newtool.md` section 5 so new tools avoid reintroducing HL7 delimiters. Grep rule for PR review: `grep -n "[|~^&]" src/tools/{toolId}/*.js`.
+
 ### Firebase Auth
 Firebase Auth (managed by Google) automatically stores:
 - Email, hashed password, OAuth tokens
@@ -156,3 +164,22 @@ Full audit conducted across `src/`, `functions/`, `firestore.rules`, HTML entrie
 - `package-lock.json` present; `npm audit` reports 0 vulnerabilities post-upgrade.
 - Template shareCode is brute-force resistant (8-char UUID slice).
 - No source maps, debug endpoints, or unused routes exposed in production.
+
+### 2026-04-14 — HL7 v2 interface compatibility audit
+Scanned all `src/tools/**/templates.js` and `definition.js` for characters that corrupt HL7 v2 ORU messages when present in OBX-5 content.
+
+**Fixed in source:**
+- 5 pipes in TI-RADS RadAI template (`' | Points: ...' ` → `' ({{x}} pts)'`)
+- 8 tildes as "approximately" colloquialism in fetal-lung and nirads
+- 12 ampersands in compound labels across 6 tools
+
+**Mitigated via copy-time sanitization:**
+- Non-ASCII characters (em/en-dash, `≥`, `≤`, `°`, `×`, `±`, `→`, smart quotes, ellipsis, zero-width chars, BOM) are normalized to ASCII by `src/core/clipboard.js` `asciiSafe()`. On-screen display retains pretty characters; only the copied text is 7-bit ASCII. 20 unit tests in `src/core/clipboard.test.js` lock in the transformations.
+- HL7 structural delimiters are also neutralized by the same function as a defense-in-depth backstop (`|` → `;`, `~` → `approx`, `^` → `-`, `&` → `and`, `\` → `/`) in case any slip into templates in the future.
+
+**New-tool guardrails:**
+- `docs/newtool.md` section 5 documents the forbidden characters with a replacement table.
+- `docs/newtool.md` verification checklist includes an HL7-safety grep.
+- `docs/gotchas.md` has a dedicated "HL7 safety" section.
+- `CLAUDE.md` Critical Watch-Outs includes a one-liner referencing the rule.
+

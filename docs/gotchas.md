@@ -34,6 +34,23 @@ Non-obvious things that will bite you when working on specific parts of the app.
 - **Use `BRAND` constants from `src/core/brand.js`** (`logoWhite`, `wordmarkWhite`, etc.) instead of hardcoding `/brand/foo.png` paths. Single source of truth; a future rename only touches one file.
 - **Header wordmark srcset**: The header `<img>` uses `srcset` with 400w / 800w / 1200w variants. If you bump `.site-header__wordmark { height }`, update the `sizes` attribute (currently `"172px"`, matching ~5.36:1 aspect at 32px tall) across all 52 HTML files or the browser picks the wrong variant.
 
+## HL7 safety in report output
+
+Report text is copied into PS360 / PowerScribe One / RadAI Omni and ultimately rides an HL7 v2 ORU message through hospital interfaces. **HL7 v2 structural delimiters in an OBX-5 field will corrupt the message.**
+
+- **Never in templates, labels, or tooltips that flow into the report:**
+  - `|` (field separator) → use `;` or parens
+  - `~` (repetition separator) → write `approx`
+  - `^` (component separator) → use `-`
+  - `&` (subcomponent separator) → use `and`
+  - `\` (escape char) → use `/`
+- The clipboard `asciiSafe()` function in `src/core/clipboard.js` **neutralizes** these on copy as a backstop, but they should not be in templates at all — downstream tools may read the report text via other paths besides the copy button (template import/export, Firestore `saved_reports`, etc).
+- **Non-ASCII characters** (`—`, `–`, `≥`, `≤`, `°`, `×`, `±`, `→`) are automatically normalized to ASCII on copy (`≥` → `>=`, `—` → `--`, etc.) — see `ASCII_MAP` in `clipboard.js`. Modern HL7 v2.5+ interfaces handle UTF-8 fine, but legacy v2.3/v2.4 interfaces mangle it to `?`, and sanitizing on copy closes that gap.
+- Unit tests for the sanitizer live in `src/core/clipboard.test.js` — 20 test cases covering each transformation and a realistic TI-RADS snippet assertion that verifies pure 7-bit ASCII output.
+- **If you add a new character** to a template or definition, either:
+  1. Stick to ASCII (preferred — one less layer of complexity), or
+  2. Add it to `ASCII_MAP` in `clipboard.js` with a test case in `clipboard.test.js`.
+
 ## Security & CSP (`public/_headers`)
 
 - **Any new third-party script, analytics service, image CDN, or API call must be added to the appropriate CSP directive** (`script-src`, `connect-src`, `img-src`). The browser will silently block unlisted sources. CSP violations appear in DevTools Console as *"Refused to ... because it violates the following Content Security Policy directive"*.

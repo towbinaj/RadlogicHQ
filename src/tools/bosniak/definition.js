@@ -57,8 +57,8 @@ export const bosniakDefinition = {
     label: 'Septa',
     options: [
       { id: 'none', label: 'No Septa', tooltip: 'No internal septation' },
-      { id: 'thinSmooth', label: 'Thin & Smooth (1-2)', tooltip: 'One to two thin (≤2 mm) smooth septa' },
-      { id: 'thinSmoothMany', label: 'Thin & Smooth (≥3)', tooltip: 'Three or more thin (≤2 mm) smooth septa' },
+      { id: 'thinSmooth', label: 'Thin and Smooth (1-2)', tooltip: 'One to two thin (≤2 mm) smooth septa' },
+      { id: 'thinSmoothMany', label: 'Thin and Smooth (≥3)', tooltip: 'Three or more thin (≤2 mm) smooth septa' },
       { id: 'minThickSmooth', label: 'Minimally Thickened Smooth', tooltip: 'Smooth minimally thickened (3 mm) enhancing septa' },
       { id: 'thickIrregular', label: 'Thickened or Irregular', tooltip: 'Thickened (≥4 mm) or irregular enhancing septum(s) with measurable enhancement' },
     ],
@@ -69,7 +69,7 @@ export const bosniakDefinition = {
     id: 'wall',
     label: 'Wall',
     options: [
-      { id: 'thinSmooth', label: 'Thin & Smooth', tooltip: 'Thin (≤2 mm) smooth wall' },
+      { id: 'thinSmooth', label: 'Thin and Smooth', tooltip: 'Thin (≤2 mm) smooth wall' },
       { id: 'minThickSmooth', label: 'Minimally Thickened Smooth', tooltip: 'Smooth minimally thickened (3 mm) enhancing wall' },
       { id: 'thickIrregular', label: 'Thickened or Irregular', tooltip: 'Thickened (≥4 mm) or irregular enhancing wall with measurable enhancement' },
     ],

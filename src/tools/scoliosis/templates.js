@@ -14,7 +14,7 @@ const FINDINGS_BLOCKS = [
   { id: 'rib', label: 'Rib Abnormalities', template: 'RIB ABNORMALITIES: {{ribText}}', enabled: true },
   { id: 'triradiate', label: 'Triradiate Cartilage', template: 'TRIRADIATE CARTILAGE: {{triradiateLabel}}', enabled: true, condition: 'triradiateProvided' },
   { id: 'risser', label: 'Risser Stage', template: 'RISSER STAGE: {{risserLabel}}', enabled: true, condition: 'risserProvided' },
-  { id: 'chestAbdomen', label: 'Chest & Abdomen', template: 'IMAGED PORTIONS OF THE CHEST AND ABDOMEN: {{chestAbdomenText}}', enabled: true },
+  { id: 'chestAbdomen', label: 'Chest and Abdomen', template: 'IMAGED PORTIONS OF THE CHEST AND ABDOMEN: {{chestAbdomenText}}', enabled: true },
 ];
 
 function buildTemplateSet(blocks, headers, impression) {
@@ -56,7 +56,7 @@ export const scoliosisTemplates = {
       { id: 'rib', label: 'Rib Abnormalities', template: 'Rib_Abnormalities: {{ribText}}', enabled: true },
       { id: 'triradiate', label: 'Triradiate Cartilage', template: 'Triradiate: {{triradiateLabel}}', enabled: true, condition: 'triradiateProvided' },
       { id: 'risser', label: 'Risser Stage', template: 'Risser: {{risserLabel}}', enabled: true, condition: 'risserProvided' },
-      { id: 'chestAbdomen', label: 'Chest & Abdomen', template: 'Chest_Abdomen: {{chestAbdomenText}}', enabled: true },
+      { id: 'chestAbdomen', label: 'Chest and Abdomen', template: 'Chest_Abdomen: {{chestAbdomenText}}', enabled: true },
     ], RADAI_HEADERS, IMPRESSION_TEXT + '\n[END STRUCTURED REPORT]'),
   },
 };

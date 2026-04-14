@@ -7,7 +7,7 @@
 
 export const boneAgeGpDefinition = {
   id: 'bone-age-gp',
-  name: 'Bone Age (G&P)',
+  name: 'Bone Age (Greulich-Pyle)',
 
   sexOptions: [
     { id: 'male', label: 'Male' },

@@ -37,7 +37,7 @@ export const aastKidneyDefinition = {
     },
     {
       id: 'collecting',
-      label: 'Collecting System & Parenchyma',
+      label: 'Collecting System and Parenchyma',
       findings: [
         { id: 'urine-extrav', label: 'Laceration with urinary extravasation', grade: 4 },
         { id: 'lac-pelvis', label: 'Laceration extending into renal pelvis with urinary extravasation', grade: 4 },

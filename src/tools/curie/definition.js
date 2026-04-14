@@ -17,14 +17,14 @@ export const curieDefinition = {
   // Curie: 10 segments, scored 0-3, max 30
   curieSegments: [
     { id: 'craniofacial', label: 'Craniofacial (skull)' },
-    { id: 'cervThoSpine', label: 'Cervical & thoracic spine' },
+    { id: 'cervThoSpine', label: 'Cervical and thoracic spine' },
     { id: 'chest', label: 'Chest (ribs, sternum, clavicles, scapulae)' },
-    { id: 'lumSacSpine', label: 'Lumbar & sacral spine' },
+    { id: 'lumSacSpine', label: 'Lumbar and sacral spine' },
     { id: 'pelvis', label: 'Pelvis' },
     { id: 'upperArms', label: 'Upper arms (humeri)' },
-    { id: 'lowerArmsHands', label: 'Lower arms & hands' },
+    { id: 'lowerArmsHands', label: 'Lower arms and hands' },
     { id: 'femurs', label: 'Femurs' },
-    { id: 'lowerLegsFeet', label: 'Lower legs & feet' },
+    { id: 'lowerLegsFeet', label: 'Lower legs and feet' },
     { id: 'softTissue', label: 'Soft tissue' },
   ],
 

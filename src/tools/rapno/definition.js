@@ -42,7 +42,7 @@ export const VARIANTS = {
   medullo: {
     id: 'medullo',
     label: 'Medulloblastoma',
-    fullName: 'Medulloblastoma & Leptomeningeal Seeding',
+    fullName: 'Medulloblastoma and Leptomeningeal Seeding',
     sequence: 'T1 post-contrast',
     hasMinorResponse: false,
     prThreshold: -50,
