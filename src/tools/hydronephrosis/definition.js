@@ -37,6 +37,12 @@ export const hydronephrosisDefinition = {
     { id: 'bilateral', label: 'Bilateral' },
   ],
 
+  // Bilateral pastes (e.g. "Right kidney: UTD P2. Left kidney: UTD P1.")
+  // split into per-side segments so each side's grade and APRPD route to
+  // its own formState fields independently. The tool's UI enters
+  // bilateral mode automatically when both sides are matched.
+  parseSegmentation: { type: 'laterality' },
+
   parseRules: {
     grade: {
       options: {
