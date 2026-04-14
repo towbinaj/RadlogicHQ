@@ -539,14 +539,54 @@ export function parseFindings(text, definition) {
       }
     } else if (rule.multi) {
       const found = [];
-      for (const [optionId, keywords] of Object.entries(rule.options)) {
-        const sorted = [...keywords].sort((a, b) => b.length - a.length);
-        for (const kw of sorted) {
-          if (normalized.includes(kw.toLowerCase())) {
-            found.push(optionId);
-            matchedSpans.push(kw);
-            break;
+      for (const [optionId, spec] of Object.entries(rule.options)) {
+        // Each option is either:
+        //   - a string[] of keywords (legacy / auto-generated shape)
+        //   - an object { keywords?: string[], patterns?: [{re, test?}] }
+        // Patterns are checked first (more specific) against the original
+        // case-sensitive extracted text, so a size threshold test can see
+        // the raw digits. Keywords fall back to substring matching on the
+        // lowercased text.
+        let optMatched = false;
+        let optSpan = '';
+
+        if (Array.isArray(spec)) {
+          // Legacy: array of keyword strings
+          const sorted = [...spec].sort((a, b) => b.length - a.length);
+          for (const kw of sorted) {
+            if (normalized.includes(kw.toLowerCase())) {
+              optMatched = true;
+              optSpan = kw;
+              break;
+            }
           }
+        } else if (spec && typeof spec === 'object') {
+          // New: {keywords, patterns}
+          if (Array.isArray(spec.patterns)) {
+            for (const p of spec.patterns) {
+              const m = extracted.match(p.re);
+              if (m && (typeof p.test !== 'function' || p.test(m))) {
+                optMatched = true;
+                optSpan = m[0];
+                break;
+              }
+            }
+          }
+          if (!optMatched && Array.isArray(spec.keywords)) {
+            const sorted = [...spec.keywords].sort((a, b) => b.length - a.length);
+            for (const kw of sorted) {
+              if (normalized.includes(kw.toLowerCase())) {
+                optMatched = true;
+                optSpan = kw;
+                break;
+              }
+            }
+          }
+        }
+
+        if (optMatched) {
+          found.push(optionId);
+          matchedSpans.push(optSpan);
         }
       }
       if (found.length > 0) {

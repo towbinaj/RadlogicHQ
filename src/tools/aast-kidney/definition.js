@@ -73,25 +73,82 @@ export const aastKidneyDefinition = {
           'perinephric hematoma',
           'perirenal blood',
           'perinephric blood',
+          'perirenal stranding',
+          'perinephric stranding',
+          'perirenal fluid',
+          'perinephric fluid',
         ],
 
         // ---- Laceration ----
-        'lac-lt1': [
-          '<1 cm depth, no urinary extravasation',
-          'superficial laceration',
-          'shallow laceration',
-          'minor laceration',
-          'small laceration',
-          'subcentimeter laceration',
-          'less than 1 cm laceration',
-        ],
-        'lac-gt1': [
-          '>1 cm depth, no collecting system rupture or urinary extravasation',
-          'deep laceration',
-          'large laceration',
-          'major laceration',
-          'greater than 1 cm laceration',
-        ],
+        // Uses the pattern+test multi-rule shape so numeric sizes in dictation
+        // (`2 cm laceration`, `5 mm laceration`, `laceration measuring 1.5 cm`)
+        // route to the correct grade automatically. 1 cm exactly defaults to
+        // lac-gt1 (Grade 3 = safer/more conservative clinical call).
+        'lac-lt1': {
+          keywords: [
+            '<1 cm depth, no urinary extravasation',
+            'superficial laceration',
+            'shallow laceration',
+            'minor laceration',
+            'small laceration',
+            'subcentimeter laceration',
+            'sub-centimeter laceration',
+            'less than 1 cm laceration',
+          ],
+          patterns: [
+            // "0.8 cm laceration", "0.5-cm laceration", "0.3cm laceration"
+            {
+              re: /\b(\d+(?:\.\d+)?)\s*-?\s*cm\b(?:\s+deep)?\s+laceration/i,
+              test: (m) => parseFloat(m[1]) < 1,
+            },
+            // "laceration measuring 0.5 cm", "laceration of 0.8 cm"
+            {
+              re: /laceration(?:,|\s+(?:measuring|of))?\s+(?:approximately\s+)?(\d+(?:\.\d+)?)\s*-?\s*cm\b/i,
+              test: (m) => parseFloat(m[1]) < 1,
+            },
+            // "5 mm laceration" (<10 mm)
+            {
+              re: /\b(\d+(?:\.\d+)?)\s*-?\s*mm\b(?:\s+deep)?\s+laceration/i,
+              test: (m) => parseFloat(m[1]) < 10,
+            },
+            // "laceration measuring 5 mm"
+            {
+              re: /laceration(?:,|\s+(?:measuring|of))?\s+(?:approximately\s+)?(\d+(?:\.\d+)?)\s*-?\s*mm\b/i,
+              test: (m) => parseFloat(m[1]) < 10,
+            },
+          ],
+        },
+        'lac-gt1': {
+          keywords: [
+            '>1 cm depth, no collecting system rupture or urinary extravasation',
+            'deep laceration',
+            'large laceration',
+            'major laceration',
+            'greater than 1 cm laceration',
+          ],
+          patterns: [
+            // "2 cm laceration", "1.5-cm laceration", "2cm laceration"
+            {
+              re: /\b(\d+(?:\.\d+)?)\s*-?\s*cm\b(?:\s+deep)?\s+laceration/i,
+              test: (m) => parseFloat(m[1]) >= 1,
+            },
+            // "laceration measuring 2 cm", "laceration of 3 cm"
+            {
+              re: /laceration(?:,|\s+(?:measuring|of))?\s+(?:approximately\s+)?(\d+(?:\.\d+)?)\s*-?\s*cm\b/i,
+              test: (m) => parseFloat(m[1]) >= 1,
+            },
+            // "15 mm laceration" (>=10 mm)
+            {
+              re: /\b(\d+(?:\.\d+)?)\s*-?\s*mm\b(?:\s+deep)?\s+laceration/i,
+              test: (m) => parseFloat(m[1]) >= 10,
+            },
+            // "laceration measuring 15 mm"
+            {
+              re: /laceration(?:,|\s+(?:measuring|of))?\s+(?:approximately\s+)?(\d+(?:\.\d+)?)\s*-?\s*mm\b/i,
+              test: (m) => parseFloat(m[1]) >= 10,
+            },
+          ],
+        },
 
         // ---- Vascular injury ----
         'contained': [

@@ -837,6 +837,138 @@ describe('parseSegmentedFindings', () => {
     });
   });
 
+  // Numeric-size laceration detection uses the pattern-based multi-rule
+  // shape and depends on the real aast-kidney parseRules.
+  describe('pattern-based multi-rule (numeric size detection)', () => {
+    const def = {
+      parseRules: {
+        selectedFindings: {
+          multi: true,
+          options: {
+            'lac-lt1': {
+              patterns: [
+                { re: /\b(\d+(?:\.\d+)?)\s*-?\s*cm\b(?:\s+deep)?\s+laceration/i, test: (m) => parseFloat(m[1]) < 1 },
+                { re: /\b(\d+(?:\.\d+)?)\s*-?\s*mm\b(?:\s+deep)?\s+laceration/i, test: (m) => parseFloat(m[1]) < 10 },
+              ],
+            },
+            'lac-gt1': {
+              patterns: [
+                { re: /\b(\d+(?:\.\d+)?)\s*-?\s*cm\b(?:\s+deep)?\s+laceration/i, test: (m) => parseFloat(m[1]) >= 1 },
+                { re: /\b(\d+(?:\.\d+)?)\s*-?\s*mm\b(?:\s+deep)?\s+laceration/i, test: (m) => parseFloat(m[1]) >= 10 },
+              ],
+            },
+          },
+        },
+      },
+      categories: [
+        { id: 'l', findings: [
+          { id: 'lac-lt1', label: '<1 cm laceration', grade: 2 },
+          { id: 'lac-gt1', label: '>1 cm laceration', grade: 3 },
+        ]},
+      ],
+    };
+
+    it('"2 cm laceration" routes to lac-gt1', () => {
+      const r = parseFindings('2 cm laceration in the parenchyma', def);
+      expect(r.formState.selectedFindings).toContain('lac-gt1');
+      expect(r.formState.selectedFindings).not.toContain('lac-lt1');
+    });
+
+    it('"0.8 cm laceration" routes to lac-lt1', () => {
+      const r = parseFindings('0.8 cm laceration noted', def);
+      expect(r.formState.selectedFindings).toContain('lac-lt1');
+      expect(r.formState.selectedFindings).not.toContain('lac-gt1');
+    });
+
+    it('"5 mm laceration" routes to lac-lt1 (<10 mm)', () => {
+      const r = parseFindings('5 mm laceration', def);
+      expect(r.formState.selectedFindings).toContain('lac-lt1');
+    });
+
+    it('"15 mm laceration" routes to lac-gt1 (>=10 mm)', () => {
+      const r = parseFindings('15 mm laceration', def);
+      expect(r.formState.selectedFindings).toContain('lac-gt1');
+    });
+
+    it('"2cm laceration" (no space) still matches', () => {
+      const r = parseFindings('2cm laceration', def);
+      expect(r.formState.selectedFindings).toContain('lac-gt1');
+    });
+
+    it('"2-cm laceration" (hyphen) still matches', () => {
+      const r = parseFindings('2-cm deep laceration', def);
+      expect(r.formState.selectedFindings).toContain('lac-gt1');
+    });
+
+    it('exactly "1 cm laceration" routes to lac-gt1 (conservative default)', () => {
+      const r = parseFindings('1 cm laceration', def);
+      expect(r.formState.selectedFindings).toContain('lac-gt1');
+    });
+
+    it('legacy array-shaped options still work alongside pattern-based options', () => {
+      const mixed = {
+        parseRules: {
+          selectedFindings: {
+            multi: true,
+            options: {
+              'sub-nonexpanding': ['subcapsular hematoma'],  // legacy array
+              'lac-gt1': {                                    // new pattern shape
+                patterns: [{ re: /\b(\d+(?:\.\d+)?)\s*cm\s+laceration/i, test: (m) => parseFloat(m[1]) >= 1 }],
+              },
+            },
+          },
+        },
+        categories: [{ id: 'x', findings: [
+          { id: 'sub-nonexpanding', label: 'sub', grade: 1 },
+          { id: 'lac-gt1', label: 'lac', grade: 3 },
+        ]}],
+      };
+      const r = parseFindings('subcapsular hematoma with 3 cm laceration', mixed);
+      expect(r.formState.selectedFindings).toContain('sub-nonexpanding');
+      expect(r.formState.selectedFindings).toContain('lac-gt1');
+    });
+  });
+
+  // Regression test: the user's reported failing paste
+  it("user's bilateral + contralateral + numeric laceration dictation", () => {
+    // Inline the real kidney parseRules enough to validate the full flow
+    const def = {
+      parseRules: {
+        selectedFindings: {
+          multi: true,
+          options: {
+            'sub-nonexpanding': ['subcapsular hematoma'],
+            'perirenal-nonexpanding': ['perirenal hematoma', 'perirenal stranding'],
+            'lac-gt1': {
+              patterns: [
+                { re: /\b(\d+(?:\.\d+)?)\s*-?\s*cm\b(?:\s+deep)?\s+laceration/i, test: (m) => parseFloat(m[1]) >= 1 },
+              ],
+            },
+          },
+        },
+      },
+      parseSegmentation: { type: 'laterality' },
+      categories: [{ id: 'x', findings: [
+        { id: 'sub-nonexpanding', label: 'sub', grade: 1 },
+        { id: 'perirenal-nonexpanding', label: 'peri', grade: 2 },
+        { id: 'lac-gt1', label: 'lac', grade: 3 },
+      ]}],
+    };
+    const text =
+      'CT abdomen and pelvis.\n' +
+      'The kidneys each have a 1.5 cm subcapsular hematoma.\n' +
+      'The right kidney additionally shows a 2 cm laceration with perirenal stranding.\n' +
+      'The contralateral kidney is otherwise unremarkable.';
+    const r = parseSegmentedFindings(text, def);
+    const right = r.segments.find((s) => s.key === 'right');
+    const left = r.segments.find((s) => s.key === 'left');
+    expect(right.formState.selectedFindings).toEqual(
+      expect.arrayContaining(['sub-nonexpanding', 'perirenal-nonexpanding', 'lac-gt1'])
+    );
+    expect(left.formState.selectedFindings).toEqual(['sub-nonexpanding']);
+    expect(r.ungrouped.text).toContain('CT abdomen');
+  });
+
   it('supports itemIndex segmentation type', () => {
     const def = {
       parseRules: {},
