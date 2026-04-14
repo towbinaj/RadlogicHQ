@@ -269,7 +269,7 @@ function init() {
     const text = parseInput.value.trim();
     if (!text) return;
 
-    const { segments, ungrouped, remainder } = parseSegmentedFindings(text, aastKidneyDefinition);
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, aastKidneyDefinition);
 
     // Phase 1.1: parseSegmentedFindings with type 'laterality' returns only
     // 'right' and 'left' segments (bilateral sentences are already expanded
@@ -303,16 +303,21 @@ function init() {
       formState.laterality = 'left';
     }
 
-    // Remainder → Additional Findings. Include any ungrouped-but-unmatched
-    // text too, so the user still sees everything we couldn't place.
-    const additionalParts = [];
-    if (remainder) additionalParts.push(remainder);
-    if (segments.length > 0 && ungrouped.text && !ungrouped.matched.length) {
-      // Ungrouped text was present alongside laterality segments but we
-      // didn't match anything in it — preserve it in Additional Findings.
-      additionalParts.push(ungrouped.text);
+    // Additional Findings gets whole sentences that produced zero matches —
+    // report headers ("CT abdomen and pelvis"), negative findings ("the
+    // contralateral kidney is otherwise unremarkable"), free-text
+    // observations the parser has no rule for. This avoids dumping the
+    // word-fragment garbage that older per-segment remainders produced.
+    //
+    // If the parser didn't match ANYTHING in the whole input, fall through
+    // to the raw text so nothing is lost.
+    let additional = '';
+    if (sidesTouched.size > 0) {
+      additional = unmatchedSentences.join(' ');
+    } else {
+      additional = text;
     }
-    additionalFindingsEl.value = additionalParts.filter(Boolean).join('; ');
+    additionalFindingsEl.value = additional;
     studyAdditionalFindings = additionalFindingsEl.value;
 
     buildUI();

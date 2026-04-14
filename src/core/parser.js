@@ -642,12 +642,41 @@ export function parseFindings(text, definition) {
     }
   }
 
-  // Clean up remainder
+  // Clean up remainder.
+  //
+  // Splitting:
+  //   - Split on commas, semicolons, and periods — BUT not on a period that
+  //     sits between two digits (so "1.5 cm" stays together).
+  //   - Also split on newlines.
+  //
+  // Stopwords removed inside each phrase: common connective words that are
+  // meaningless on their own when the surrounding clinical terms have been
+  // stripped out as matched spans. The list is conservative — aggressively
+  // removing medical terms would erase useful context.
+  //
+  // Dropped phrases:
+  //   - shorter than 3 characters after cleanup
+  //   - entirely numeric / punctuation (e.g. "1", "5 cm" left behind after
+  //     stripping a finding)
+  //   - all-stopword fragments
+  const STOPWORDS_RE = /\b(with|and|also|additionally|further|furthermore|moreover|in\s+the|in|on|the|a|an|of|at|is|are|was|were|has|have|had|show|shows|showing|shown|demonstrate|demonstrates|demonstrated|contain|contains|reveal|reveals|exhibits?|otherwise|unremarkable|normal|each|both|either|neither|this|that|these|those|it|its|same|other|kidneys?|adrenals?|ovar(?:y|ies)|breasts?|lungs?|hips?|contralateral|ipsilateral|measuring|measures?|approximately|approx|about|noted|seen|identified|present|present)\b/gi;
+  const JUNK_RE = /^[\s\d.\-,;]*$/;
+
   let phrases = remainder
-    .split(/[,;.]+/)
-    .map((p) => p.replace(/\b(with|and|in the|in|the|a|an|of|is|are|was|nodule|thyroid|measuring|measures)\b/gi, ''))
+    // Split on , ; \n — but a period only if NOT between two digits
+    .split(/[,;\n]+|\.(?!\d)(?!\s*\d)/)
+    .map((p) => p.replace(STOPWORDS_RE, ''))
     .map((p) => p.replace(/\s{2,}/g, ' ').trim())
-    .filter((p) => p.length > 1);
+    .filter((p) => p.length > 2 && !JUNK_RE.test(p));
+
+  // Dedupe phrases (same text can appear from multiple segments)
+  const seen = new Set();
+  phrases = phrases.filter((p) => {
+    const key = p.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   const cleanRemainder = phrases.join('; ');
 
@@ -734,8 +763,12 @@ const IPSILATERAL_RE = /\bipsilateral\b|\bthe\s+same\s+(?:side|kidney|organ)\b/i
  *   - Split on newlines
  * This won't split "2.5 cm" because "cm" is lowercase. It may misfire on
  * abbreviations like "Dr. Smith" but those rarely appear in findings text.
+ *
+ * Exported so tools that want per-sentence preservation (e.g. putting
+ * unmatched sentences into Additional Findings verbatim) can reuse the
+ * same tokenization that the laterality segmenter uses.
  */
-function splitSentences(text) {
+export function splitSentences(text) {
   if (!text || !text.trim()) return [];
   return text
     .split(/(?<=[.!?])\s+(?=[A-Z])|\n+/)
@@ -997,9 +1030,29 @@ export function parseSegmentedFindings(text, definition) {
     ungrouped.remainder,
   ].filter(Boolean);
 
+  // Per-sentence preservation: split the ORIGINAL text into sentences and
+  // check each one against the full definition. Sentences with zero matches
+  // are preserved verbatim — they're typically clinical context the user
+  // wants in Additional Findings (negative findings like "otherwise
+  // unremarkable", report headers like "CT abdomen and pelvis", or free-text
+  // observations the parser has no rule for).
+  //
+  // Running parseFindings per-sentence is O(N_sentences × N_rules) but both
+  // numbers are small for typical radiology reports (< 20 × < 50), so it's
+  // cheap. This is the cleanest way to avoid dumping word-fragment garbage
+  // into Additional Findings.
+  const unmatchedSentences = [];
+  for (const sentence of splitSentences(extracted)) {
+    const r = parseFindings(sentence, definition);
+    if (!r.matched || r.matched.length === 0) {
+      unmatchedSentences.push(sentence);
+    }
+  }
+
   return {
     segments,
     ungrouped,
     remainder: allRemainders.join('; '),
+    unmatchedSentences,
   };
 }

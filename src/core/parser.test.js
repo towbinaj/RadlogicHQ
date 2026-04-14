@@ -929,6 +929,58 @@ describe('parseSegmentedFindings', () => {
     });
   });
 
+  describe('unmatchedSentences (whole-sentence preservation for Additional Findings)', () => {
+    const def = {
+      parseRules: {
+        selectedFindings: {
+          multi: true,
+          options: {
+            'sub-nonexpanding': ['subcapsular hematoma'],
+          },
+        },
+      },
+      parseSegmentation: { type: 'laterality' },
+      categories: [{ id: 'x', findings: [
+        { id: 'sub-nonexpanding', label: 'sub', grade: 1 },
+      ]}],
+    };
+
+    it('preserves header sentences with no findings', () => {
+      const text = 'CT abdomen and pelvis. Right kidney: subcapsular hematoma.';
+      const r = parseSegmentedFindings(text, def);
+      expect(r.unmatchedSentences).toContain('CT abdomen and pelvis.');
+      expect(r.unmatchedSentences).not.toContain('Right kidney: subcapsular hematoma.');
+    });
+
+    it('preserves negative-finding sentences verbatim', () => {
+      const text = 'Right kidney: subcapsular hematoma. The contralateral kidney is otherwise unremarkable.';
+      const r = parseSegmentedFindings(text, def);
+      expect(r.unmatchedSentences).toContain('The contralateral kidney is otherwise unremarkable.');
+    });
+
+    it('returns empty array when every sentence matches', () => {
+      const text = 'Right kidney: subcapsular hematoma. Left kidney: subcapsular hematoma.';
+      const r = parseSegmentedFindings(text, def);
+      expect(r.unmatchedSentences).toEqual([]);
+    });
+
+    it('returns every sentence when nothing matches', () => {
+      const text = 'Some random text. Another sentence.';
+      const r = parseSegmentedFindings(text, def);
+      expect(r.unmatchedSentences).toHaveLength(2);
+    });
+
+    it('does not split decimals like "1.5 cm" into separate sentences', () => {
+      const text = 'The kidney has a 1.5 cm subcapsular hematoma. Header text.';
+      const r = parseSegmentedFindings(text, def);
+      // "1.5 cm" should be inside the hematoma sentence, which IS matched,
+      // so it should NOT appear in unmatchedSentences
+      const joined = r.unmatchedSentences.join(' ');
+      expect(joined).not.toContain('1.5');
+      expect(r.unmatchedSentences).toContain('Header text.');
+    });
+  });
+
   // Regression test: the user's reported failing paste
   it("user's bilateral + contralateral + numeric laceration dictation", () => {
     // Inline the real kidney parseRules enough to validate the full flow
