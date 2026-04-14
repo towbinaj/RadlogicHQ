@@ -11,6 +11,9 @@ import {
   sendPasswordResetEmail,
   deleteUser,
   onAuthStateChanged,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
@@ -73,6 +76,36 @@ export async function resetPassword(email) {
   }
 }
 
+/**
+ * Update the signed-in user's password.
+ * Requires the current password for re-authentication, per Firebase's
+ * "recent login" requirement for sensitive operations. Works only for
+ * accounts with an email/password provider — OAuth-only accounts (e.g.
+ * Google sign-in) don't have a password to change here.
+ */
+export async function updateUserPassword(currentPassword, newPassword) {
+  const user = auth.currentUser;
+  if (!user) return { error: 'Not signed in.' };
+  if (!user.email) return { error: 'This account has no password to change.' };
+  const hasPasswordProvider = user.providerData.some(
+    (p) => p.providerId === 'password'
+  );
+  if (!hasPasswordProvider) {
+    return {
+      error:
+        'This account signs in with Google. Manage your password through your Google account.',
+    };
+  }
+  try {
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPassword);
+    return { error: null };
+  } catch (error) {
+    return { error: friendlyError(error) };
+  }
+}
+
 export async function signOut() {
   try {
     await firebaseSignOut(auth);
@@ -113,6 +146,7 @@ function friendlyError(error) {
     'auth/too-many-requests': 'Too many attempts. Please wait and try again.',
     'auth/popup-closed-by-user': 'Sign-in popup was closed.',
     'auth/invalid-credential': 'Invalid email or password.',
+    'auth/requires-recent-login': 'For security, please sign out and back in, then try again.',
   };
   return map[error.code] || error.message;
 }

@@ -3,10 +3,11 @@ import '../styles/forms.css';
 import './profile.css';
 import '../components/auth-ui.js';
 import '../components/feedback-widget.js';
-import { onAuthChange, getUser, signOut, deleteAccount } from '../core/auth.js';
+import { onAuthChange, getUser, signOut, deleteAccount, updateUserPassword, resetPassword } from '../core/auth.js';
 import { getSavedReports, getPreferences, exportAllUserData, deleteAllUserData } from '../core/user-data.js';
 import { getStored, setStored } from '../core/storage.js';
 import { toolsRegistry } from '../data/tools-registry.js';
+import { showToast } from '../core/toast.js';
 
 function init() {
   const page = document.getElementById('profile-page');
@@ -37,6 +38,11 @@ function init() {
     for (let i = 0; i < localStorage.length; i++) {
       if (localStorage.key(i)?.startsWith('radtools:blockConfig:')) templateCount++;
     }
+
+    // Whether this user has a password to change (false for Google-only accounts)
+    const hasPasswordProvider = (user.providerData || []).some(
+      (p) => p.providerId === 'password'
+    );
 
     page.innerHTML = `
       <div class="profile-card card">
@@ -115,6 +121,30 @@ function init() {
         </div>
       </div>
 
+      <div class="profile-section card" id="security-section" style="${hasPasswordProvider ? '' : 'display:none'}">
+        <h3>Security</h3>
+        <p style="font-size:var(--text-xs);color:var(--text-muted);margin:-4px 0 var(--space-md);">Change your password. You'll need your current password to confirm.</p>
+        <form id="password-form" class="profile-password-form" novalidate>
+          <div class="auth-modal__field">
+            <label for="pw-current">Current password</label>
+            <input type="password" id="pw-current" autocomplete="current-password" required>
+          </div>
+          <div class="auth-modal__field">
+            <label for="pw-new">New password</label>
+            <input type="password" id="pw-new" autocomplete="new-password" minlength="6" required>
+          </div>
+          <div class="auth-modal__field">
+            <label for="pw-confirm">Confirm new password</label>
+            <input type="password" id="pw-confirm" autocomplete="new-password" minlength="6" required>
+          </div>
+          <div class="profile-password-form__error" id="pw-error" role="alert" style="display:none"></div>
+          <div class="profile-password-form__actions">
+            <button type="submit" class="btn btn--primary" id="pw-submit">Update password</button>
+            <button type="button" class="btn" id="pw-forgot">Send reset email instead</button>
+          </div>
+        </form>
+      </div>
+
       <div class="profile-section card" id="renamed-tools-section" style="${Object.keys(getStored('toolNames', {})).length === 0 ? 'display:none' : ''}">
         <h3>Renamed Tools</h3>
         <p style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-sm);">Custom tool names. Click to reset to default.</p>
@@ -168,6 +198,70 @@ function init() {
     page.querySelector('#pref-leglength-mode').addEventListener('change', (e) => {
       setStored('mode:leglength', e.target.value);
     });
+
+    // Password update (email/password accounts only)
+    if (hasPasswordProvider) {
+      const pwForm = page.querySelector('#password-form');
+      const pwCurrent = page.querySelector('#pw-current');
+      const pwNew = page.querySelector('#pw-new');
+      const pwConfirm = page.querySelector('#pw-confirm');
+      const pwError = page.querySelector('#pw-error');
+      const pwSubmit = page.querySelector('#pw-submit');
+      const pwForgot = page.querySelector('#pw-forgot');
+
+      const showPwError = (msg) => {
+        pwError.textContent = msg;
+        pwError.style.display = '';
+      };
+      const clearPwError = () => {
+        pwError.textContent = '';
+        pwError.style.display = 'none';
+      };
+
+      pwForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearPwError();
+
+        const current = pwCurrent.value;
+        const next = pwNew.value;
+        const confirmPw = pwConfirm.value;
+
+        if (!current) return showPwError('Enter your current password.');
+        if (next.length < 6) return showPwError('New password must be at least 6 characters.');
+        if (next !== confirmPw) return showPwError('New passwords do not match.');
+        if (next === current) return showPwError('New password must be different from the current one.');
+
+        pwSubmit.disabled = true;
+        pwSubmit.textContent = 'Updating…';
+        try {
+          const { error } = await updateUserPassword(current, next);
+          if (error) {
+            showPwError(error);
+          } else {
+            pwForm.reset();
+            showToast('Password updated.');
+          }
+        } finally {
+          pwSubmit.disabled = false;
+          pwSubmit.textContent = 'Update password';
+        }
+      });
+
+      pwForgot.addEventListener('click', async () => {
+        if (!user.email) return showPwError('This account has no email on file.');
+        const confirmed = confirm(
+          `Send a password reset link to ${user.email}?`
+        );
+        if (!confirmed) return;
+        const { error } = await resetPassword(user.email);
+        if (error) {
+          showPwError(error);
+        } else {
+          clearPwError();
+          showToast('Reset email sent. Check your inbox.');
+        }
+      });
+    }
 
     // Hidden tools recovery
     function renderHiddenTools() {
