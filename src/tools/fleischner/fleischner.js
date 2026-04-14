@@ -8,7 +8,7 @@ import { renderEditorContent, splitEditorContent } from '../../core/pill-editor.
 import { fleischnerDefinition } from './definition.js';
 import { calculateFleischner } from './calculator.js';
 import { fleischnerTemplates } from './templates.js';
-import { parseFindings } from '../../core/parser.js';
+import { parseSegmentedFindings } from '../../core/parser.js';
 import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
 import '../../core/tool-name.js';
 
@@ -321,15 +321,42 @@ function init() {
   parseBtn.addEventListener('click', () => {
     const text = parseInput.value.trim();
     if (!text) return;
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, fleischnerDefinition);
-    const fs = nodules[activeNoduleIndex].formState;
-    for (const key of Object.keys(fs)) delete fs[key];
-    Object.assign(fs, parsed);
-    additionalFindingsEl.value = remainder || '';
+
+    // Item-indexed parsing: "Nodule 1: ... Nodule 2: ..." (or numbered
+    // "1. ... 2. ...") pastes split into per-nodule segments, each
+    // becoming its own tab. Single-nodule pastes fall through to the
+    // ungrouped bucket and apply to the active tab (old behavior).
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, fleischnerDefinition);
+
+    let matchedFieldCount = 0;
+
+    if (segments.length > 0) {
+      nodules = segments.map((seg) => ({
+        id: seg.index,
+        label: `Nodule ${seg.index}`,
+        formState: { ...seg.formState },
+      }));
+      activeNoduleIndex = 0;
+      matchedFieldCount = segments.reduce((n, s) => n + s.matched.length, 0);
+    } else if (ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
+      const fs = nodules[activeNoduleIndex].formState;
+      for (const key of Object.keys(fs)) delete fs[key];
+      Object.assign(fs, ungrouped.formState);
+      matchedFieldCount = ungrouped.matched.length;
+    }
+
+    const additional = unmatchedSentences
+      .filter((s) => !/^\s*(?:\(\d+\)|\d+\.?)\s*$/.test(s))
+      .join(' ');
+    additionalFindingsEl.value = additional;
     studyAdditionalFindings = additionalFindingsEl.value;
+
+    renderNoduleTabs();
     buildUI();
-    const total = matched.length + unmatched.length;
-    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+
+    const noduleCount = segments.length > 0 ? segments.length : 1;
+    const noduleSuffix = noduleCount > 1 ? ` across ${noduleCount} nodules` : '';
+    parseStatus.textContent = `Matched ${matchedFieldCount} field(s)${noduleSuffix}${unmatchedSentences.length ? ' \u2014 remainder in Additional Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });

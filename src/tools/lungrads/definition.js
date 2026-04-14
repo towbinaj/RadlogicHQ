@@ -77,6 +77,11 @@ export const lungradsDefinition = {
     ],
   },
 
+  // Multi-nodule pastes like "Nodule 1: ... Nodule 2: ..." (or numbered
+  // "1. ... 2. ...") split into per-nodule segments so each maps to its
+  // own nodule tab.
+  parseSegmentation: { type: 'itemIndex', itemLabel: 'Nodule' },
+
   parseRules: {
     'size': {
       pattern: /(\d*\.?\d+)\s*mm/,
@@ -95,9 +100,11 @@ export const lungradsDefinition = {
     },
     'noduleType': {
       options: {
+        // 'part-solid nodule' must be longer than 'solid nodule' so
+        // longest-match picks partSolid for "part-solid nodule" dictations.
         'solid': ['solid nodule', 'solid'],
-        'partSolid': ['part-solid', 'part solid'],
-        'groundGlass': ['ground glass', 'ground-glass', 'ggn', 'ggo'],
+        'partSolid': ['part-solid nodule', 'part solid nodule', 'part-solid', 'part solid'],
+        'groundGlass': ['ground-glass nodule', 'ground glass nodule', 'ground glass', 'ground-glass', 'ggn', 'ggo'],
       },
     },
   },
