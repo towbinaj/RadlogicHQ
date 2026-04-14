@@ -647,90 +647,154 @@ function escapeRegex(str) {
 // whether to apply it to the currently-active side/item or leave it alone.
 // ============================================================
 
-// Laterality marker patterns, in priority order (longer/more specific first).
-// Each entry produces 0+ markers pointing at the start of a new segment.
-const LATERALITY_MARKERS = [
-  // "bilateral kidneys", "both kidneys", "bilateral", "both sides"
-  { re: /\b(?:bilateral|both)\s+(?:kidneys|sides|adrenals|ovaries|breasts|lungs|hips|organs)\b/gi, key: 'bilateral' },
-  { re: /\bbilaterally\b/gi, key: 'bilateral' },
+// Laterality marker patterns. Used to classify each sentence as right,
+// left, or bilateral. Order matters: bilateral patterns are checked first
+// so "bilateral kidneys" doesn't get misclassified as "left kidney"
+// because it contains "left" as a substring. (Actually "bilateral" doesn't
+// contain "left" but keep the ordering for safety with future patterns.)
+const BILATERAL_RE = /\b(?:bilateral|both)\s+(?:kidneys|sides|adrenals|ovaries|breasts|lungs|hips|organs)\b|\bbilaterally\b|\b(?:right\s+and\s+left|left\s+and\s+right)\s+(?:kidneys|adrenals|ovaries|breasts|lungs|hips|sides|organs)\b/i;
+const RIGHT_RE = /\b(?:the\s+)?right\s+(?:kidney|adrenal|ovary|breast|lung|hip|side|organ)s?\b|\bon\s+the\s+right\b|\brt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|side)\b|(?:^|\n)\s*(?:the\s+)?right\s*:/i;
+const LEFT_RE = /\b(?:the\s+)?left\s+(?:kidney|adrenal|ovary|breast|lung|hip|side|organ)s?\b|\bon\s+the\s+left\b|\blt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|side)\b|(?:^|\n)\s*(?:the\s+)?left\s*:/i;
 
-  // "Right kidney", "Right adrenal", "the right kidney:", etc.
-  { re: /\b(?:the\s+)?right\s+(?:kidney|adrenal|ovary|breast|lung|hip|side|organ)s?\b\s*:?/gi, key: 'right' },
-  { re: /\b(?:the\s+)?left\s+(?:kidney|adrenal|ovary|breast|lung|hip|side|organ)s?\b\s*:?/gi, key: 'left' },
+// Cross-reference tokens: flip the current side for this sentence only.
+const CONTRALATERAL_RE = /\bcontralateral\b|\bthe\s+(?:other|opposite)\s+(?:kidney|side|adrenal|organ)\b|\bon\s+the\s+other\s+side\b/i;
 
-  // "On the right" / "on the left"
-  { re: /\bon\s+the\s+right\b/gi, key: 'right' },
-  { re: /\bon\s+the\s+left\b/gi, key: 'left' },
-
-  // Radiology shorthand: Rt / Lt + organ
-  { re: /\brt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|side)\b/gi, key: 'right' },
-  { re: /\blt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|side)\b/gi, key: 'left' },
-];
+// "Ipsilateral" / "same side" → keep current side (explicit reinforcement).
+const IPSILATERAL_RE = /\bipsilateral\b|\bthe\s+same\s+(?:side|kidney|organ)\b/i;
 
 /**
- * Find all laterality marker positions in `text` and return a sorted list.
- * Each marker: { pos: number, endPos: number, key: 'right'|'left'|'bilateral' }
+ * Split text into sentences. Medical radiology text has tricky edge cases
+ * (decimals like "2.5 cm", abbreviations), so we use a conservative regex:
+ *   - Split on period / ! / ? followed by whitespace + uppercase letter
+ *   - Split on newlines
+ * This won't split "2.5 cm" because "cm" is lowercase. It may misfire on
+ * abbreviations like "Dr. Smith" but those rarely appear in findings text.
  */
-function findLateralityMarkers(text) {
-  const markers = [];
-  for (const { re, key } of LATERALITY_MARKERS) {
-    re.lastIndex = 0;
-    let m;
-    while ((m = re.exec(text)) !== null) {
-      markers.push({ pos: m.index, endPos: m.index + m[0].length, key });
-    }
-  }
-  markers.sort((a, b) => a.pos - b.pos);
-  // Drop markers whose position is inside a prior marker's span (covers overlap
-  // between "right kidney" and "right side" regexes on the same phrase)
-  const deduped = [];
-  for (const m of markers) {
-    const last = deduped[deduped.length - 1];
-    if (last && m.pos < last.endPos) continue;
-    deduped.push(m);
-  }
-  return deduped;
+function splitSentences(text) {
+  if (!text || !text.trim()) return [];
+  return text
+    .split(/(?<=[.!?])\s+(?=[A-Z])|\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /**
- * Segment text by laterality markers. Implements the "most recent marker"
- * attribution rule: text between marker N and marker N+1 belongs to marker N's
- * side; text before the first marker is ungrouped.
+ * Classify a single sentence for laterality routing.
+ * Returns an object with zero or more of:
+ *   - `bilateral: true`     — mentions bilateral/both → apply to both sides
+ *   - `explicit: 'right'|'left'` — explicit side marker → set current + apply
+ *   - `contralateral: true` — "contralateral" / "the other kidney" → flip
+ *   - `ipsilateral: true`   — "ipsilateral" / "same side" → keep current
+ * Plus the original `sentence` string.
+ */
+function classifySentenceLaterality(sentence) {
+  const cls = { sentence };
+  // Order matters: check bilateral FIRST so "bilateral" doesn't get
+  // shadowed by any accidental right/left substring match.
+  if (BILATERAL_RE.test(sentence)) {
+    cls.bilateral = true;
+    return cls;
+  }
+  const hasRight = RIGHT_RE.test(sentence);
+  const hasLeft = LEFT_RE.test(sentence);
+  if (hasRight && hasLeft) {
+    // "The right and left kidneys both show..." — treat as bilateral
+    cls.bilateral = true;
+    return cls;
+  }
+  if (hasRight) {
+    cls.explicit = 'right';
+    return cls;
+  }
+  if (hasLeft) {
+    cls.explicit = 'left';
+    return cls;
+  }
+  if (CONTRALATERAL_RE.test(sentence)) {
+    cls.contralateral = true;
+    return cls;
+  }
+  if (IPSILATERAL_RE.test(sentence)) {
+    cls.ipsilateral = true;
+    return cls;
+  }
+  return cls;
+}
+
+/**
+ * Segment text by laterality using sentence-level classification.
  *
- * If the same key appears multiple times (e.g. "Right kidney: X. Left kidney:
- * Y. Right kidney: Z"), the segments are merged in order. Phase 1.1 can add
- * smarter interleaving detection.
+ * Phase 1.1 upgrade over Phase 1:
+ *   - Walks text sentence-by-sentence, classifying each independently
+ *   - Sticky attribution: a sentence with no marker inherits the current
+ *     side from the most recent sentence that had one
+ *   - `contralateral` / "the other kidney" flip the side for that sentence
+ *   - `ipsilateral` / "same side" reinforce the current side
+ *   - `bilateral` / `both kidneys` produce entries in BOTH right and left
+ *     segments (caller no longer sees a 'bilateral' key)
+ *   - Text before the first side-bearing sentence goes to `ungrouped`
+ *
+ * Returns: { segments: [{key, label, text}, ...], ungroupedText: string }
+ * where key is 'right' or 'left' only.
  */
 export function segmentByLaterality(text) {
-  const markers = findLateralityMarkers(text);
-  if (markers.length === 0) {
-    return { segments: [], ungroupedText: text.trim() };
+  const sentences = splitSentences(text);
+  if (sentences.length === 0) {
+    return { segments: [], ungroupedText: '' };
   }
 
-  const ungroupedText = text.slice(0, markers[0].pos).trim();
+  const rightParts = [];
+  const leftParts = [];
+  const ungroupedParts = [];
+  let currentSide = null; // 'right' | 'left' | null — most recent sticky side
 
-  // Build raw segments in source order, then merge same-key segments
-  const raw = [];
-  for (let i = 0; i < markers.length; i++) {
-    const start = markers[i].endPos;
-    const end = i + 1 < markers.length ? markers[i + 1].pos : text.length;
-    const segText = text.slice(start, end).trim();
-    if (segText) raw.push({ key: markers[i].key, text: segText });
-  }
+  for (const raw of sentences) {
+    const cls = classifySentenceLaterality(raw);
 
-  const mergedMap = new Map();
-  for (const seg of raw) {
-    const prev = mergedMap.get(seg.key);
-    mergedMap.set(seg.key, prev ? prev + '\n' + seg.text : seg.text);
+    if (cls.bilateral) {
+      // Apply to both sides. Bilateral sentences do NOT change the sticky
+      // `currentSide` — an explicit side later should still take over.
+      rightParts.push(cls.sentence);
+      leftParts.push(cls.sentence);
+      continue;
+    }
+
+    if (cls.explicit) {
+      currentSide = cls.explicit;
+      (currentSide === 'right' ? rightParts : leftParts).push(cls.sentence);
+      continue;
+    }
+
+    if (cls.contralateral && currentSide) {
+      // Flip for this sentence only; sticky side stays the same so a
+      // subsequent plain sentence still inherits the original side.
+      const flipped = currentSide === 'right' ? 'left' : 'right';
+      (flipped === 'right' ? rightParts : leftParts).push(cls.sentence);
+      continue;
+    }
+
+    if (cls.ipsilateral && currentSide) {
+      (currentSide === 'right' ? rightParts : leftParts).push(cls.sentence);
+      continue;
+    }
+
+    // No marker: inherit sticky side. If none yet, drop to ungrouped.
+    if (currentSide) {
+      (currentSide === 'right' ? rightParts : leftParts).push(cls.sentence);
+    } else {
+      ungroupedParts.push(cls.sentence);
+    }
   }
 
   const segments = [];
-  for (const [key, segText] of mergedMap) {
-    const label = key.charAt(0).toUpperCase() + key.slice(1);
-    segments.push({ key, label, text: segText });
+  if (rightParts.length > 0) {
+    segments.push({ key: 'right', label: 'Right', text: rightParts.join(' ') });
+  }
+  if (leftParts.length > 0) {
+    segments.push({ key: 'left', label: 'Left', text: leftParts.join(' ') });
   }
 
-  return { segments, ungroupedText };
+  return { segments, ungroupedText: ungroupedParts.join(' ') };
 }
 
 const WORD_TO_NUMBER = {

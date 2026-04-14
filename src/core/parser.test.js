@@ -446,54 +446,62 @@ describe('parseFindings with auto-generated rules', () => {
 // Segmentation layer
 // ============================================================
 
-describe('segmentByLaterality', () => {
+describe('segmentByLaterality (Phase 1.1 — sentence-based)', () => {
   it('returns no segments and full text as ungrouped when no markers', () => {
     const r = segmentByLaterality('Subcapsular hematoma with perirenal extension');
     expect(r.segments).toEqual([]);
-    expect(r.ungroupedText).toBe('Subcapsular hematoma with perirenal extension');
+    expect(r.ungroupedText).toContain('Subcapsular hematoma');
   });
 
   it('splits a simple right/left report into two segments', () => {
     const text = 'Right kidney: subcapsular hematoma. Left kidney: 2 cm laceration.';
     const r = segmentByLaterality(text);
-    expect(r.segments.length).toBe(2);
-    expect(r.segments[0].key).toBe('right');
-    expect(r.segments[0].text).toContain('subcapsular hematoma');
-    expect(r.segments[1].key).toBe('left');
-    expect(r.segments[1].text).toContain('2 cm laceration');
+    expect(r.segments).toHaveLength(2);
+    const right = r.segments.find((s) => s.key === 'right');
+    const left = r.segments.find((s) => s.key === 'left');
+    expect(right.text).toContain('subcapsular hematoma');
+    expect(left.text).toContain('2 cm laceration');
   });
 
   it('captures text before first marker as ungrouped', () => {
     const text = 'CT abdomen performed. Right kidney: hematoma.';
     const r = segmentByLaterality(text);
-    expect(r.ungroupedText).toContain('CT abdomen performed');
+    expect(r.ungroupedText).toContain('CT abdomen');
     expect(r.segments).toHaveLength(1);
     expect(r.segments[0].key).toBe('right');
   });
 
-  it('handles "bilateral" and "both kidneys" as a bilateral marker', () => {
+  it('expands "bilateral kidneys" to BOTH right and left segments', () => {
     const text = 'Bilateral kidneys show scattered hematomas.';
     const r = segmentByLaterality(text);
-    expect(r.segments).toHaveLength(1);
-    expect(r.segments[0].key).toBe('bilateral');
+    expect(r.segments).toHaveLength(2);
+    expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
+    expect(r.segments[0].text).toContain('scattered hematomas');
+    expect(r.segments[1].text).toContain('scattered hematomas');
   });
 
-  it('attributes mid-segment findings to the most recent marker (Phase 1 rule)', () => {
-    const text = 'Right kidney: grade 3 laceration. Subcapsular hematoma throughout.';
+  it('expands "both kidneys" the same way', () => {
+    const text = 'Both kidneys are enlarged.';
     const r = segmentByLaterality(text);
-    // "Subcapsular hematoma throughout" joins the right segment, not ungrouped
-    expect(r.segments).toHaveLength(1);
-    expect(r.segments[0].key).toBe('right');
-    expect(r.segments[0].text).toContain('Subcapsular hematoma');
+    expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
   });
 
-  it('merges multiple segments with the same key', () => {
-    const text = 'Right kidney: X. Left kidney: Y. Right kidney: also Z.';
+  it('applies sticky attribution for sentences without markers', () => {
+    const text = 'Right kidney: grade 3 laceration. Subcapsular hematoma throughout. No active bleeding.';
+    const r = segmentByLaterality(text);
+    const right = r.segments.find((s) => s.key === 'right');
+    expect(right.text).toContain('Subcapsular hematoma throughout');
+    expect(right.text).toContain('No active bleeding');
+    expect(r.segments).toHaveLength(1);
+  });
+
+  it('merges same-key sentences in source order', () => {
+    const text = 'Right kidney: X hematoma. Left kidney: Y laceration. Right kidney: also Z.';
     const r = segmentByLaterality(text);
     expect(r.segments).toHaveLength(2);
     const right = r.segments.find((s) => s.key === 'right');
-    expect(right.text).toContain('X');
-    expect(right.text).toContain('Z');
+    expect(right.text).toContain('X hematoma');
+    expect(right.text).toContain('also Z');
   });
 
   it('matches radiology shorthand Rt/Lt', () => {
@@ -503,6 +511,92 @@ describe('segmentByLaterality', () => {
 
   it('matches "on the right" / "on the left"', () => {
     const r = segmentByLaterality('On the right, subcapsular hematoma. On the left, 2 cm laceration.');
+    expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
+  });
+
+  // --- Phase 1.1 additions ---
+
+  it('resolves "contralateral kidney" by flipping the current side', () => {
+    const text = 'The right kidney has a subcapsular hematoma. The contralateral kidney shows a 2 cm laceration.';
+    const r = segmentByLaterality(text);
+    const right = r.segments.find((s) => s.key === 'right');
+    const left = r.segments.find((s) => s.key === 'left');
+    expect(right.text).toContain('subcapsular hematoma');
+    expect(left.text).toContain('2 cm laceration');
+    expect(left.text).not.toContain('subcapsular hematoma');
+  });
+
+  it('resolves "the other kidney" as contralateral', () => {
+    const text = 'Left kidney: 3 cm laceration. The other kidney shows a subcapsular hematoma.';
+    const r = segmentByLaterality(text);
+    const right = r.segments.find((s) => s.key === 'right');
+    const left = r.segments.find((s) => s.key === 'left');
+    expect(left.text).toContain('3 cm laceration');
+    expect(right.text).toContain('subcapsular hematoma');
+  });
+
+  it('keeps current side for "ipsilateral" / "same side"', () => {
+    const text = 'Right kidney: laceration. Ipsilateral perirenal hematoma.';
+    const r = segmentByLaterality(text);
+    expect(r.segments).toHaveLength(1);
+    expect(r.segments[0].key).toBe('right');
+    expect(r.segments[0].text).toContain('perirenal hematoma');
+  });
+
+  it('handles interleaved bouncing between sides', () => {
+    const text = [
+      'Right kidney: subcapsular hematoma.',
+      'Left kidney: 2 cm laceration.',
+      'Right kidney additionally shows a perirenal fluid collection.',
+      'Left kidney has contained vascular injury.',
+    ].join(' ');
+    const r = segmentByLaterality(text);
+    const right = r.segments.find((s) => s.key === 'right');
+    const left = r.segments.find((s) => s.key === 'left');
+    expect(right.text).toContain('subcapsular hematoma');
+    expect(right.text).toContain('perirenal fluid collection');
+    expect(right.text).not.toContain('2 cm laceration');
+    expect(right.text).not.toContain('contained vascular injury');
+    expect(left.text).toContain('2 cm laceration');
+    expect(left.text).toContain('contained vascular injury');
+  });
+
+  it('handles bilateral-then-unilateral (partial bilateral)', () => {
+    const text = 'Bilateral kidneys show scattered subcapsular hematomas. The right kidney additionally has a 2 cm laceration.';
+    const r = segmentByLaterality(text);
+    const right = r.segments.find((s) => s.key === 'right');
+    const left = r.segments.find((s) => s.key === 'left');
+    // Both sides see the bilateral finding
+    expect(right.text).toContain('subcapsular hematomas');
+    expect(left.text).toContain('subcapsular hematomas');
+    // Only right sees the unilateral finding
+    expect(right.text).toContain('2 cm laceration');
+    expect(left.text).not.toContain('2 cm laceration');
+  });
+
+  it('contralateral flip does not change the sticky side for subsequent sentences', () => {
+    const text = 'Right kidney: laceration. Contralateral hematoma. Additionally shows perirenal stranding.';
+    const r = segmentByLaterality(text);
+    const right = r.segments.find((s) => s.key === 'right');
+    const left = r.segments.find((s) => s.key === 'left');
+    // Sentence 1 -> right. Sentence 2 -> left (flip). Sentence 3 -> right (sticky).
+    expect(right.text).toContain('laceration');
+    expect(right.text).toContain('perirenal stranding');
+    expect(left.text).toContain('hematoma');
+    expect(left.text).not.toContain('perirenal stranding');
+  });
+
+  it('does not split decimals like "2.5 cm" into sentences', () => {
+    const text = 'Right kidney has a 2.5 cm subcapsular hematoma. Left kidney is normal.';
+    const r = segmentByLaterality(text);
+    const right = r.segments.find((s) => s.key === 'right');
+    expect(right.text).toContain('2.5 cm');
+  });
+
+  it('"right and left kidneys both" is treated as bilateral', () => {
+    const text = 'The right and left kidneys both show subcapsular hematomas.';
+    const r = segmentByLaterality(text);
+    expect(r.segments).toHaveLength(2);
     expect(r.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
   });
 });

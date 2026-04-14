@@ -271,8 +271,10 @@ function init() {
 
     const { segments, ungrouped, remainder } = parseSegmentedFindings(text, aastKidneyDefinition);
 
+    // Phase 1.1: parseSegmentedFindings with type 'laterality' returns only
+    // 'right' and 'left' segments (bilateral sentences are already expanded
+    // to both sides by the segmenter). No 'bilateral' branch needed.
     const sidesTouched = new Set();
-    let bilateralSawContent = false;
 
     for (const seg of segments) {
       if (seg.key === 'right') {
@@ -281,13 +283,6 @@ function init() {
       } else if (seg.key === 'left') {
         applyParsedToSide('left', seg.formState);
         sidesTouched.add('left');
-      } else if (seg.key === 'bilateral') {
-        // "Both kidneys show subcapsular hematoma" — apply to both sides
-        applyParsedToSide('right', seg.formState);
-        applyParsedToSide('left', seg.formState);
-        sidesTouched.add('right');
-        sidesTouched.add('left');
-        bilateralSawContent = true;
       }
     }
 
@@ -303,9 +298,9 @@ function init() {
     if (sidesTouched.has('right') && sidesTouched.has('left')) {
       formState.laterality = 'bilateral';
     } else if (sidesTouched.has('right')) {
-      formState.laterality = bilateralSawContent ? 'bilateral' : 'right';
+      formState.laterality = 'right';
     } else if (sidesTouched.has('left')) {
-      formState.laterality = bilateralSawContent ? 'bilateral' : 'left';
+      formState.laterality = 'left';
     }
 
     // Remainder → Additional Findings. Include any ungrouped-but-unmatched

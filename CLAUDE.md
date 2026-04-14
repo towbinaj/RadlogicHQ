@@ -75,7 +75,7 @@ These are the ones that will break things if ignored. For the longer list organi
 - **HL7 safety**: never write `|`, `~`, `^`, `&`, or `\` into report templates, option labels, or tooltips — they're HL7 v2 structural delimiters and will corrupt downstream ORU messages. `src/core/clipboard.js` `asciiSafe()` normalizes non-ASCII on copy as a backstop, but keep source text ASCII. See `docs/gotchas.md` "HL7 safety" section.
 - **Google OAuth** requires `radiologichq.com` in Firebase Console → Authentication → Settings → Authorized domains (separate from the CSP whitelist)
 - **Parse rules** are auto-generated from labels + SYNONYMS dict in `parser.js`. Hand-written `parseRules` in a tool's `definition.js` override the auto-generated ones. Run `npm run check-synonyms {toolId}` to audit coverage.
-- **Segmented parsing**: tools with paired-organ or multi-item state can opt into `parseSegmentation: { type: 'laterality' }` or `{ type: 'itemIndex', itemLabel: 'Nodule' }` in their definition. See `parseSegmentedFindings()` in `parser.js` and the "Segmented Parsing" section in `docs/newtool.md`.
+- **Segmented parsing**: tools with paired-organ or multi-item state can opt into `parseSegmentation: { type: 'laterality' }` or `{ type: 'itemIndex', itemLabel: 'Nodule' }` in their definition. Laterality is sentence-based with sticky attribution + contralateral flip — see the "Segmented Parsing" section in `docs/newtool.md`.
 - **New tools must include `trackEvent('tool:{toolId}:opens')`** as the first line of their `init()` function
 
 ## Adding a New Tool

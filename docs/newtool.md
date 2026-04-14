@@ -242,7 +242,13 @@ export const aastKidneyDefinition = {
 
 Two segmenter types are available in `src/core/parser.js`:
 
-- **`'laterality'`** — splits text at `Right kidney`, `Left kidney`, `Bilateral kidneys`, `Rt/Lt kidney`, `on the right / left`, `both kidneys` and similar phrases. Each chunk goes to its own segment with `key: 'right' | 'left' | 'bilateral'`. Text before the first marker → `ungrouped`.
+- **`'laterality'`** — sentence-based classifier. Each sentence is classified independently as belonging to the right side, left side, or both. Recognizes:
+  - Explicit: `Right kidney`, `Left adrenal`, `the right breast`, `Rt/Lt kidney`, `on the right`, `Right:` / `Left:` prefix
+  - Bilateral: `bilateral kidneys`, `both kidneys`, `bilaterally`, `the right and left kidneys`
+  - Cross-reference: `contralateral`, `the other kidney`, `the opposite side` → flips the current side for that sentence only
+  - Reinforcement: `ipsilateral`, `the same side/kidney` → keeps the current side
+  - A sentence with no marker inherits the most recent side (sticky attribution)
+  - Bilateral sentences produce entries in **both** `right` and `left` segments — callers only ever see `key: 'right' | 'left'`
 - **`'itemIndex'`** — splits at `Nodule 1`, `Nodule #1`, `Nodule 1:`, `first nodule`, `second nodule`, and numbered line starts `1.` / `(1)` / `2.`. Configurable via `itemLabel` (default `'item'`). Each chunk gets `key: 'item-<N>', index: <N>`.
 
 Then use the segmented API in your parse handler:
@@ -258,7 +264,7 @@ parseBtn.addEventListener('click', () => {
   for (const seg of segments) {
     if (seg.key === 'right')      applyToSide('right', seg.formState);
     else if (seg.key === 'left')  applyToSide('left',  seg.formState);
-    else if (seg.key === 'bilateral') { /* apply to both */ }
+    // No 'bilateral' case — bilateral sentences already expanded to both
   }
 
   // When no segments were detected, fall back to applying ungrouped to the
@@ -270,11 +276,14 @@ parseBtn.addEventListener('click', () => {
 });
 ```
 
-**Phase 1 attribution rules:**
-- Text between marker N and marker N+1 belongs to marker N (most-recent-marker rule).
-- Text before the first marker → `ungrouped`.
-- Multiple markers with the same key (e.g. `Right kidney: X ... Right kidney: Z`) are merged in source order.
-- **Phase 1.1 (not yet implemented)** will handle bouncing back and forth mid-sentence and cross-reference pronouns ("the contralateral kidney...") more gracefully.
+**Phase 1.1 attribution rules:**
+- Text is split into sentences first (splitting on `. ! ?` followed by whitespace + uppercase, and on newlines; decimals like `2.5 cm` are preserved).
+- Each sentence is classified independently. A sentence with no marker inherits the sticky side set by the most recent prior sentence that did have one.
+- `bilateral` / `both kidneys` applies to both sides but does NOT change the sticky side — an explicit side later can still take over.
+- `contralateral` / `the other kidney` flips the side **for that sentence only**. The next sentence with no marker still inherits the original sticky side, not the flipped one.
+- `ipsilateral` / `same side` reinforces the current sticky side.
+- Text before the first side-bearing sentence goes to `ungrouped` (good for report headers like `"CT abdomen performed with IV contrast."`).
+- When both `right` and `left` appear in the same clause as a conjunction (`"the right and left kidneys both show..."`), the whole sentence is treated as bilateral.
 
 **Note on `selectedFindings`:** For tools with `categories → findings` (AAST pattern), `parseFindings` returns `selectedFindings` as an **array**, not a Set. The tool's formState typically uses a Set, so convert on the way in: `formState.right.selectedFindings = new Set(parsed.selectedFindings || [])`. See `src/tools/aast-kidney/aast-kidney.js` `applyParsedToSide()` for the canonical pattern.
 

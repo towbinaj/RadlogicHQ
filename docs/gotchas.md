@@ -36,11 +36,12 @@ Tools that track more than one independent finding set (paired organs, multi-nod
 
 - **Opt-in via `definition.parseSegmentation`**: `{ type: 'laterality' }` or `{ type: 'itemIndex', itemLabel: 'Nodule' }`. No field → old single-pass behavior.
 - **`parseSegmentedFindings(text, definition)`** returns `{ segments, ungrouped, remainder }`. Each segment has its own `formState`, `matched`, `unmatched`, `remainder`.
-- **Attribution rule**: text between marker N and marker N+1 belongs to marker N. Text before the first marker goes to `ungrouped`. Segments with the same key are merged in source order.
+- **Laterality segmentation is sentence-based** (Phase 1.1). Text is split into sentences, then each sentence is classified independently. A sentence with no marker inherits the sticky side from the most recent marker-bearing sentence. `bilateral` / `both kidneys` sentences produce entries in BOTH `right` and `left` segments — the caller never sees a `'bilateral'` key.
+- **Cross-reference handling**: `contralateral`, `the other kidney`, and `the opposite side` flip the current side **for that sentence only**. The sticky side for subsequent sentences stays pointing at the most recent explicit marker. `ipsilateral` and `the same side` reinforce the current sticky side.
 - **Ungrouped fallback**: when `segments.length === 0`, the tool should apply `ungrouped.formState` to the currently-active side (or item) so simple single-side pastes still work.
-- **Phase 1 limitations**: no cross-reference pronoun handling, no sentence-level disambiguation, no interleaved "bouncing" detection. These are planned for Phase 1.1 when needed.
-- **Adding new laterality patterns**: edit the `LATERALITY_MARKERS` array in `parser.js`. Add organ-specific matches (e.g. `right adrenal`, `left breast`) — the existing array already covers kidney, adrenal, ovary, breast, lung, hip.
-- **Tests live in `src/core/parser.test.js`** — 17 cases covering `segmentByLaterality`, `segmentByItemIndex`, `parseSegmentedFindings`. Every new segmentation bug should land with a failing test first.
+- **Decimals like "2.5 cm"** are preserved because the sentence splitter requires an uppercase letter after the period. Abbreviations with a trailing period followed by a capitalized word (`"Dr. Smith reported..."`) could misfire but rarely appear in findings text.
+- **Adding new laterality patterns**: edit `RIGHT_RE`, `LEFT_RE`, and `BILATERAL_RE` at the top of the segmentation section in `parser.js`. Add organ-specific matches (e.g. `right adrenal`, `left breast`) — the existing array already covers kidney, adrenal, ovary, breast, lung, hip.
+- **Tests live in `src/core/parser.test.js`** — 26 cases covering `segmentByLaterality` (including contralateral flip, sticky attribution, interleaved bouncing, partial bilateral, conjunction form), `segmentByItemIndex`, and `parseSegmentedFindings`. Every new segmentation bug should land with a failing test first.
 
 ## Brand Assets
 
