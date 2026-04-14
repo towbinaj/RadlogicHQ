@@ -180,5 +180,24 @@
 ### Polish
 - [ ] Keyboard accessibility (arrow keys, Enter to select)
 - [ ] ARIA labels on all interactive elements
-- [ ] SEO meta tags and Open Graph
+- [x] SEO meta tags and Open Graph (canonical + og:* + twitter:*, commit 99d1104)
 - [ ] 404 page
+
+## Post-Launch Checklist (radiologichq.com)
+
+Immediate follow-ups now that the custom domain is live:
+
+- [ ] **Add `GITHUB_TOKEN` to Cloudflare Pages env vars (Secret)** — blocks the
+  in-site feedback widget. Fine-grained PAT, scoped to `towbinaj/radlogichq`
+  with `Issues: Read and write`. Add at Cloudflare dashboard → Pages →
+  radlogichq → Settings → Variables and Secrets, then trigger a redeploy.
+- [ ] **Submit sitemap to Google Search Console** — property for
+  `radiologichq.com`, then Sitemaps → enter `sitemap.xml`.
+- [x] **Verified OG / Twitter card previews**.
+- [x] **`www.radiologichq.com` → `radiologichq.com` redirect** confirmed working.
+- [ ] **Enable Page Shield** (Cloudflare → Security → Page Shield) for
+  script supply-chain monitoring.
+- [ ] **Set up Email Routing for `feedback@radiologichq.com`** → forward to
+  `radiologichq@gmail.com`, as a backup channel if the widget errors.
+  Then update the feedback-widget error message to reference the domain
+  email instead of the Gmail one.
