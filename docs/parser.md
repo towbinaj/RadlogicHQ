@@ -755,3 +755,262 @@ dimensions: {
 The transform returns an object — the parser doesn't care about the
 shape of the returned value, only that it's stored in
 `formState[inputId]`.
+
+---
+
+## 9. Testing
+
+Parser tests live in `src/core/parser.test.js` — **79 tests** as of
+this writing, covering:
+
+- `parseFindings` basic rules (pattern / options / multi)
+- `buildParseRules` auto-generation against sample definitions
+- `SYNONYMS` substring expansion
+- `extractText` (plain / XML / RadAI structured report formats)
+- `splitSentences` edge cases (decimals, newlines, abbreviations)
+- `segmentByLaterality` — sticky attribution, contralateral flip,
+  interleaved sentence bouncing, partial bilateral, conjunction
+  form, postposed/copula/distributive/prepositional bilateral
+  phrasings
+- `segmentByItemIndex` — explicit / word form / numbered line,
+  same-index merging, `itemLabel` configurability
+- `parseSegmentedFindings` — the `parseSegmentation` opt-in path
+  + per-segment `parseFindings` invocation
+
+**Test-first for segmenter bugs.** Every new segmentation failure
+mode that ships should land with a failing test in this file
+before the fix lands. The laterality segmenter in particular has
+fiddly sentence-classification rules where a regression in one
+pattern can silently break a different pattern — the test suite
+is the only thing that catches this.
+
+**Run locally:**
+
+```sh
+npm run test:run           # full suite (all 165 tests, <1s)
+npx vitest parser          # just parser tests
+```
+
+**Synonym audit:**
+
+```sh
+npm run check-synonyms tirads        # one tool
+npm run check-synonyms -- --all       # every tool
+```
+
+Reports which labels have synonym coverage and which don't.
+Labels with no synonyms still work for parsing (the label itself
+is always included as a keyword), but adding synonyms improves
+robustness against dictation variants.
+
+---
+
+## 10. Opted-in tool registry
+
+18 tools currently opt in to `parseSegmentation`. Add yours here
+when you wire up a new tool.
+
+### Item-index (10 tools)
+
+| Tool | `itemLabel` | Handler idiom | Notes |
+|---|---|---|---|
+| `tirads` | Nodule | (a) drop-in | First to ship; reference for others |
+| `lirads` | Observation | (a) drop-in | Also has benignAssessment manual rules |
+| `lungrads` | Nodule | (a) drop-in | Required `part-solid nodule` keyword fix |
+| `fleischner` | Nodule | (a) drop-in | Shared parser fix with lungrads |
+| `bosniak` | Cyst | (a) drop-in | cm→mm unit transform in size pattern |
+| `pirads` | Lesion | (a) drop-in | Auto-gen covers named option groups (t2Score, dwiScore, dce) |
+| `orads` | Mass | (a) drop-in | Pelvic ovary-adnexa |
+| `recist` | Target | (e) per-target | Sizes → `current`; organ free-text; MAX_TARGETS=5 |
+| `mrecist` | Target | (e) per-target | Couinaud segment location; HCC-specific non-target keywords |
+| `rapno` | Target | (e) per-target | Bidimensional `dimensions: { d1, d2 }` transform |
+
+### Laterality (8 tools)
+
+| Tool | Per-side state | Handler idiom | Notes |
+|---|---|---|---|
+| `aast-kidney` | `{ right: {...}, left: {...} }` | Custom (AAST Set handling) | First laterality tool; `selectedFindings` Set conversion |
+| `vur` | `rightGrade` / `leftGrade` | (b) drop-in | VCUG variant |
+| `vur-nm` | `rightGrade` / `leftGrade` | (b) drop-in | Nuclear medicine variant |
+| `reimers` | `rightM1` / `rightM2` / `leftM1` / `leftM2` | (b) drop-in | Already bilateral pre-refactor |
+| `hydronephrosis` | Flat + `rightGrade` / `leftGrade` / `rightAprpd` / `leftAprpd` | (c) refactor | Reference for bilateral refactor pattern |
+| `hip-dysplasia` | Flat + per-side grade + `rightAlpha` / `leftAlpha` / `rightBeta` / `leftBeta` | (c) refactor | Graf mode only has angles; AAOS doesn't |
+| `kellgren-lawrence` | Flat + `rightGrade` / `leftGrade` | (c) refactor | Joint type stays study-level |
+| `fetal-ventricle` | Flat + `rightWidth` / `leftWidth` | (c) refactor + (d) fallback | Flow-text fallback for one-sentence bilateral dictations |
+
+### Not segmented (single-item or single-side by design)
+
+Tools that explicitly **don't** want segmentation even though they
+have a `side` or `laterality` field:
+
+- `adrenal-washout` — unilateral by clinical convention; side is
+  metadata only. Has manual HU extraction rules for the three
+  contrast phases with negative-lookbehind on `enhanced` to avoid
+  `unenhanced` substring overlap.
+- `birads` — single category per assessment by design. Manual
+  `laterality` rule picks the first right/left/bilateral mention
+  (not longest-match) so "Left breast mass, Right breast negative"
+  attributes to the left.
+
+---
+
+## 11. Common pitfalls / FAQ
+
+### "My `parseFindings` call corrupted an AAST tool's state"
+
+`parseFindings` returns `selectedFindings` as an **array**, but
+AAST tool `formState` uses a `Set`. Directly `Object.assign`-ing
+the parsed result replaces the Set with an array and breaks the
+UI's `.has()` checks — a latent bug in most AAST tools that
+doesn't fire only because the auto-generated rules rarely match
+AAST's long specific finding labels.
+
+**Fix:** convert on the way in.
+
+```js
+if (Array.isArray(parsed.selectedFindings)) {
+  formState.selectedFindings = new Set(parsed.selectedFindings);
+}
+```
+
+See `src/tools/aast-kidney/aast-kidney.js` `applyParsedToSide()`
+for the canonical implementation.
+
+### "Adding `'us'` as a synonym for Ultrasound broke everything"
+
+This is the incident that led to removing `'us'` and `'mr'` from
+SYNONYMS in commit `12e80bc`. The parser uses substring matching,
+not word boundaries, so `'us'` fires inside `'s(us)picion'`,
+`'gluteus'`, `'musculus'`, `'fibr(us)'`, and many other common
+words.
+
+**Don't add short initialisms to SYNONYMS.** If your tool
+genuinely needs to detect bare `"US"` or `"MR"` in dictations,
+add a regex-pattern rule with explicit `\b` boundaries in the
+tool's own `parseRules`:
+
+```js
+modality: {
+  pattern: /\bUS\b(?!\w)/,    // Word-bounded "US"
+  transform: () => 'us',
+}
+```
+
+### "Longest-match picked the wrong option"
+
+Longest-match is calculated across **all options in a single
+rule**. If option A has a keyword `'solid nodule'` (12 chars) and
+option B has `'part-solid'` (10 chars), parsing `"part-solid
+nodule"` picks A — the longer keyword wins even though the
+shorter one is semantically more specific.
+
+This bit lungrads and fleischner during Batch A rollout when
+`"part-solid nodule"` dictations were parsed as `solid` instead
+of `partSolid`. The fix was to add a longer keyword to partSolid:
+
+```js
+partSolid: [
+  'part-solid nodule',  // 17 chars — longer than 'solid nodule' (12)
+  'part solid nodule',
+  'part-solid',
+  'part solid',
+],
+```
+
+**General rule:** when you add a keyword that's a substring of a
+keyword in a competing option, add an equally-long or longer
+variant to the correct option first.
+
+### "Bare `'cystic'` now matches inside `'mixed cystic and solid'`"
+
+This one's safe because of the same longest-match rule. TI-RADS
+has:
+
+```js
+cystic: ['cystic or almost completely cystic', 'predominantly cystic', 'cystic'],
+mixed:  ['mixed cystic and solid', 'partially cystic'],
+```
+
+Parsing `"mixed cystic and solid nodule"` finds:
+
+- `'cystic'` (6 chars) in the `cystic` option ✓
+- `'mixed cystic and solid'` (22 chars) in the `mixed` option ✓
+
+Longest wins → `mixed`. Bare `cystic` only triggers when nothing
+longer matches (e.g., `"1.5 cm cystic nodule"` → `cystic`). This
+is the TI-RADS "cystic gap fix" from commit `7a40ffd`.
+
+The inline comment in `src/tools/tirads/definition.js` documents
+this invariant explicitly so future editors don't accidentally
+shorten the competing keywords.
+
+### "My HU extraction rule is matching numbers across commas"
+
+Adrenal-washout's three HU phases (`unenhanced`, `enhanced`,
+`delayed`) need tight proximity constraints between the phase
+label and the number, or they match across phrase boundaries.
+
+**Wrong:**
+
+```js
+unenhanced: {
+  pattern: /\b(?:unenhanced|...)\b[\s:]*(-?\d+)\s*hu|(-?\d+)\s*hu\s*,?\s*(?:on\s+)?\bunenhanced\b/i,
+  //                                                        ^^^^^^^
+  // This allows comma + whitespace between the number and the label,
+  // so "8 HU, portal venous" leaks the "8" into the unenhanced bucket
+  // because "8 HU, ... unenhanced" still matches.
+}
+```
+
+**Right:** require whitespace-only connection in the number → label
+branch (no comma separator):
+
+```js
+unenhanced: {
+  pattern: /\b(?:unenhanced|...)\b[\s:]*(-?\d+)\s*hu|(-?\d+)\s*hu\s+(?:on\s+|at\s+)?\bunenhanced\b/i,
+  //                                                        ^^^
+  // \s+ only, no comma; phrase-level proximity preserved.
+}
+```
+
+See `src/tools/adrenal-washout/definition.js` for the full three-
+phase pattern set and commit `43f89d5` for the incident history.
+
+### "My parse handler rebuilds the state array and the tabs don't update"
+
+After the handler finishes, you need to call both `renderItemTabs()`
+and `buildUI()` (in that order). A common regression is forgetting
+the tab re-render — the state is correct but the tab row still
+shows the old count. See any of the idiom-(a) tools for the
+canonical ending:
+
+```js
+renderItemTabs();
+buildUI();
+```
+
+### "The laterality segmenter isn't picking up my tool's organ"
+
+The organ list in `RIGHT_RE` / `LEFT_RE` / `BILATERAL_RE` is a
+fixed vocabulary. Sentences like `"Right wrist: Grade 2"` won't
+segment if `wrist` isn't in the list.
+
+**Fix:** add the anchor to all three regexes (search for "Organ
+list is kept in sync" in `parser.js`). Add a failing test in
+`src/core/parser.test.js` for the new anchor first, then update
+the regex until it passes. The Phase 2 MSK rollout (knee /
+shoulder / elbow / wrist / ankle / hand / foot / joint / ventricle)
+is the canonical reference for this.
+
+### "The modifier word regex lets through too much"
+
+`(?:\w+\s+)?` between the side word and the organ anchor allows
+**one** optional word. This is deliberately narrow — two or more
+intervening words won't match. Phrases like `"right posterior
+upper lobe lung"` would not be recognized as right-sided without
+additional tweaks.
+
+If a tool genuinely needs multi-word modifiers, widen the regex
+to `(?:\w+\s+){0,3}?` (non-greedy, up to 3 words). Test carefully:
+widening raises false-positive risk for unrelated sentences that
+happen to contain both a side word and an organ anchor far apart.
