@@ -660,3 +660,45 @@ export function getActiveLabels() {
 export function getModalityLabel(code) {
   return MODALITIES.find((m) => m.code === code)?.label || code;
 }
+
+// =============================================================================
+// Validation status
+// =============================================================================
+//
+// Every tool ships in an "unvalidated" state by default. When a tool has been
+// clinically reviewed and tested by the RadioLogicHQ team, add its ID to the
+// VALIDATED_TOOLS set below — this flips its badge from red warning to green
+// check on every tool card and tool page automatically.
+//
+// Criteria for adding a tool to VALIDATED_TOOLS:
+//   - Unit tests present and passing
+//   - Scoring logic reviewed against the primary reference paper
+//   - Report output reviewed by a practicing radiologist
+//   - Parse rules tested with real-world finding text
+//   - Edge cases and boundary values verified
+
+export const VALIDATED_TOOLS = new Set([
+  // Add tool IDs here as they complete validation, e.g. 'tirads', 'lirads'
+]);
+
+export function isValidated(toolId) {
+  return VALIDATED_TOOLS.has(toolId);
+}
+
+/**
+ * Return the HTML snippet for the validation status badge.
+ * - Unvalidated → red warning triangle with hover warning
+ * - Validated   → green check circle with hover confirmation
+ *
+ * Size is controlled by CSS (.validation-badge); caller does not need to set width/height.
+ */
+export function validationBadgeHtml(toolId) {
+  if (isValidated(toolId)) {
+    const title =
+      'Clinically validated. This tool has been reviewed and tested by the RadioLogicHQ team against its reference literature.';
+    return `<span class="validation-badge validation-badge--ok" title="${title}" aria-label="Validated tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>`;
+  }
+  const title =
+    'Not yet validated. This tool has not been clinically reviewed or tested by the RadioLogicHQ team. Independently verify all scores and recommendations before any clinical use.';
+  return `<span class="validation-badge validation-badge--warn" title="${title}" aria-label="Not validated"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>`;
+}

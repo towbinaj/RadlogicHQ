@@ -147,6 +147,47 @@ h4 { font-size: var(--text-lg); }
   margin-left: auto;
 }
 
+/* Validation badge — shown on tool cards (landing) and tool hero (tool pages).
+   Red warning = not yet validated. Green check = clinically validated.
+   Hover title (set in tools-registry.js) gives the full explanation. */
+.validation-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  vertical-align: middle;
+  cursor: help;
+}
+
+.validation-badge svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.validation-badge--warn {
+  color: var(--danger);
+}
+
+.validation-badge--ok {
+  color: var(--success);
+}
+
+/* Slightly larger on tool pages (inside .tool-hero__text) so it's easy to spot */
+.tool-hero__text .validation-badge {
+  width: 22px;
+  height: 22px;
+  margin-left: var(--space-sm);
+}
+
+/* Tool card: sit just before the title, same line */
+.tool-card__title .validation-badge {
+  margin-right: 6px;
+  transform: translateY(-1px);
+}
+
 /* Legal / content pages */
 .legal-page {
   max-width: 720px;

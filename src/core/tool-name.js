@@ -6,6 +6,7 @@
  * The tool ID is detected from the URL path.
  */
 import { getToolDisplayName, getStored } from './storage.js';
+import { validationBadgeHtml } from '../data/tools-registry.js';
 import '../components/feedback-widget.js';
 
 // Apply compact mode globally on all tool pages
@@ -32,6 +33,18 @@ if (pathMatch) {
       if (breadcrumb) breadcrumb.textContent = displayName;
 
       document.title = document.title.replace(defaultName, displayName);
+    }
+
+    // Append the validation badge after the Ref link (or at the end of the h1
+    // if there's no ref link). Use insertAdjacentHTML to avoid clobbering any
+    // inline elements already in the h1.
+    if (!h1.querySelector('.validation-badge')) {
+      const badgeHtml = validationBadgeHtml(toolId);
+      if (refLink) {
+        refLink.insertAdjacentHTML('afterend', badgeHtml);
+      } else {
+        h1.insertAdjacentHTML('beforeend', badgeHtml);
+      }
     }
   }
 }

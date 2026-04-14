@@ -2,7 +2,7 @@ import './styles/base.css';
 import './styles/forms.css';
 import './components/auth-ui.js';
 import './components/feedback-widget.js';
-import { toolsRegistry, getModalityLabel, getActiveLabels, MODALITIES } from './data/tools-registry.js';
+import { toolsRegistry, getModalityLabel, getActiveLabels, MODALITIES, validationBadgeHtml } from './data/tools-registry.js';
 import { loadSharedTemplate } from './core/user-data.js';
 import { isLoggedIn } from './core/auth.js';
 import { copyToClipboard } from './core/clipboard.js';
@@ -572,7 +572,7 @@ if (grid) {
     card.innerHTML = `
       <div class="tool-card__icon">${tool.icon}</div>
       <div class="tool-card__body">
-        <h2 class="tool-card__title ${isCustomName ? 'tool-card__title--custom' : ''}">${displayName}</h2>
+        <h2 class="tool-card__title ${isCustomName ? 'tool-card__title--custom' : ''}">${validationBadgeHtml(tool.id)}${displayName}</h2>
         <p class="tool-card__desc">${tool.description}</p>
         <div class="tool-card__tags">${labels.join('')}</div>
       </div>
