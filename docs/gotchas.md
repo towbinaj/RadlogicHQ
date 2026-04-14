@@ -24,31 +24,16 @@ Non-obvious things that will bite you when working on specific parts of the app.
 
 ## Parser (`parser.js` + per-tool `parseRules`)
 
-- **Parse rules are auto-generated** from definition labels + a ~100-entry synonym dictionary in `parser.js`. Most tools need no manual `parseRules`.
-- **Hand-written `parseRules` override auto-generated on conflict.** Use them only for disease-specific terminology. ~30 tools have manual overrides.
-- **Two synonym layers**: cross-tool (`SYNONYMS` dict in `parser.js`) and tool-specific (`parseRules` in each `definition.js`).
-- **Run `npm run check-synonyms {toolId}`** to audit coverage; add missing synonyms to `SYNONYMS` or `parseRules` as needed.
-- **`selectedFindings` type mismatch for AAST tools**: `parseFindings` returns `selectedFindings` as an **array**, but tool formState usually uses a Set. Tools that call `parseFindings` on AAST-style definitions must convert to a Set before merging into formState (see `src/tools/aast-kidney/aast-kidney.js` `applyParsedToSide()`). Directly `Object.assign`-ing the parsed result replaces the Set with an array and breaks the UI's `.has()` checks — a latent bug in most AAST tools that only doesn't fire because auto-generated rules rarely match AAST's long specific finding labels.
+For the full parser reference — auto-gen rules, SYNONYMS dict internals, both segmenter types, 5 handler idioms, 18-tool registry, and 8 pitfall case studies — see **`docs/parser.md`**. The watch-outs below are the ones that will bite you even if you don't plan to touch the parser.
 
-## Segmented parsing — multi-side & multi-item tools
-
-Tools that track more than one independent finding set (paired organs, multi-nodule, multi-lesion) can opt in to the segmentation layer in `src/core/parser.js`. It splits the input text into regions *before* running the per-region parser.
-
-- **Opt-in via `definition.parseSegmentation`**: `{ type: 'laterality' }` or `{ type: 'itemIndex', itemLabel: 'Nodule' }`. No field → old single-pass behavior.
-- **`parseSegmentedFindings(text, definition)`** returns `{ segments, ungrouped, remainder }`. Each segment has its own `formState`, `matched`, `unmatched`, `remainder`.
-- **Laterality segmentation is sentence-based** (Phase 1.1). Text is split into sentences, then each sentence is classified independently. A sentence with no marker inherits the sticky side from the most recent marker-bearing sentence. `bilateral` / `both kidneys` sentences produce entries in BOTH `right` and `left` segments — the caller never sees a `'bilateral'` key.
-- **Cross-reference handling**: `contralateral`, `the other kidney`, and `the opposite side` flip the current side **for that sentence only**. The sticky side for subsequent sentences stays pointing at the most recent explicit marker. `ipsilateral` and `the same side` reinforce the current sticky side.
-- **Ungrouped fallback**: when `segments.length === 0`, the tool should apply `ungrouped.formState` to the currently-active side (or item) so simple single-side pastes still work.
-- **Decimals like "2.5 cm"** are preserved because the sentence splitter requires an uppercase letter after the period. Abbreviations with a trailing period followed by a capitalized word (`"Dr. Smith reported..."`) could misfire but rarely appear in findings text.
-- **Adding new laterality patterns**: edit `RIGHT_RE`, `LEFT_RE`, and `BILATERAL_RE` at the top of the segmentation section in `parser.js`. Add organ-specific matches (e.g. `right adrenal`, `left breast`) — the existing array already covers kidney, adrenal, ovary, breast, lung, hip.
-- **Tests live in `src/core/parser.test.js`** — 33 cases covering `segmentByLaterality` (including contralateral flip, sticky attribution, interleaved bouncing, partial bilateral, conjunction form, postposed/copula/distributive/prepositional bilateral phrasings), `segmentByItemIndex`, and `parseSegmentedFindings`. Every new segmentation bug should land with a failing test first.
-- **Bilateral phrasings** currently recognized (all added to `BILATERAL_RE` in `parser.js`):
-  - **Prefix**: `bilateral kidneys`, `both kidneys`, `bilaterally`
-  - **Conjunction**: `the right and left kidneys`
-  - **Postposed**: `the kidneys each have`, `the kidneys both show`
-  - **Copula**: `the kidneys are both enlarged`, `kidneys have each`
-  - **Prepositional**: `each of the kidneys`, `both of the kidneys`
-  - **Distributive singular**: `each kidney`
+- **Parse rules are auto-generated** from definition labels + a ~123-entry synonym dictionary in `parser.js`. ~36 tools have manual `parseRules` overrides; the rest use `parseRules: {}` and rely on auto-gen.
+- **Hand-written `parseRules` override auto-generated on conflict** (`mergeRules(auto, manual)` is a shallow merge — a manual rule for one field key replaces the entire auto-gen rule for that key, not just one option's keywords).
+- **`selectedFindings` type mismatch for AAST tools**: `parseFindings` returns `selectedFindings` as an **array**, but AAST tool formState uses a `Set`. Directly `Object.assign`-ing the parsed result replaces the Set with an array and breaks the UI's `.has()` checks — a latent bug in most AAST tools that only doesn't fire because auto-generated rules rarely match AAST's long specific finding labels. Canonical fix in `src/tools/aast-kidney/aast-kidney.js` `applyParsedToSide()`.
+- **Don't add short initialisms to `SYNONYMS`** (`'us'`, `'mr'`, `'m'`, `'f'`, etc). Substring matching fires them inside common words — `'us'` fires in `'s(us)picion'`, `'gluteus'`, `'fibrous'`. `'us'` and `'mr'` were removed in commit `12e80bc` after this exact bug showed up in BI-RADS. Use a regex-pattern rule with `\b` boundaries in the tool's own `parseRules` if you need bare abbreviation detection.
+- **Longest-match wins across all options in a single rule.** If option A has keyword `'solid nodule'` (12 chars) and option B has `'part-solid'` (10 chars), `"part-solid nodule"` picks A. Add an equally-long or longer variant to the correct option when introducing a short keyword. Bit lungrads/fleischner in Batch A; fix in commit `6a0f7dd`.
+- **Segmented tools** (paired-organ / multi-item) opt in via `definition.parseSegmentation` — see the registry in `docs/parser.md` section 10 for the 18 tools currently using it. Adding to a new tool requires picking one of the 5 handler idioms documented in section 8; paired-organ tools frequently also need a bilateral state refactor (per-side keys + `buildXCard` helper + calculator bilateral branch + template conditionals).
+- **Run `npm run check-synonyms {toolId}`** to audit coverage; add missing synonyms to the tool's `parseRules` (not `SYNONYMS`) as the first move.
+- **Parser tests** live in `src/core/parser.test.js` (79 tests). Every new segmentation failure mode should land with a failing test first — sentence classification rules are fiddly enough that regressions in one pattern silently break unrelated ones.
 
 ## Brand Assets
 

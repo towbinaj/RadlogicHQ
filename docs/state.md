@@ -85,12 +85,13 @@
 - Template usage tracking via `trackEvent('template:{templateId}:uses')`
 
 ### Parser (paste-to-autofill)
-- `buildParseRules(definition)` auto-generates rules from definition labels (sections, inputs, categories, grades, scores)
-- Synonym dictionary in `parser.js` expands labels with common radiology variants (~100 entries: echogenicity, laterality, severity, grades, stages, types, morphology, enhancement, vascular, MSK, fetal, PET/CT, etc.)
-- Hand-written `parseRules` in definition.js override auto-generated on conflict
-- 30 tools have hand-written parseRules for disease-specific terminology (RADS category keywords, AAST findings, response criteria, annotation factors, anatomic regions, etc.)
+- `buildParseRules(definition)` auto-generates rules from definition labels (sections, inputs, categories, grades, scores, named option groups, sideOptions/lateralityOptions/modalityOptions)
+- Synonym dictionary in `parser.js` expands labels with common radiology variants (~123 entries: echogenicity, laterality, severity, grades, stages, types, morphology, enhancement, vascular, MSK, fetal, PET/CT, etc.)
+- Hand-written `parseRules` in definition.js override auto-generated on conflict (shallow merge — hand-written wins per-field)
+- ~36 tools have hand-written parseRules for disease-specific terminology (RADS category keywords, AAST findings, response criteria, annotation factors, anatomic regions, HU contrast phases, bidimensional measurements, etc.)
 - All tools get baseline parsing automatically from their definition structure
 - `npm run check-synonyms {toolId}` reports synonym coverage and hand-written rule counts per tool
+- **Phase 2 segmentation rollout complete** — 18 tools opt in to `parseSegmentation` via the laterality (8 tools: aast-kidney, vur, vur-nm, reimers, hydronephrosis, hip-dysplasia, kellgren-lawrence, fetal-ventricle) or itemIndex (10 tools: tirads, lirads, lungrads, fleischner, bosniak, pirads, orads, recist, mrecist, rapno) segmenters. Bilateral state refactor pattern established for paired-organ tools (per-side formState keys + `buildXCard` helper + calculator bilateral branch + `{{#if}}`/`{{#unless}}` template conditionals). Laterality segmenter extended with MSK joint anchors (knee/shoulder/elbow/wrist/ankle/hand/foot/joint/ventricle) and optional modifier-word regex (`right lateral ventricle`, `right upper lobe lung`). Full reference in `docs/parser.md`.
 
 ### Tools (42 active)
 

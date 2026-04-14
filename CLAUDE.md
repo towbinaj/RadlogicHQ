@@ -40,6 +40,7 @@ Read these on demand — don't load them unless they're relevant.
 | `docs/tools.md` | Working with specific tools, CDE IDs, subspecialty breakdown, tool types, shared AAST/bone-age patterns |
 | `docs/architecture.md` | Project structure, tech stack, data flow diagrams, Firestore schema, auth flow, security details |
 | `docs/newtool.md` | Adding a new calculator — HTML template, definition format, parser rules, verification checklist |
+| `docs/parser.md` | Writing or debugging parser rules, segmentation, or parse handlers — full reference for `parser.js`, both segmenter types, 5 handler idioms, 18-tool registry, pitfall case studies |
 | `docs/state.md` | Current project state, shipped features, pending roadmap, post-launch checklist |
 | `docs/brand.md` | Voice/tone, logo and wordmark asset inventory, colors, typography, brand guide |
 | `docs/compliance.md` | HIPAA / GDPR posture, Firestore schema, PHI policy, OWASP audit log, feedback widget data flow |
