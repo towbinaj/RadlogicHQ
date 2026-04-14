@@ -759,8 +759,15 @@ const BILATERAL_RE = new RegExp(
   ].join('|'),
   'i'
 );
-const RIGHT_RE = /\b(?:the\s+)?right\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side|organ)s?\b|\bon\s+the\s+right\b|\brt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side)\b|(?:^|\n)\s*(?:the\s+)?right\s*:/i;
-const LEFT_RE = /\b(?:the\s+)?left\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side|organ)s?\b|\bon\s+the\s+left\b|\blt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side)\b|(?:^|\n)\s*(?:the\s+)?left\s*:/i;
+// The `(?:\w+\s+)?` between the side and the organ name lets
+// "right lateral ventricle", "left upper lobe lung", "right main
+// pulmonary artery" etc. still match. It allows one optional
+// modifier word -- enough for common radiology phrasings without
+// matching "right arm bone fracture with knee findings" as a knee
+// reference. The modifier word doesn't need to be in a vocabulary
+// because the anchor is still the trailing organ name.
+const RIGHT_RE = /\b(?:the\s+)?right\s+(?:\w+\s+)?(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side|organ)s?\b|\bon\s+the\s+right\b|\brt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side)\b|(?:^|\n)\s*(?:the\s+)?right\s*:/i;
+const LEFT_RE = /\b(?:the\s+)?left\s+(?:\w+\s+)?(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side|organ)s?\b|\bon\s+the\s+left\b|\blt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side)\b|(?:^|\n)\s*(?:the\s+)?left\s*:/i;
 
 // Cross-reference tokens: flip the current side for this sentence only.
 const CONTRALATERAL_RE = /\bcontralateral\b|\bthe\s+(?:other|opposite)\s+(?:kidney|side|adrenal|organ)\b|\bon\s+the\s+other\s+side\b/i;
