@@ -4,7 +4,7 @@
 
 ## Current Version
 
-**v1.2** — Live at radlogichq.pages.dev. 42 active tools. Firebase auth + Firestore. Cloudflare Pages auto-deploy.
+**v1.2** — Live at radiologichq.com. 42 active tools. Firebase auth + Firestore. Cloudflare Pages auto-deploy.
 
 ## What's Shipped
 
@@ -150,7 +150,7 @@
 ## Infrastructure
 
 - **Hosting**: Cloudflare Pages (auto-deploy on git push to main)
-- **Live URL**: radlogichq.pages.dev
+- **Live URL**: radiologichq.com
 - **Backend**: Firebase (Firestore + Auth) — free Spark plan
 - **Auth**: Email/password + Google OAuth + forgot password
 - **Database**: Firestore (profiles, preferences, templates, saved reports, analytics)

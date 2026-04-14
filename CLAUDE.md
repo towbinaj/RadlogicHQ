@@ -13,7 +13,7 @@ npm run check-synonyms -- --all  # Check all tools
 - Vanilla ES6+ modules, no framework — multi-page app (MPA) via Vite
 - Firebase backend: Auth (email + Google OAuth), Firestore (preferences, templates, reports, analytics)
 - Deployed to Cloudflare Pages (auto-deploy on git push to main)
-- Live: radlogichq.pages.dev
+- Live: radiologichq.com
 - Dark radiology reading room theme by default
 
 ## Key Directories
