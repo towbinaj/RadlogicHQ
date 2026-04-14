@@ -243,15 +243,11 @@ The regex matches only pure whitespace + number; real content is always longer.
 
 ## 8. Handler idioms
 
-Five canonical parse-handler patterns are in use across the 18
-segmented tools. Pick the one that matches your tool's state shape.
+Five canonical parse-handler patterns are in use across the 18 segmented tools. Idiom (a) is the canonical full example below; the other four reference the canonical tool to read when implementing each pattern.
 
-### (a) Item-index drop-in
+### (a) Item-index drop-in — canonical example
 
-Used by: **tirads, lirads, lungrads, fleischner, bosniak, pirads,
-orads**. All seven share a state shape of `items[]` + `activeIndex`
-+ `createItemState(num)` factory + tab rendering. The handler
-rebuilds the array from segments.
+**Used by:** tirads, lirads, lungrads, fleischner, bosniak, pirads, orads. All seven share `items[]` + `activeIndex` + `createItemState(num)` + tab rendering. The handler rebuilds the array from segments.
 
 ```js
 parseBtn.addEventListener('click', () => {
@@ -260,204 +256,57 @@ parseBtn.addEventListener('click', () => {
   const { segments, ungrouped, unmatchedSentences } =
     parseSegmentedFindings(text, toolDefinition);
 
-  let matchedFieldCount = 0;
-
   if (segments.length > 0) {
     // Multi-item paste: rebuild items[] from segments.
+    // Index labels come from seg.index so "Nodule 2" keeps its label
+    // even if it's first in the paste.
     items = segments.map((seg) => ({
       id: seg.index,
       label: `${itemName} ${seg.index}`,
       formState: { ...seg.formState },
     }));
     activeIndex = 0;
-    matchedFieldCount = segments.reduce((n, s) => n + s.matched.length, 0);
   } else if (ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
-    // Single-item paste: replace active item's formState (old behavior).
+    // Single-item paste: replace active item's formState.
     const fs = items[activeIndex].formState;
     for (const key of Object.keys(fs)) delete fs[key];
     Object.assign(fs, ungrouped.formState);
-    matchedFieldCount = ungrouped.matched.length;
   }
 
-  const additional = unmatchedSentences
+  additionalFindingsEl.value = unmatchedSentences
     .filter((s) => !/^\s*(?:\(\d+\)|\d+\.?)\s*$/.test(s))
     .join(' ');
-  additionalFindingsEl.value = additional;
-  studyAdditionalFindings = additional;
 
-  renderItemTabs();
+  renderItemTabs();  // MUST come before buildUI() or tabs show stale count
   buildUI();
 });
 ```
 
-Key points: **replace** items (not merge), index labels come from
-`seg.index` (so "Nodule 2" keeps its label even if it's first in
-the paste), fall through to ungrouped for simple single-item pastes.
+**Key points:** replace items (not merge), fall through to ungrouped for single-item pastes, apply the bare-marker filter from section 7, re-render tabs before rebuilding the form. Canonical reference: `src/tools/tirads/tirads.js`.
 
-### (b) Laterality drop-in (state already bilateral)
+### (b) Laterality drop-in — state already bilateral
 
-Used by: **vur, vur-nm, reimers**. These tools already track per-
-side state (`rightGrade` / `leftGrade`, `rightM1` / `leftM1`, etc.)
-before segmentation was added — no refactor was needed, just a new
-parse handler.
+**Used by:** vur, vur-nm, reimers. These tools already tracked per-side state (`rightGrade`/`leftGrade`, `rightM1`/`leftM1`) before segmentation shipped; no refactor, just a new handler.
 
-```js
-parseBtn.addEventListener('click', () => {
-  const text = parseInput.value.trim();
-  if (!text) return;
-  const { segments, ungrouped, unmatchedSentences } =
-    parseSegmentedFindings(text, toolDefinition);
-
-  // Replace semantics: clear per-side fields first.
-  formState.rightGrade = null;
-  formState.leftGrade = null;
-
-  for (const seg of segments) {
-    if (seg.key === 'right' && seg.formState.grade) {
-      formState.rightGrade = seg.formState.grade;
-    } else if (seg.key === 'left' && seg.formState.grade) {
-      formState.leftGrade = seg.formState.grade;
-    }
-  }
-
-  // Auto-switch side mode based on what matched.
-  if (formState.rightGrade && formState.leftGrade) {
-    formState.side = 'bilateral';
-  } else if (formState.rightGrade) {
-    formState.side = 'right';
-  } else if (formState.leftGrade) {
-    formState.side = 'left';
-  }
-
-  additionalFindingsEl.value = unmatchedSentences.join(' ');
-  buildUI();
-});
-```
-
-The tool's pre-existing bilateral UI already renders per-side cards,
-so no UI changes are needed. Ungrouped fallback (not shown) applies
-single-side pastes to whichever side is currently selected.
+Shape: clear per-side fields, walk `segments`, route each to `rightX` or `leftX` based on `seg.key`, auto-switch `formState.side` based on what matched (`rightX + leftX → 'bilateral'`, single side → `'right'`/`'left'`). Canonical reference: `src/tools/vur/vur.js` parse handler (commit `c7f6932`).
 
 ### (c) Laterality with bilateral state refactor
 
-Used by: **hydronephrosis, hip-dysplasia, kellgren-lawrence,
-fetal-ventricle**. These tools started as single-side + toggle and
-needed a full refactor to track both sides independently. The
-refactor touches five files: `definition.js` (add segmentation),
-`calculator.js` (bilateral branch), `templates.js` (conditional
-rendering), tool controller (state + UI + handler), and sometimes
-the CSS.
+**Used by:** hydronephrosis, hip-dysplasia, kellgren-lawrence, fetal-ventricle. Tools that started as single-side + toggle and got a full bilateral refactor. Touches five files:
 
-**State:** add per-side keys alongside the flat ones so single-side
-mode is unchanged:
+- **`definition.js`** — add `parseSegmentation: { type: 'laterality' }`.
+- **`calculator.js`** — add a `bilateral` branch reading per-side fields, returning combined display strings like `"Right: ${rInfo.label}, Left: ${lInfo.label}"` + `bilateral: true` flag.
+- **`templates.js`** — use `{{#if fieldX}}…{{/if}}` / `{{#unless bilateral}}…{{/unless}}` conditionals so the same block definitions work for both modes. Typical impression: `'{{#unless bilateral}}{{sideLabel}} {{/unless}}{{gradeLabel}}.'`
+- **Tool controller** — formState gains per-side keys alongside the flat ones (flat keys stay as single-side source of truth). `buildUI()` conditionally calls a `buildXCard(title, keyA, keyB)` helper once in single-side mode or twice in bilateral. Side toggle change triggers `buildUI()` (not `update()`) because the card count changes.
+- **Handler** — walks segments into per-side keys with a `sidesTouched` Set, then auto-switches `formState.side` and **copies per-side values back to flat fields** when only one side matched (so the single-side UI picks them up).
 
-```js
-const formState = {
-  grade: null, side: null, aprpd: null,
-  rightGrade: null, leftGrade: null,
-  rightAprpd: null, leftAprpd: null,
-};
-```
-
-**UI:** factor the per-side card into a helper that takes the
-formState key names, then call it once in single-side mode and twice
-in bilateral:
-
-```js
-function buildUI() {
-  // ... side toggle card
-
-  if (formState.side === 'bilateral') {
-    stepContainer.appendChild(buildGradeCard('Right kidney', 'rightGrade', 'rightAprpd'));
-    stepContainer.appendChild(buildGradeCard('Left kidney',  'leftGrade',  'leftAprpd'));
-  } else {
-    stepContainer.appendChild(buildGradeCard('Grade', 'grade', 'aprpd'));
-  }
-}
-
-function buildGradeCard(title, gradeKey, aprpdKey) {
-  // ... reads formState[gradeKey] / formState[aprpdKey]
-  // ... writes formState[gradeKey] / formState[aprpdKey] on change
-}
-```
-
-**Calculator:** add a `bilateral` branch that reads the per-side
-fields and returns combined display strings:
-
-```js
-if (side === 'bilateral') {
-  return {
-    gradeLabel: `Right: ${rInfo.label}, Left: ${lInfo.label}`,
-    aprpdLabel: `Right ${rightAprpd} mm, Left ${leftAprpd} mm`,
-    management: primarySide.management,  // more-severe side drives recommendation
-    bilateral: true,
-    // ... per-side detail fields for templates that want granular rendering
-    rightGradeLabel: rInfo.label,
-    leftGradeLabel: lInfo.label,
-  };
-}
-// Single-side branch unchanged.
-```
-
-**Templates:** use `{{#if}}` / `{{#unless}}` conditionals so the
-same block definitions work for both modes:
-
-```js
-// Block template: hides trailing colon when bilateral mode sets
-// description to empty string
-{ id: 'grade', template: '{{gradeLabel}}{{#if description}}: {{description}}{{/if}}' }
-
-// Impression template: omits sideLabel prefix in bilateral mode
-// because gradeLabel already embeds "Right: ..., Left: ..."
-const IMP = '{{#unless bilateral}}{{sideLabel}} {{/unless}}{{gradeLabel}}.';
-```
-
-**Handler:** routes segment formState to per-side keys, auto-switches
-`side`, and copies to flat fields when only one side matched:
-
-```js
-const sidesTouched = new Set();
-for (const seg of segments) {
-  if (seg.key === 'right') {
-    if (seg.formState.grade) formState.rightGrade = seg.formState.grade;
-    if (seg.formState.aprpd != null) formState.rightAprpd = seg.formState.aprpd;
-    sidesTouched.add('right');
-  } else if (seg.key === 'left') {
-    if (seg.formState.grade) formState.leftGrade = seg.formState.grade;
-    if (seg.formState.aprpd != null) formState.leftAprpd = seg.formState.aprpd;
-    sidesTouched.add('left');
-  }
-}
-
-// Auto-switch mode and copy flat fields for single-sided parses.
-if (sidesTouched.has('right') && sidesTouched.has('left')) {
-  formState.side = 'bilateral';
-} else if (sidesTouched.has('right')) {
-  formState.side = 'right';
-  formState.grade = formState.rightGrade;
-  formState.aprpd = formState.rightAprpd;
-} else if (sidesTouched.has('left')) {
-  formState.side = 'left';
-  formState.grade = formState.leftGrade;
-  formState.aprpd = formState.leftAprpd;
-}
-```
-
-Hydronephrosis was the first tool to ship this pattern (commit
-`06c811b`) and remains the cleanest reference. Read its four files
-back-to-back when doing a bilateral refactor on a new tool.
+Canonical reference: `src/tools/hydronephrosis/` — read `definition.js`, `calculator.js`, `templates.js`, and `hydronephrosis.js` back-to-back. Shipped in commit `06c811b`.
 
 ### (d) Flow-text bilateral fallback
 
-Used by: **fetal-ventricle**. Dictations like `"Bilateral
-ventriculomegaly, right 13 mm, left 12 mm."` are one sentence — the
-laterality segmenter doesn't split them because the period is at
-the end, not between the right and left clauses. The result is
-`segments: []` + `ungrouped.formState.side = 'bilateral'` with only
-one `width` value captured (the first number).
+**Used by:** fetal-ventricle. Dictations like `"Bilateral ventriculomegaly, right 13 mm, left 12 mm."` are one sentence, so the laterality segmenter doesn't split them — result is `segments: []` with `ungrouped.formState.side = 'bilateral'` and only one captured value (the first number).
 
-The fallback pattern scans `ungrouped.text` directly for
-side-prefixed measurements when the segmenter missed them:
+The fallback scans `ungrouped.text` for side-prefixed measurements when segmentation failed:
 
 ```js
 if (segments.length === 0 && ungrouped.formState.side === 'bilateral') {
@@ -465,50 +314,19 @@ if (segments.length === 0 && ungrouped.formState.side === 'bilateral') {
   const lMatch = ungrouped.text.match(/\bleft[\s:,]*(\d*\.?\d+)\s*mm/i);
   if (rMatch) formState.rightWidth = parseFloat(rMatch[1]);
   if (lMatch) formState.leftWidth = parseFloat(lMatch[1]);
-  if (rMatch || lMatch) formState.width = null;  // clear the misleading flat value
+  if (rMatch || lMatch) formState.width = null;
 }
 ```
 
-This is intentionally **targeted and tool-specific** — a general
-solution would require a semantic parser or more intrusive
-segmenter logic. The fallback only fires when segmentation
-genuinely failed and there's clear side-prefixed data in the text.
+Targeted and tool-specific — a general fix would need semantic parsing. Only fires when segmentation genuinely failed.
 
-### (e) Per-target measurement routing (RECIST family)
+### (e) Per-target measurement routing — RECIST family
 
-Used by: **recist, mrecist, rapno**. These oncology response tools
-track per-target measurements across timepoints (`baseline`,
-`current`, `nadir`). A paste typically represents the **current**
-study; baseline and nadir carry over from prior reports.
+**Used by:** recist, mrecist, rapno. Oncology response tools with per-target measurements across timepoints (`baseline`, `current`, `nadir`). A paste represents the **current** study; baseline and nadir carry over from prior reports.
 
-The handler routes parsed `size` to `current`, leaves `baseline`
-and `nadir` null, caps at `MAX_TARGETS = 5`, and collects
-study-level fields (`nonTarget`, `newLesion`, `clinicalStatus`)
-from wherever they appear:
+Handler routes parsed `size` to `target.current`, leaves `baseline`/`nadir` null, caps at `MAX_TARGETS = 5`, and collects study-level fields (`nonTarget`, `newLesion`, `clinicalStatus`) from the first segment (or `ungrouped`) that has them.
 
-```js
-if (segments.length > 0) {
-  targets = segments.slice(0, MAX_TARGETS).map((seg) => ({
-    label: `Target ${seg.index}`,
-    organ: seg.formState.organ || '',
-    baseline: null,
-    current: seg.formState.size != null ? seg.formState.size : null,
-    nadir: null,
-  }));
-
-  // Study-level fields: first-match wins.
-  for (const key of ['nonTarget', 'newLesion']) {
-    for (const src of [...segments.map((s) => s.formState), ungrouped.formState]) {
-      if (src && src[key]) { formState[key] = src[key]; break; }
-    }
-  }
-}
-```
-
-RAPNO additionally extracts bidimensional measurements
-(`dimensions: { d1, d2 }`) via a custom transform and routes them
-to `curD1`/`curD2`. See `src/tools/rapno/definition.js` for the
-bidimensional pattern form:
+RAPNO additionally extracts bidimensional measurements via a custom transform:
 
 ```js
 dimensions: {
@@ -518,9 +336,7 @@ dimensions: {
 }
 ```
 
-The transform returns an object — the parser doesn't care about the
-shape of the returned value, only that it's stored in
-`formState[inputId]`.
+The transform returns an object — `formState[inputId]` accepts any type. Handler routes `dimensions.d1`/`dimensions.d2` to `curD1`/`curD2`. Canonical references: `src/tools/recist/recist.js` + `src/tools/rapno/definition.js`.
 
 ---
 
