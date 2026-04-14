@@ -129,9 +129,16 @@ h4 { font-size: var(--text-lg); }
 }
 
 .site-header__logo {
-  font-size: var(--text-base);
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
   color: var(--text-primary);
+}
+
+.site-header__wordmark {
+  display: block;
+  height: 28px;
+  width: auto;
 }
 
 .site-header__nav {

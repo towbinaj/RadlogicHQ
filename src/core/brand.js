@@ -1,23 +1,25 @@
 // Brand asset paths.
 //
-// Files currently live under /images/ with camera-upload names (IMG_46xx.png).
-// This module is the single place that maps those to meaningful names so the
-// rest of the app can import `BRAND.logoWhite` etc. When the raw files are
-// renamed in the repo, only this file needs updating.
+// Single source of truth for logo / wordmark URLs so the rest of the app can
+// import `BRAND.logoWhite` etc. If the files are renamed or moved, update
+// this module once and every reference follows.
 //
-// Vite serves `public/` at the site root, so `/images/foo.png` resolves to
-// `public/images/foo.png` on disk.
+// Vite serves `public/` at the site root, so `/brand/foo.png` resolves to
+// `public/brand/foo.png` on disk.
 
-const base = '/images';
+const base = '/brand';
 
 export const BRAND = {
-  // [R] bracket mark — square, 1024x1024 source
-  logoWhite: `${base}/IMG_4684.png`,
-  logoBlack: `${base}/IMG_4685.png`,
-  logoBlue:  `${base}/IMG_4691.png`,
+  // [R] bracket mark — square
+  logoWhite: `${base}/logo-r-white.png`,
+  logoBlack: `${base}/logo-r-black.png`,
+  logoBlue:  `${base}/logo-r-blue.png`,
 
-  // "RadioLogic HQ" serif wordmark — 1536x1024 source
-  wordmarkWhite: `${base}/IMG_4689.png`,
-  wordmarkBlack: `${base}/IMG_4688.png`,
-  wordmarkBlue:  `${base}/IMG_4690.png`,
+  // "RadioLogic HQ" serif wordmark
+  wordmarkWhite: `${base}/wordmark-white.png`,
+  wordmarkBlack: `${base}/wordmark-black.png`,
+  wordmarkBlue:  `${base}/wordmark-blue.png`,
+
+  // SVG favicon (navy tile + white [R]) lives at site root
+  favicon: '/favicon.svg',
 };
