@@ -1,6 +1,6 @@
 # RadioLogicHQ v1.2 — Project State
 
-*Last updated: 2026-04-11*
+*Last updated: 2026-04-15*
 
 ## Current Version
 
@@ -200,3 +200,29 @@ Immediate follow-ups now that the custom domain is live:
   `radiologichq@gmail.com`, as a backup channel if the widget errors.
   Then update the feedback-widget error message to reference the domain
   email instead of the Gmail one.
+
+## Repo Housekeeping
+
+Stale feature branches on origin that are fully merged into `main`.
+Cosmetic clutter, not functional problems — clean up whenever convenient.
+
+- [ ] **Delete `claude/ti-rads-coverage-batch-1-TdEkz`** — the branch
+  that landed the retroactive test-coverage backlog (batches 1-6, 769 new
+  calculator tests: baseline 165 → 934 passing + 8 todo), the
+  `fix(rapno)` CR bug fix, and the `refactor(bone-age)` Sontag split.
+  Fully merged via `561ea6b Merge branch ...`. Local delete succeeded;
+  `git push origin --delete` from the Claude Code session returned
+  HTTP 403 (likely branch protection or session proxy permission — the
+  GitHub MCP toolset does not expose branch deletion either). Easiest
+  cleanup: delete via the GitHub UI at
+  `https://github.com/towbinaj/RadlogicHQ/branches`, or retry
+  `git push origin --delete claude/ti-rads-coverage-batch-1-TdEkz`
+  from a local terminal where credentials may differ.
+- [ ] **Delete `claude/ti-rads-test-coverage-batch-1-xxEV9`** — a parallel
+  branch from a different session pinned at `909be77 chore(hooks):
+  enforce test:run + build before every git commit`, which is commit
+  #47 in current main's history. Investigated 2026-04-15: zero unique
+  commits (pure ancestor of main, fully contained in the merge). Local
+  delete succeeded; remote delete hit the same HTTP 403 as the other
+  branch. Clean up via the GitHub UI or a local terminal alongside
+  `claude/ti-rads-coverage-batch-1-TdEkz`.
