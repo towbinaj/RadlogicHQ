@@ -9,7 +9,7 @@ import { mrecistDefinition } from './definition.js';
 import { calculateMrecist } from './calculator.js';
 import { mrecistTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
-import { parseFindings } from '../../core/parser.js';
+import { parseSegmentedFindings } from '../../core/parser.js';
 import '../../core/tool-name.js';
 
 const MAX_TARGETS = 5;
@@ -134,13 +134,58 @@ function init() {
   parseBtn.addEventListener('click', () => {
     const text = parseInput.value.trim();
     if (!text) return;
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, mrecistDefinition);
-    Object.assign(formState, parsed);
-    additionalFindingsEl.value = remainder || '';
+
+    // Item-indexed parsing: "Target 1: ... Target 2: ..." (or numbered
+    // markers) split into per-target segments. Each segment populates
+    // one target row's location + current enhancing diameter.
+    // Baseline/nadir carry over from prior reports and stay manual.
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, mrecistDefinition);
+
+    let matchedFieldCount = 0;
+
+    if (segments.length > 0) {
+      targets = segments.slice(0, MAX_TARGETS).map((seg) => ({
+        label: `Target ${seg.index}`,
+        location: seg.formState.location || '',
+        baseline: null,
+        current: seg.formState.size != null ? seg.formState.size : null,
+        nadir: null,
+      }));
+      matchedFieldCount = segments.reduce((n, s) => n + s.matched.length, 0);
+
+      // Study-level fields: pull from wherever they appear.
+      for (const key of ['nonTarget', 'newLesion']) {
+        for (const src of [...segments.map((s) => s.formState), ungrouped.formState]) {
+          if (src && src[key]) { formState[key] = src[key]; break; }
+        }
+      }
+    } else if (ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
+      for (const key of ['nonTarget', 'newLesion']) {
+        if (ungrouped.formState[key]) formState[key] = ungrouped.formState[key];
+      }
+      if (ungrouped.formState.size != null || ungrouped.formState.location) {
+        targets[0] = {
+          label: targets[0]?.label || 'Target 1',
+          location: ungrouped.formState.location || targets[0]?.location || '',
+          baseline: targets[0]?.baseline ?? null,
+          current: ungrouped.formState.size != null ? ungrouped.formState.size : (targets[0]?.current ?? null),
+          nadir: targets[0]?.nadir ?? null,
+        };
+      }
+      matchedFieldCount = ungrouped.matched.length;
+    }
+
+    const additional = unmatchedSentences
+      .filter((s) => !/^\s*(?:\(\d+\)|\d+\.?)\s*$/.test(s))
+      .join(' ');
+    additionalFindingsEl.value = additional;
     studyAdditionalFindings = additionalFindingsEl.value;
+
     buildUI();
-    const total = matched.length + unmatched.length;
-    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+
+    const targetCount = segments.length > 0 ? Math.min(segments.length, MAX_TARGETS) : 0;
+    const targetSuffix = targetCount > 1 ? ` across ${targetCount} targets` : '';
+    parseStatus.textContent = `Matched ${matchedFieldCount} field(s)${targetSuffix}${unmatchedSentences.length ? ' \u2014 remainder in Additional Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });

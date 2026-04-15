@@ -215,6 +215,10 @@ export const tiradsDefinition = {
 
   additionalInputs: [],
 
+  // Multi-nodule pastes like "Nodule 1: ... Nodule 2: ..." split into
+  // per-nodule segments so each maps to its own nodule tab.
+  parseSegmentation: { type: 'itemIndex', itemLabel: 'Nodule' },
+
   parseRules: {
     'nodule-size': {
       pattern: /(\d*\.?\d+)\s*cm/,
@@ -229,8 +233,14 @@ export const tiradsDefinition = {
       },
     },
     'composition': {
+      // Longest-match wins across all options. The bare 'cystic' keyword is
+      // safe here because every longer phrase ('mixed cystic and solid',
+      // 'partially cystic', 'predominantly cystic', 'almost completely
+      // cystic') lives on its own option's keyword list and beats it on
+      // length. 'cystic' alone remains for plain dictations like
+      // "1.5 cm cystic nodule in the right lobe".
       options: {
-        'cystic': ['cystic or almost completely cystic', 'almost completely cystic', 'predominantly cystic'],
+        'cystic': ['cystic or almost completely cystic', 'almost completely cystic', 'predominantly cystic', 'cystic'],
         'spongiform': ['spongiform'],
         'mixed': ['mixed cystic and solid', 'mixed solid and cystic', 'partially cystic', 'predominantly solid'],
         'solid': ['solid or almost completely solid', 'almost completely solid', 'solid nodule', 'solid'],

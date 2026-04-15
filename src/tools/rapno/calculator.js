@@ -35,11 +35,18 @@ export function calculateRapno(targets, formState, variant) {
   let hasCurrent = false;
   const details = [];
 
+  // Baseline guard stays `> 0`: a baseline of 0 means the lesion was
+  // never measured (can't target a 0-size lesion). Current and nadir
+  // guards accept 0 so that a disappeared lesion (0 × 0) correctly
+  // contributes 0 to currentSum and lets the CR branch fire.
   for (const t of targets) {
     const blProd = (t.blD1 > 0 && t.blD2 > 0) ? round1(t.blD1 * t.blD2) : null;
-    const curProd = (t.curD1 > 0 && t.curD2 > 0) ? round1(t.curD1 * t.curD2) : null;
-    // Nadir: use manual override if provided, otherwise auto from baseline
-    const nadir = t.nadirProduct > 0 ? t.nadirProduct : blProd;
+    const curProd = (t.curD1 != null && t.curD2 != null && t.curD1 >= 0 && t.curD2 >= 0)
+      ? round1(t.curD1 * t.curD2)
+      : null;
+    // Nadir: use manual override if provided (including 0), otherwise
+    // auto from baseline.
+    const nadir = (t.nadirProduct != null && t.nadirProduct >= 0) ? t.nadirProduct : blProd;
 
     if (blProd != null) { baselineSum += blProd; hasBaseline = true; }
     if (curProd != null) { currentSum += curProd; hasCurrent = true; }

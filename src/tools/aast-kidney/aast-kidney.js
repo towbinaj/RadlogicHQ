@@ -328,7 +328,7 @@ function init() {
     if (sidesTouched.has('right')) routingParts.push('right');
     if (sidesTouched.has('left')) routingParts.push('left');
     const routing = routingParts.length === 2 ? 'both sides' : routingParts[0] || 'active side';
-    parseStatus.textContent = `Matched ${totalMatched} finding(s) to ${routing}${additionalParts.length ? ' -- remainder in Additional Findings' : ''}`;
+    parseStatus.textContent = `Matched ${totalMatched} finding(s) to ${routing}${additional ? ' -- remainder in Additional Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });

@@ -1,10 +1,13 @@
 /**
- * Bone age calculator — shared by G&P and Sontag tools.
- * Computes difference between bone age and chronological age.
+ * Greulich & Pyle bone age calculator.
+ *
+ * Sontag has its own calculator in ../bone-age-sontag/calculator.js as of
+ * the split (docs/test.md section 9 backlog closeout). This file is now
+ * G&P-specific and no longer accepts a method parameter.
  */
 
 export function calculateBoneAge(formState) {
-  const { sex, chronoYears, chronoMonths, boneAgeYears, boneAgeMonths, ossificationCount, method } = formState;
+  const { sex, chronoYears, chronoMonths, boneAgeYears, boneAgeMonths } = formState;
 
   const sexLabels = { male: 'Male', female: 'Female' };
   const chronoTotal = (chronoYears || 0) + (chronoMonths || 0) / 12;
@@ -30,12 +33,10 @@ export function calculateBoneAge(formState) {
   }
 
   return {
-    methodLabel: method || 'Greulich & Pyle',
+    methodLabel: 'Greulich & Pyle',
     sexLabel: sexLabels[sex] || '', sexProvided: !!sex,
     chronoLabel, chronoProvided: hasChrono,
     boneAgeLabel, boneAgeProvided: boneAgeTotal != null,
-    ossificationCount: ossificationCount != null ? ossificationCount : null,
-    ossificationProvided: ossificationCount != null,
     difference, differenceLabel: difference != null ? `${difference >= 0 ? '+' : ''}${difference.toFixed(1)} years` : '--',
     differenceProvided: difference != null,
     interpretation, interpretationProvided: !!interpretation, level,

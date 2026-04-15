@@ -77,7 +77,49 @@ export const rapnoDefinition = {
     { id: 'increased', label: 'Increased' },
   ],
 
+  // Multi-target pastes like "Target 1: ... Target 2: ..." (or numbered
+  // markers) split into per-target segments so each maps to its own
+  // target row in the bidimensional table.
+  parseSegmentation: { type: 'itemIndex', itemLabel: 'Target' },
+
   parseRules: {
+    // Bidimensional measurement. Accepts all common forms:
+    //   "20 x 15 mm"    (single trailing unit)
+    //   "20 mm x 15 mm" (unit on both values)
+    //   "20 × 15 mm"    (multiplication sign U+00D7)
+    // Returns { d1, d2 }; the handler routes to curD1 / curD2.
+    dimensions: {
+      pattern: /(\d*\.?\d+)\s*(?:mm)?\s*[x\u00d7]\s*(\d*\.?\d+)\s*mm/,
+      group: 0,
+      transform: (m) => ({ d1: parseFloat(m[1]), d2: parseFloat(m[2]) }),
+    },
+
+    // Single-dimension fallback (only used if `dimensions` doesn't match).
+    // Routes to curD1 in the handler; curD2 stays null for user to fill.
+    size: {
+      pattern: /(\d*\.?\d+)\s*mm/,
+      group: 1,
+      transform: (m) => parseFloat(m[1]),
+    },
+
+    // Per-target brain region. IDs feed directly into target.location.
+    location: {
+      options: {
+        'Frontal lobe': ['frontal lobe', 'frontal'],
+        'Parietal lobe': ['parietal lobe', 'parietal'],
+        'Temporal lobe': ['temporal lobe', 'temporal'],
+        'Occipital lobe': ['occipital lobe', 'occipital'],
+        'Pons': ['pons', 'pontine'],
+        'Medulla': ['medulla', 'medullary'],
+        'Cerebellum': ['cerebellum', 'cerebellar'],
+        'Thalamus': ['thalamus', 'thalamic'],
+        'Basal ganglia': ['basal ganglia', 'basal ganglion'],
+        'Corpus callosum': ['corpus callosum', 'callosal'],
+        'Brainstem': ['brain stem', 'brainstem'],
+        'Spinal cord': ['spinal cord', 'intramedullary'],
+      },
+    },
+
     nonTarget: {
       options: {
         'absent': ['non-target absent', 'non-target cr', 'nontarget absent', 'nontarget cr', 'no non-target', 'complete response non-target'],

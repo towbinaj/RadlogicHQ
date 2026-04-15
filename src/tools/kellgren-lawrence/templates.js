@@ -1,6 +1,11 @@
+// In bilateral mode `findings` is empty (no single description fits
+// two sides), so the findings block uses a nested conditional.
+// `gradeLabel` in bilateral mode already embeds "Right: ..., Left: ..."
+// -- so the grade block reads "Bilateral knee osteoarthritis: Right:
+// Grade 3, Left: Grade 2", which is verbose but readable.
 const FINDINGS_BLOCKS = [
   { id: 'grade', label: 'KL Grade', template: '{{sideLabel}} {{jointLabel}} osteoarthritis: {{gradeLabel}}', enabled: true, condition: 'gradeProvided' },
-  { id: 'findings', label: 'Findings', template: '{{findings}}', enabled: true, condition: 'gradeProvided' },
+  { id: 'findings', label: 'Findings', template: '{{#if findings}}{{findings}}{{/if}}', enabled: true, condition: 'gradeProvided' },
 ];
 
 function bts(blocks, headers, impression) {

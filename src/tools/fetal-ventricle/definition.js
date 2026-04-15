@@ -24,5 +24,27 @@ export const fetalVentricleDefinition = {
     { id: 'bilateral', label: 'Bilateral' },
   ],
 
-  parseRules: {},
+  // Bilateral pastes like "Right lateral ventricle: 11 mm. Left
+  // lateral ventricle: 10 mm." split into per-side segments so each
+  // carries its own atrial-width measurement. Ventriculomegaly is
+  // commonly bilateral in obstetric scans.
+  parseSegmentation: { type: 'laterality' },
+
+  parseRules: {
+    // Atrial width: any "<N> mm" measurement in a segment. Per-segment
+    // parsing means right/left widths are naturally separated by the
+    // laterality segmenter; if multiple mm values appear in one
+    // segment, the first match wins.
+    width: {
+      pattern: /(\d*\.?\d+)\s*mm/,
+      group: 1,
+      transform: (m) => parseFloat(m[1]),
+    },
+    // Gestational age: "GA 22 weeks", "22 weeks", "22w", "22 wks".
+    ga: {
+      pattern: /(?:\bga\b[\s:]*|\bat\s+)?(\d{2})\s*(?:weeks?|wks?|w\b)/i,
+      group: 1,
+      transform: (m) => parseInt(m[1], 10),
+    },
+  },
 };

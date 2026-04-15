@@ -10,7 +10,7 @@ import { renderEditorContent, splitEditorContent } from '../../core/pill-editor.
 import { tiradsDefinition } from './definition.js';
 import { calculateTirads } from './calculator.js';
 import { tiradsTemplates } from './templates.js';
-import { parseFindings } from '../../core/parser.js';
+import { parseSegmentedFindings } from '../../core/parser.js';
 import { trackEvent } from '../../core/storage.js';
 import { initKeyboardShortcuts } from '../../core/keyboard-shortcuts.js';
 import '../../core/tool-name.js';
@@ -331,22 +331,52 @@ function init() {
     const text = parseInput.value.trim();
     if (!text) return;
 
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, tiradsDefinition);
-    const nodule = nodules[activeNoduleIndex];
+    // Item-indexed parsing: "Nodule 1: ... Nodule 2: ..." pastes split into
+    // per-nodule segments, each becoming its own tab. Single-nodule pastes
+    // with no "Nodule N" markers fall through to ungrouped and apply to the
+    // currently-active nodule, preserving the old single-nodule behavior.
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, tiradsDefinition);
 
-    // Replace (not merge) the active nodule's form state with parsed values
-    nodule.formState = { ...parsed };
+    let matchedFieldCount = 0;
 
-    // Replace additional findings with remainder (not append)
-    additionalFindingsEl.value = remainder || '';
+    if (segments.length > 0) {
+      // Multi-nodule paste: replace the nodule list with one per segment.
+      // Use each segment's detected index for the tab label so "Nodule 2:
+      // ..." in the paste maps to a tab labeled "Nodule 2" even if it was
+      // the first segment encountered.
+      nodules = segments.map((seg) => ({
+        id: seg.index,
+        label: `Nodule ${seg.index}`,
+        formState: { ...seg.formState },
+      }));
+      activeNoduleIndex = 0;
+      matchedFieldCount = segments.reduce((n, s) => n + s.matched.length, 0);
+    } else if (ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
+      // Single-nodule paste: replace active nodule's form state
+      const nodule = nodules[activeNoduleIndex];
+      nodule.formState = { ...ungrouped.formState };
+      matchedFieldCount = ungrouped.matched.length;
+    }
+
+    // Whole-sentence preservation: sentences with zero parser matches go to
+    // Additional Findings (report headers, negative findings, free-text).
+    // Filter out bare index markers like "1.", "(2)" that leak through the
+    // sentence splitter when the segmenter consumed "1. Right lobe: ..."
+    // style pastes.
+    const additional = unmatchedSentences
+      .filter((s) => !/^\s*(?:\(\d+\)|\d+\.?)\s*$/.test(s))
+      .join(' ');
+    additionalFindingsEl.value = additional;
     studyAdditionalFindings = additionalFindingsEl.value;
 
-    // Re-render the form to show selections
+    // Re-render tabs + form for the first nodule
+    renderNoduleTabs();
     renderActiveNodule();
 
     // Show status
-    const total = matched.length + unmatched.length;
-    parseStatus.textContent = `Matched ${matched.length}/${total} fields${remainder ? ' \u2014 remainder added to Additional Findings' : ''}`;
+    const noduleCount = segments.length > 0 ? segments.length : 1;
+    const noduleSuffix = noduleCount > 1 ? ` across ${noduleCount} nodules` : '';
+    parseStatus.textContent = `Matched ${matchedFieldCount} field(s)${noduleSuffix}${unmatchedSentences.length ? ' \u2014 remainder in Additional Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
 
     setTimeout(() => {

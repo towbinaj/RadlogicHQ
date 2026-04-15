@@ -158,6 +158,11 @@ export const liradsDefinition = {
     ],
   },
 
+  // Multi-observation pastes like "Observation 1: ... Observation 2: ..."
+  // (or numbered "1. ... 2. ...") split into per-observation segments,
+  // each mapping to its own observation tab.
+  parseSegmentation: { type: 'itemIndex', itemLabel: 'Observation' },
+
   parseRules: {
     'size': {
       pattern: /(\d+)\s*mm/,
@@ -200,6 +205,116 @@ export const liradsDefinition = {
         'yes': ['threshold growth', 'interval growth', 'increased in size', 'new lesion'],
         'no': ['stable', 'no growth', 'unchanged'],
       },
+    },
+
+    // --- Benign assessment (drives the 4-way button in the UI) ---
+    // "cyst" alone is NOT in the keyword list because "cyst" is a substring
+    // of "cystic", which would false-positive on "cystic lesion" etc. Use
+    // 'simple cyst', 'hepatic cyst', 'benign cyst' instead. Longest-match
+    // discrimination: "probable hemangioma" beats "hemangioma", so dictations
+    // like "probable hemangioma" route to probablyBenign, while plain
+    // "hemangioma" routes to definitelyBenign.
+    'benignAssessment': {
+      options: {
+        'definitelyBenign': [
+          'definitely benign',
+          'simple cyst',
+          'hepatic cyst',
+          'benign cyst',
+          'hemangioma',
+          'perfusion alteration',
+          'focal fat deposition',
+          'focal fat sparing',
+          'hypertrophic pseudomass',
+          'confluent fibrosis',
+          'focal scar',
+        ],
+        'probablyBenign': [
+          'probably benign',
+          'probable cyst',
+          'probable simple cyst',
+          'probable hemangioma',
+          'angiomyolipoma',
+          'focal nodular hyperplasia',
+          'fnh',
+          'distinctive nodule',
+        ],
+        'indeterminate': ['indeterminate'],
+        'notBenign': ['not benign'],
+      },
+    },
+
+    // --- Tumor in vein (LR-TIV) ---
+    'tumorInVein': {
+      options: {
+        'yes': ['tumor in vein', 'tumor thrombus', 'enhancing tumor thrombus', 'venous tumor invasion', 'lr-tiv'],
+        'no': ['bland thrombus', 'no tumor thrombus', 'no tumor in vein', 'patent'],
+      },
+    },
+
+    // --- LR-M targetoid / non-HCC malignancy features ---
+    // Kept narrow to avoid collisions with major-feature rules above.
+    'lrmFeatures': {
+      options: {
+        'yes': [
+          'targetoid',
+          'rim arterial phase hyperenhancement',
+          'rim aphe',
+          'peripheral washout',
+          'delayed central enhancement',
+          'infiltrative appearance',
+          'marked diffusion restriction',
+          'lr-m',
+        ],
+      },
+    },
+
+    // --- Ancillary features favoring HCC (upgrade) ---
+    // Tool-specific formState keys: anc_hcc_<featureId>. Only the most
+    // commonly dictated ones are covered; users can still click to toggle
+    // the rest.
+    'anc_hcc_restrictedDiffusion': {
+      options: { yes: ['restricted diffusion', 'diffusion restriction', 'low adc', 'true restricted diffusion'] },
+    },
+    'anc_hcc_mildT2Hyperintensity': {
+      options: {
+        yes: [
+          'mild t2 hyperintensity',
+          'mild-moderate t2 hyperintensity',
+          'mild to moderate t2 hyperintensity',
+          'mildly t2 hyperintense',
+          'moderately t2 hyperintense',
+        ],
+      },
+    },
+    'anc_hcc_intralesionalFat': {
+      options: { yes: ['intralesional fat', 'intratumoral fat', 'fat within the lesion', 'signal loss on opposed-phase'] },
+    },
+    'anc_hcc_mosaicArchitecture': {
+      options: { yes: ['mosaic architecture', 'mosaic appearance'] },
+    },
+    'anc_hcc_coronaEnhancement': {
+      options: { yes: ['corona enhancement', 'perilesional enhancement'] },
+    },
+    'anc_hcc_noduleInNodule': {
+      options: { yes: ['nodule-in-nodule', 'nodule in nodule'] },
+    },
+
+    // --- Ancillary features favoring benign (downgrade) ---
+    'anc_benign_markedT2Hyperintensity': {
+      options: { yes: ['marked t2 hyperintensity', 'markedly t2 hyperintense', 'fluid signal on t2', 't2 bright'] },
+    },
+    'anc_benign_parallelsBloodPool': {
+      options: { yes: ['parallels blood pool', 'follows blood pool', 'blood-pool enhancement'] },
+    },
+    'anc_benign_hbpIsointensity': {
+      options: { yes: ['hbp isointensity', 'hepatobiliary phase isointensity', 'iso to liver on hbp', 'hepatobiliary phase iso'] },
+    },
+    'anc_benign_undistortedVessels': {
+      options: { yes: ['undistorted vessels', 'vessels traverse', 'traversing vessels'] },
+    },
+    'anc_benign_homogeneousSignal': {
+      options: { yes: ['homogeneous signal', 'uniformly homogeneous'] },
     },
   },
 };

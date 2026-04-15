@@ -30,6 +30,11 @@ export const klDefinition = {
     { id: 'bilateral', label: 'Bilateral' },
   ],
 
+  // Bilateral pastes like "Right knee: KL 3. Left knee: KL 2." split
+  // into per-side segments so each side carries its own grade.
+  // Joint is study-level (the whole exam is usually one joint type).
+  parseSegmentation: { type: 'laterality' },
+
   parseRules: {
     grade: {
       options: {

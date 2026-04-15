@@ -24,7 +24,7 @@ function init() {
   reportEl.definition = boneAgeGpDefinition;
   reportEl.setTemplates(boneAgeTemplates);
 
-  const formState = { sex: null, chronoYears: null, chronoMonths: null, boneAgeYears: null, boneAgeMonths: null, method: 'Greulich & Pyle' };
+  const formState = { sex: null, chronoYears: null, chronoMonths: null, boneAgeYears: null, boneAgeMonths: null };
   let studyAdditionalFindings = '';
   additionalFindingsEl.addEventListener('input', () => { studyAdditionalFindings = additionalFindingsEl.value; updateReport(); });
 

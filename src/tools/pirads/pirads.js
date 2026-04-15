@@ -8,7 +8,7 @@ import { renderEditorContent, splitEditorContent } from '../../core/pill-editor.
 import { piradsDefinition } from './definition.js';
 import { calculatePirads } from './calculator.js';
 import { piradsTemplates } from './templates.js';
-import { parseFindings } from '../../core/parser.js';
+import { parseSegmentedFindings } from '../../core/parser.js';
 import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
 import '../../core/tool-name.js';
 
@@ -262,15 +262,42 @@ function init() {
   parseBtn.addEventListener('click', () => {
     const text = parseInput.value.trim();
     if (!text) return;
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, piradsDefinition);
-    const fs = lesions[activeLesionIndex].formState;
-    for (const key of Object.keys(fs)) delete fs[key];
-    Object.assign(fs, parsed);
-    additionalFindingsEl.value = remainder || '';
+
+    // Item-indexed parsing: "Lesion 1: ... Lesion 2: ..." (or numbered
+    // markers) split into per-lesion segments, each becoming its own
+    // tab. Single-lesion pastes fall through to the ungrouped bucket
+    // and apply to the active tab.
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, piradsDefinition);
+
+    let matchedFieldCount = 0;
+
+    if (segments.length > 0) {
+      lesions = segments.map((seg) => ({
+        id: seg.index,
+        label: `Lesion ${seg.index}`,
+        formState: { ...seg.formState },
+      }));
+      activeLesionIndex = 0;
+      matchedFieldCount = segments.reduce((n, s) => n + s.matched.length, 0);
+    } else if (ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
+      const fs = lesions[activeLesionIndex].formState;
+      for (const key of Object.keys(fs)) delete fs[key];
+      Object.assign(fs, ungrouped.formState);
+      matchedFieldCount = ungrouped.matched.length;
+    }
+
+    const additional = unmatchedSentences
+      .filter((s) => !/^\s*(?:\(\d+\)|\d+\.?)\s*$/.test(s))
+      .join(' ');
+    additionalFindingsEl.value = additional;
     studyAdditionalFindings = additionalFindingsEl.value;
+
+    renderLesionTabs();
     buildUI();
-    const total = matched.length + unmatched.length;
-    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+
+    const lesionCount = segments.length > 0 ? segments.length : 1;
+    const lesionSuffix = lesionCount > 1 ? ` across ${lesionCount} lesions` : '';
+    parseStatus.textContent = `Matched ${matchedFieldCount} field(s)${lesionSuffix}${unmatchedSentences.length ? ' \u2014 remainder in Additional Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });

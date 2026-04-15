@@ -120,9 +120,15 @@ const SYNONYMS = {
   'type v': ['type 5'],
 
   // --- Common modalities ---
+  // Bare initialisms like 'us' and 'mr' are intentionally NOT included
+  // because the parser uses substring (not word-boundary) matching:
+  // 'us' would fire inside 's(us)picion', 'gluteus', 'musculus', etc.,
+  // and 'mr' inside 'MRSA', 'MRCP'. Tools that need 'US' / 'MR'
+  // abbreviation detection should add a regex-pattern rule with
+  // explicit \b boundaries in their own parseRules.
   mammography: ['mammo', 'mammogram'],
-  ultrasound: ['us', 'sonography', 'sonographic'],
-  mri: ['mr', 'magnetic resonance'],
+  ultrasound: ['sonography', 'sonographic'],
+  mri: ['magnetic resonance'],
 
   // --- Hydronephrosis ---
   hydronephrosis: ['hydroureteronephrosis', 'collecting system dilation', 'pelvicaliectasis', 'pyelectasis'],
@@ -728,27 +734,40 @@ function escapeRegex(str) {
 //   d) Copula plural:   "the kidneys are both enlarged", "kidneys have each"
 //   e) Prepositional:   "each of the kidneys", "both of the kidneys"
 //   f) Distributive singular: "each kidney", "both kidneys"
-// Organ list is kept in sync with RIGHT_RE / LEFT_RE.
+//
+// Organ list is kept in sync with RIGHT_RE / LEFT_RE. Covers the
+// abdominal/pelvic/thoracic organs from Phase 1 plus MSK joints
+// (knees/hips/shoulders/etc.) added for the Phase 2 K-L / hip-
+// dysplasia / fetal-ventricle rollouts. Two keyword lists:
+//   ORGANS_PLURAL  -- "the kidneys / knees / shoulders"
+//   ORGANS_SINGULAR -- "kidney / knee / shoulder"
 const BILATERAL_RE = new RegExp(
   [
     // a) Prefix: "bilateral kidneys", "both kidneys"
-    String.raw`\b(?:bilateral|both)\s+(?:kidneys|sides|adrenals|ovaries|breasts|lungs|hips|organs)\b`,
+    String.raw`\b(?:bilateral|both)\s+(?:kidneys|sides|adrenals|ovaries|breasts|lungs|hips|knees|shoulders|elbows|wrists|ankles|hands|feet|joints|ventricles|organs)\b`,
     String.raw`\bbilaterally\b`,
     // b) Conjunction: "right and left kidneys"
-    String.raw`\b(?:right\s+and\s+left|left\s+and\s+right)\s+(?:kidneys|adrenals|ovaries|breasts|lungs|hips|sides|organs)\b`,
+    String.raw`\b(?:right\s+and\s+left|left\s+and\s+right)\s+(?:kidneys|adrenals|ovaries|breasts|lungs|hips|knees|shoulders|elbows|wrists|ankles|hands|feet|joints|ventricles|sides|organs)\b`,
     // c) Postposed: "kidneys each", "kidneys both"
-    String.raw`\b(?:kidneys|adrenals|ovaries|breasts|lungs|hips)\s+(?:each|both)\b`,
+    String.raw`\b(?:kidneys|adrenals|ovaries|breasts|lungs|hips|knees|shoulders|elbows|wrists|ankles|hands|feet|joints|ventricles)\s+(?:each|both)\b`,
     // d) Copula: "kidneys are/have/show/demonstrate both|each"
-    String.raw`\b(?:kidneys|adrenals|ovaries|breasts|lungs|hips)\s+(?:are|have|show|shows|demonstrate|demonstrates|contain|reveal|exhibit)\s+(?:each|both)\b`,
+    String.raw`\b(?:kidneys|adrenals|ovaries|breasts|lungs|hips|knees|shoulders|elbows|wrists|ankles|hands|feet|joints|ventricles)\s+(?:are|have|show|shows|demonstrate|demonstrates|contain|reveal|exhibit)\s+(?:each|both)\b`,
     // e) Prepositional: "each of the kidneys", "both of the kidneys"
-    String.raw`\b(?:each|both)\s+of\s+(?:the\s+)?(?:kidneys|adrenals|ovaries|breasts|lungs|hips)\b`,
+    String.raw`\b(?:each|both)\s+of\s+(?:the\s+)?(?:kidneys|adrenals|ovaries|breasts|lungs|hips|knees|shoulders|elbows|wrists|ankles|hands|feet|joints|ventricles)\b`,
     // f) Distributive singular: "each kidney"
-    String.raw`\beach\s+(?:kidney|adrenal|ovary|breast|lung|hip)\b`,
+    String.raw`\beach\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle)\b`,
   ].join('|'),
   'i'
 );
-const RIGHT_RE = /\b(?:the\s+)?right\s+(?:kidney|adrenal|ovary|breast|lung|hip|side|organ)s?\b|\bon\s+the\s+right\b|\brt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|side)\b|(?:^|\n)\s*(?:the\s+)?right\s*:/i;
-const LEFT_RE = /\b(?:the\s+)?left\s+(?:kidney|adrenal|ovary|breast|lung|hip|side|organ)s?\b|\bon\s+the\s+left\b|\blt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|side)\b|(?:^|\n)\s*(?:the\s+)?left\s*:/i;
+// The `(?:\w+\s+)?` between the side and the organ name lets
+// "right lateral ventricle", "left upper lobe lung", "right main
+// pulmonary artery" etc. still match. It allows one optional
+// modifier word -- enough for common radiology phrasings without
+// matching "right arm bone fracture with knee findings" as a knee
+// reference. The modifier word doesn't need to be in a vocabulary
+// because the anchor is still the trailing organ name.
+const RIGHT_RE = /\b(?:the\s+)?right\s+(?:\w+\s+)?(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side|organ)s?\b|\bon\s+the\s+right\b|\brt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side)\b|(?:^|\n)\s*(?:the\s+)?right\s*:/i;
+const LEFT_RE = /\b(?:the\s+)?left\s+(?:\w+\s+)?(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side|organ)s?\b|\bon\s+the\s+left\b|\blt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side)\b|(?:^|\n)\s*(?:the\s+)?left\s*:/i;
 
 // Cross-reference tokens: flip the current side for this sentence only.
 const CONTRALATERAL_RE = /\bcontralateral\b|\bthe\s+(?:other|opposite)\s+(?:kidney|side|adrenal|organ)\b|\bon\s+the\s+other\s+side\b/i;

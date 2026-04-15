@@ -46,5 +46,19 @@ export const biradsDefinition = {
         '6': ['known malignancy', 'biopsy-proven', 'birads 6', 'bi-rads 6'],
       },
     },
+
+    // Manual laterality rule (overrides auto-generated rule from
+    // lateralityOptions). Picks the FIRST laterality mention in the
+    // text so reports like "Left breast mass, BI-RADS 4b. Right breast
+    // negative." attribute laterality to the left (the side where the
+    // concerning finding is) rather than the right (where the negative
+    // finding happens to be mentioned second). BI-RADS is a single-
+    // category assessment by design, so first-match works for the
+    // common case of "one finding side + the other side negative".
+    laterality: {
+      pattern: /\b(right|left|bilateral|both)\b/i,
+      group: 1,
+      transform: (m) => m[1].toLowerCase() === 'both' ? 'bilateral' : m[1].toLowerCase(),
+    },
   },
 };

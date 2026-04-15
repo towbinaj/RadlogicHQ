@@ -9,7 +9,7 @@ import { rapnoDefinition, VARIANTS } from './definition.js';
 import { calculateRapno } from './calculator.js';
 import { rapnoTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
-import { parseFindings } from '../../core/parser.js';
+import { parseSegmentedFindings } from '../../core/parser.js';
 import '../../core/tool-name.js';
 
 const MAX_TARGETS = 5;
@@ -178,9 +178,15 @@ function init() {
   }
 
   // --- Helpers ---
+  // Dimension guards mirror calculator.js: baseline must be > 0 (a
+  // 0-size baseline means "not yet measured"), but current accepts 0
+  // so a disappeared lesion shows `0` in the Product column instead of
+  // "—" and flips the badge to CR.
   function targetRow(t, i) {
     const blProd = (t.blD1 > 0 && t.blD2 > 0) ? Math.round(t.blD1 * t.blD2 * 10) / 10 : null;
-    const curProd = (t.curD1 > 0 && t.curD2 > 0) ? Math.round(t.curD1 * t.curD2 * 10) / 10 : null;
+    const curProd = (t.curD1 != null && t.curD2 != null && t.curD1 >= 0 && t.curD2 >= 0)
+      ? Math.round(t.curD1 * t.curD2 * 10) / 10
+      : null;
     return `
       <tr data-row="${i}">
         <td>${t.label}</td>
@@ -216,7 +222,9 @@ function init() {
     if (!row) return;
     const t = targets[i];
     const blProd = (t.blD1 > 0 && t.blD2 > 0) ? Math.round(t.blD1 * t.blD2 * 10) / 10 : null;
-    const curProd = (t.curD1 > 0 && t.curD2 > 0) ? Math.round(t.curD1 * t.curD2 * 10) / 10 : null;
+    const curProd = (t.curD1 != null && t.curD2 != null && t.curD1 >= 0 && t.curD2 >= 0)
+      ? Math.round(t.curD1 * t.curD2 * 10) / 10
+      : null;
     row.querySelector('.rapno-bl-prod').textContent = blProd != null ? blProd : '—';
     row.querySelector('.rapno-cur-prod').textContent = curProd != null ? curProd : '—';
     refreshSums();
@@ -226,7 +234,10 @@ function init() {
     let blSum = 0, curSum = 0, hasBl = false, hasCur = false;
     for (const t of targets) {
       if (t.blD1 > 0 && t.blD2 > 0) { blSum += t.blD1 * t.blD2; hasBl = true; }
-      if (t.curD1 > 0 && t.curD2 > 0) { curSum += t.curD1 * t.curD2; hasCur = true; }
+      if (t.curD1 != null && t.curD2 != null && t.curD1 >= 0 && t.curD2 >= 0) {
+        curSum += t.curD1 * t.curD2;
+        hasCur = true;
+      }
     }
     const sumBl = document.getElementById('sum-bl');
     const sumCur = document.getElementById('sum-cur');
@@ -296,13 +307,65 @@ function init() {
   parseBtn.addEventListener('click', () => {
     const text = parseInput.value.trim();
     if (!text) return;
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, rapnoDefinition);
-    Object.assign(formState, parsed);
-    additionalFindingsEl.value = remainder || '';
+
+    // Item-indexed parsing: "Target 1: ... Target 2: ..." (or numbered
+    // markers) split into per-target segments. RAPNO is bidimensional,
+    // so each segment's `dimensions` field (if present) maps to
+    // curD1/curD2; a fallback `size` field maps to curD1 only.
+    // Baseline measurements stay manual -- they carry over from prior
+    // reports.
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, rapnoDefinition);
+
+    // Helper: merge a parsed per-target formState into a target object.
+    const applyToTarget = (t, parsedFs) => {
+      if (parsedFs.location) t.location = parsedFs.location;
+      if (parsedFs.dimensions) {
+        t.curD1 = parsedFs.dimensions.d1;
+        t.curD2 = parsedFs.dimensions.d2;
+      } else if (parsedFs.size != null) {
+        t.curD1 = parsedFs.size;
+      }
+    };
+
+    let matchedFieldCount = 0;
+
+    if (segments.length > 0) {
+      targets = segments.slice(0, MAX_TARGETS).map((seg) => {
+        const t = createTarget(seg.index);
+        applyToTarget(t, seg.formState);
+        return t;
+      });
+      matchedFieldCount = segments.reduce((n, s) => n + s.matched.length, 0);
+
+      // Study-level fields (nonTarget, newLesion, clinicalStatus,
+      // steroidDose) can appear anywhere -- pull from first source that
+      // has them.
+      for (const key of ['nonTarget', 'newLesion', 'clinicalStatus', 'steroidDose']) {
+        for (const src of [...segments.map((s) => s.formState), ungrouped.formState]) {
+          if (src && src[key]) { formState[key] = src[key]; break; }
+        }
+      }
+    } else if (ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
+      for (const key of ['nonTarget', 'newLesion', 'clinicalStatus', 'steroidDose']) {
+        if (ungrouped.formState[key]) formState[key] = ungrouped.formState[key];
+      }
+      if (ungrouped.formState.dimensions || ungrouped.formState.size != null || ungrouped.formState.location) {
+        applyToTarget(targets[0], ungrouped.formState);
+      }
+      matchedFieldCount = ungrouped.matched.length;
+    }
+
+    const additional = unmatchedSentences
+      .filter((s) => !/^\s*(?:\(\d+\)|\d+\.?)\s*$/.test(s))
+      .join(' ');
+    additionalFindingsEl.value = additional;
     studyAdditionalFindings = additionalFindingsEl.value;
+
     buildUI();
-    const total = matched.length + unmatched.length;
-    parseStatus.textContent = `Matched ${matched.length}/${total}${remainder ? ' — remainder in Additional Findings' : ''}`;
+
+    const targetCount = segments.length > 0 ? Math.min(segments.length, MAX_TARGETS) : 0;
+    const targetSuffix = targetCount > 1 ? ` across ${targetCount} targets` : '';
+    parseStatus.textContent = `Matched ${matchedFieldCount} field(s)${targetSuffix}${unmatchedSentences.length ? ' \u2014 remainder in Additional Findings' : ''}`;
     parseStatus.className = 'parse-panel__status parse-panel__status--success';
     setTimeout(() => { parseStatus.textContent = ''; parseStatus.className = 'parse-panel__status'; }, 5000);
   });

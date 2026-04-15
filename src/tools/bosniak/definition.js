@@ -109,6 +109,11 @@ export const bosniakDefinition = {
     ],
   },
 
+  // Multi-cyst pastes like "Cyst 1: ... Cyst 2: ..." (or numbered
+  // "1. ... 2. ...") split into per-cyst segments so each maps to its
+  // own cyst tab.
+  parseSegmentation: { type: 'itemIndex', itemLabel: 'Cyst' },
+
   parseRules: {
     'size': {
       pattern: /(\d*\.?\d+)\s*(?:mm|cm)/,
