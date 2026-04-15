@@ -178,9 +178,15 @@ function init() {
   }
 
   // --- Helpers ---
+  // Dimension guards mirror calculator.js: baseline must be > 0 (a
+  // 0-size baseline means "not yet measured"), but current accepts 0
+  // so a disappeared lesion shows `0` in the Product column instead of
+  // "—" and flips the badge to CR.
   function targetRow(t, i) {
     const blProd = (t.blD1 > 0 && t.blD2 > 0) ? Math.round(t.blD1 * t.blD2 * 10) / 10 : null;
-    const curProd = (t.curD1 > 0 && t.curD2 > 0) ? Math.round(t.curD1 * t.curD2 * 10) / 10 : null;
+    const curProd = (t.curD1 != null && t.curD2 != null && t.curD1 >= 0 && t.curD2 >= 0)
+      ? Math.round(t.curD1 * t.curD2 * 10) / 10
+      : null;
     return `
       <tr data-row="${i}">
         <td>${t.label}</td>
@@ -216,7 +222,9 @@ function init() {
     if (!row) return;
     const t = targets[i];
     const blProd = (t.blD1 > 0 && t.blD2 > 0) ? Math.round(t.blD1 * t.blD2 * 10) / 10 : null;
-    const curProd = (t.curD1 > 0 && t.curD2 > 0) ? Math.round(t.curD1 * t.curD2 * 10) / 10 : null;
+    const curProd = (t.curD1 != null && t.curD2 != null && t.curD1 >= 0 && t.curD2 >= 0)
+      ? Math.round(t.curD1 * t.curD2 * 10) / 10
+      : null;
     row.querySelector('.rapno-bl-prod').textContent = blProd != null ? blProd : '—';
     row.querySelector('.rapno-cur-prod').textContent = curProd != null ? curProd : '—';
     refreshSums();
@@ -226,7 +234,10 @@ function init() {
     let blSum = 0, curSum = 0, hasBl = false, hasCur = false;
     for (const t of targets) {
       if (t.blD1 > 0 && t.blD2 > 0) { blSum += t.blD1 * t.blD2; hasBl = true; }
-      if (t.curD1 > 0 && t.curD2 > 0) { curSum += t.curD1 * t.curD2; hasCur = true; }
+      if (t.curD1 != null && t.curD2 != null && t.curD1 >= 0 && t.curD2 >= 0) {
+        curSum += t.curD1 * t.curD2;
+        hasCur = true;
+      }
     }
     const sumBl = document.getElementById('sum-bl');
     const sumCur = document.getElementById('sum-cur');

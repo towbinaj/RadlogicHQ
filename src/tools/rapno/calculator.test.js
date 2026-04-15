@@ -13,20 +13,22 @@ function target(blD1, blD2, curD1, curD2, extra = {}) {
   return { label: 'T1', blD1, blD2, curD1, curD2, ...extra };
 }
 
-// Quirk: the calculator guards curProd on `curD1 > 0 && curD2 > 0`, so
-// literally (0, 0) produces curProd=null and hasCurrent stays false —
-// target response doesn't fire. To reach the CR branch (currentSum === 0)
-// we need both dimensions > 0 but small enough that round1(d1*d2) = 0.
-// 0.1 × 0.1 = 0.01 → round1 rounds to 0.0.
-const NEAR_ZERO = 0.1;
-
 describe('calculateRapno — HGG/LGG thresholds (PR=-50, MinR=-25, PD=+25)', () => {
-  it('sum rounds to 0 → CR', () => {
-    const r = calculateRapno(
-      [target(10, 10, NEAR_ZERO, NEAR_ZERO)],
-      {},
-      HGG,
-    );
+  it('literal (0, 0) current dimensions → CR (disappeared lesion)', () => {
+    // Regression test for the `curD > 0` guard bug: users entering 0
+    // for a disappeared lesion need to hit the CR branch, not have the
+    // target treated as "not measured". Baseline guard stays > 0 since
+    // a 0-size baseline is nonsensical.
+    const r = calculateRapno([target(10, 10, 0, 0)], {}, HGG);
+    expect(r.currentSum).toBe(0);
+    expect(r.currentSumProvided).toBe(true);
+    expect(r.overallResponse).toBe('CR');
+  });
+
+  it('one dimension zero, other non-zero → still CR for that target', () => {
+    // A single 0 dimension with a positive partner also means the
+    // lesion is no longer a measurable product. Product = 0.
+    const r = calculateRapno([target(10, 10, 5, 0)], {}, HGG);
     expect(r.currentSum).toBe(0);
     expect(r.overallResponse).toBe('CR');
   });
@@ -143,7 +145,7 @@ describe('calculateRapno — manual nadir override', () => {
 describe('calculateRapno — overall response gates', () => {
   it('new lesion forces PD', () => {
     const r = calculateRapno(
-      [target(10, 10, NEAR_ZERO, NEAR_ZERO)],
+      [target(10, 10, 0, 0)],
       { newLesion: 'yes' },
       HGG,
     );
@@ -152,7 +154,7 @@ describe('calculateRapno — overall response gates', () => {
 
   it('non-target progression forces PD', () => {
     const r = calculateRapno(
-      [target(10, 10, NEAR_ZERO, NEAR_ZERO)],
+      [target(10, 10, 0, 0)],
       { nonTarget: 'progression' },
       HGG,
     );
@@ -161,7 +163,7 @@ describe('calculateRapno — overall response gates', () => {
 
   it('target CR + non-target absent → overall CR', () => {
     const r = calculateRapno(
-      [target(10, 10, NEAR_ZERO, NEAR_ZERO)],
+      [target(10, 10, 0, 0)],
       { nonTarget: 'absent' },
       HGG,
     );
@@ -170,7 +172,7 @@ describe('calculateRapno — overall response gates', () => {
 
   it('target CR + non-target present → overall PR', () => {
     const r = calculateRapno(
-      [target(10, 10, NEAR_ZERO, NEAR_ZERO)],
+      [target(10, 10, 0, 0)],
       { nonTarget: 'present' },
       HGG,
     );
@@ -201,9 +203,10 @@ describe('calculateRapno — sums and metadata', () => {
     expect(r.targetCount).toBe(2);
   });
 
-  it('targets with both dimensions invalid are excluded from count', () => {
+  it('targets with null dimensions are excluded from count', () => {
+    // null = "not yet measured". 0 = "measured as disappeared" (CR).
     const r = calculateRapno([
-      { label: 'T1', blD1: 0, blD2: 0, curD1: 0, curD2: 0 },
+      { label: 'T1', blD1: null, blD2: null, curD1: null, curD2: null },
       target(10, 10, 8, 8),
     ], {}, HGG);
     expect(r.targetCount).toBe(1);
