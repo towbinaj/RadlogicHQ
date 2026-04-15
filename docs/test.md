@@ -352,3 +352,153 @@ describe('calculateTirads — edge cases', () => {
 **Rule of thumb:** if a calculator has an `if`/`else if`/`else` chain on a numeric threshold, every branch needs a test. The test count for a calculator is usually `≥ (branches × 2) + (edge cases)`.
 
 ---
+
+## 7. Common idioms and helpers
+
+A handful of small conventions that make the tests easier to read and less brittle.
+
+**Use real dictations, not synthetic placeholders.** `"Nodule 1: 2.5 cm solid hypoechoic right lobe"` tells a reviewer exactly what dictation form the test verifies. `"test input 1"` tells them nothing.
+
+**Assert on observable output, not internal state.** Test `result.gradeLabel === 'UTD P2 (Moderate)'`, not `formState._internalDerivedKey === 2`. When a refactor changes internal representation, observable-output tests survive; internal-state tests break.
+
+**Prefer `toMatchObject` over `toEqual` for formState.** Auto-gen rules can add new keys to `formState` over time. `toMatchObject` only checks the keys you care about; `toEqual` forces you to chase every new auto-gen addition.
+
+**Parametrized cases with `it.each`.** When testing many similar inputs (e.g., every TI-RADS point total mapping to a level), use `it.each` instead of copy-pasting blocks:
+
+```js
+it.each([
+  [0, 1], [1, 2], [2, 2], [3, 3], [4, 4], [6, 4], [7, 5], [10, 5],
+])('%d points → TR%d', (points, expected) => {
+  expect(calculateTirads(points, null).tiradsLevel).toBe(expected);
+});
+```
+
+One line per case, fewer braces, clearer signal when a boundary regresses.
+
+**Group with `describe`.** Each public function gets its own `describe` block. Each risk category (happy path / boundaries / edge cases / bilateral) gets its own nested `describe`. Helps `-t` pattern filtering and gives failure messages a breadcrumb.
+
+**Don't snapshot-test rendered templates.** Report output strings change frequently as templates evolve. Snapshot tests go stale, get blanket-updated without review, and stop catching regressions. Test specific template variables (`data.gradeLabel`, `data.management`) instead.
+
+**`expect.closeTo(n, precision)` for floating-point comparisons.** `(18 / 40) * 100` doesn't equal exactly `45` in IEEE 754. Use `expect(pct).toBeCloseTo(45, 1)` for percentages and ratios.
+
+---
+
+## 8. Pitfalls
+
+Test anti-patterns that creep in when nobody's watching. Call these out in review.
+
+### Testing implementation details
+
+Asserting on private helpers, internal state shapes, or implementation-specific intermediate values couples the test to the implementation. Every refactor breaks the test even when the observable behavior is unchanged.
+
+**Wrong:**
+```js
+expect(calculator._normalizeInputInternal(fs)).toEqual({...});
+```
+
+**Right:**
+```js
+expect(calculateTirads(points, size).management).toMatch(/FNA/);
+```
+
+### Overly synthetic test data
+
+```js
+parseFindings('size: 1', tiradsDefinition);  // ← not a real dictation
+```
+
+The test passes, but you haven't verified the parser works on real radiology text. Use the kind of strings a radiologist would actually dictate.
+
+### Missing the negative case
+
+For every "feature X is detected when present" test, add a "feature X is NOT detected when absent" companion. The `us`/`suspicion` bug would have surfaced months earlier if there had been a `'us' should not match inside "moderate suspicion"` test from the start.
+
+### Order-dependent tests
+
+A test that only passes when run after another test means you're mutating shared state. Vitest runs tests in file order by default, but parallel mode and `--shard` don't guarantee it. Symptom: tests pass locally, fail in CI or when you run `npx vitest -t <pattern>` on a single test.
+
+**Fix:** every test creates its own fixtures. Don't reuse module-level `let state` across tests.
+
+### Snapshot brittleness
+
+Snapshot tests of rendered reports get updated without review and stop catching anything. If you need rendered-output regression coverage, assert on a handful of specific substrings (`expect(report).toContain('Side: Bilateral')`), not the whole string.
+
+### Passing tests on accidental truthiness
+
+```js
+expect(result.formState).toBeTruthy();  // ← always true; empty object is truthy
+```
+
+Use specific assertions: `toMatchObject`, `toEqual({})`, `toHaveProperty('composition', 'solid')`.
+
+### Over-mocking
+
+Mocking `parseFindings` in a calculator test means you're testing the mock, not the real integration. Calculator tests should call the real calculator; parser tests should call the real parser. Mocks are mostly for Firebase / network / time — not for our own pure functions.
+
+---
+
+## 9. Coverage status + backlog
+
+### Current state (165 tests, 8 files)
+
+| File | Tests | Coverage |
+|---|---|---|
+| `src/core/parser.test.js` | 79 | `parseFindings`, `buildParseRules`, `SYNONYMS`, `extractText`, `splitSentences`, `segmentByLaterality`, `segmentByItemIndex`, `parseSegmentedFindings` |
+| `src/core/clipboard.test.js` | 20 | HL7 character sanitization, `asciiSafe()`, ASCII_MAP transformations |
+| `src/tools/tirads/calculator.test.js` | 18 | `getTiradsLevel`, `getManagement`, `calculateTirads` — every TR level, size thresholds, edge cases |
+| `src/core/engine.test.js` | 12 | `calculateScore`, point summation, section rule merging |
+| `src/tools/bosniak/calculator.test.js` | 10 | Category classification, enhancement branches |
+| `src/tools/nascet/calculator.test.js` | 9 | Stenosis percentage calculation |
+| `src/tools/aast-liver/calculator.test.js` | 9 | Grade assignment by finding set |
+| `src/tools/reimers/calculator.test.js` | 8 | Migration percentage, bilateral branches |
+
+### Tools without `calculator.test.js` (43)
+
+A backlog for incremental retrofit. Each tool needs at least boundary tests for its main scoring/categorization function, and bilateral tests for the refactored ones.
+
+**Phase 2 refactor tools** (highest priority — bilateral state refactor shipped with no tests):
+
+- `hydronephrosis` — bilateral UTD/SFU grade branches (commit `06c811b`)
+- `hip-dysplasia` — bilateral Graf/AAOS branches (commit `a466f33`)
+- `kellgren-lawrence` — bilateral KL grade branches (commit `ee55036`)
+- `fetal-ventricle` — bilateral widths + flow-text fallback (commit `6e6515b`)
+- `adrenal-washout` — HU extraction proximity rules (commit `43f89d5`)
+- `vur`, `vur-nm` — laterality parse handlers (commit `c7f6932`)
+- `aast-kidney` — Set/array conversion in `applyParsedToSide` (commit `e49ee76`)
+
+**Multi-item parse tools** (shipped parser changes with only ad-hoc verification):
+
+- `lirads`, `lungrads`, `fleischner`, `bosniak` *(has tests but not for new parseRules)*, `pirads`, `orads`, `recist`, `mrecist`, `rapno`
+
+**Decision-tree tools** (never had tests):
+
+- `cadrads`, `nascet` *(has tests)*, `sah-grade`, `aspects`, `nirads`, `salter-harris`, `gmh`
+
+**Measurement tools**:
+
+- `agatston`, `leglength`, `scoliosis`, `kyphosis`, `pectus`, `reimers` *(has tests)*, `fetal-biometry`, `fetal-cc`, `fetal-pf`, `fetal-lung`
+
+**Oncologic response**:
+
+- `deauville`, `lugano`, `curie`, `idrf`, `pretext`
+
+**MSK / orthopedic**:
+
+- `bone-age`, `bone-age-sontag`
+
+**Other RADS**:
+
+- `birads`, `balthazar`
+
+**AAST family**:
+
+- `aast-spleen`, `aast-pancreas`, `aast-multi`
+
+### Retrofit priority order
+
+1. **Phase 2 refactor tools first** (bilateral branches with zero coverage — highest regression risk).
+2. **Tools with manual parseRules** (second-highest risk — parser change + no test).
+3. **Decision-tree tools** (small calculators but no coverage means any refactor flies blind).
+4. **Measurement tools** (straightforward threshold tests, mechanical to write).
+
+---
