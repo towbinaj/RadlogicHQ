@@ -344,11 +344,12 @@ The transform returns an object — `formState[inputId]` accepts any type. Handl
 
 Parser tests live in `src/core/parser.test.js` — **79 tests** covering `parseFindings` rule shapes, `buildParseRules` auto-gen, `SYNONYMS` expansion, `extractText` (plain/XML/RadAI formats), `splitSentences` edge cases, `segmentByLaterality` (sticky attribution, contralateral flip, all six bilateral families), `segmentByItemIndex` (all three marker forms, same-index merging), and `parseSegmentedFindings` end-to-end.
 
-**Test-first for segmenter bugs.** Laterality classification is fiddly enough that a regression in one pattern silently breaks another — the test suite is the only thing that catches this. Every new segmentation failure mode should land with a failing test before the fix.
+**Test-first for parser.js edits.** This is the hard rule — see `docs/test.md` section 10. Any edit to a regex, SYNONYMS entry, or segmenter in `parser.js` lands a failing test in `parser.test.js` **before** the fix. `docs/test.md` sections 5a–5d cover the canonical parser-test patterns (dictation-driven sanity, segmenter unit tests, SYNONYMS regression tests, test-first workflow).
 
 ```sh
 npm run test:run                      # full suite (165 tests)
 npx vitest parser                     # just parser tests
+npx vitest parser -t "<name>"         # just one test case
 npm run check-synonyms <toolId>       # synonym audit for one tool
 npm run check-synonyms -- --all       # audit every tool
 ```

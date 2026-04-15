@@ -41,6 +41,7 @@ Read these on demand — don't load them unless they're relevant.
 | `docs/architecture.md` | Project structure, tech stack, data flow diagrams, Firestore schema, auth flow, security details |
 | `docs/newtool.md` | Adding a new calculator — HTML template, definition format, parser rules, verification checklist |
 | `docs/parser.md` | Writing or debugging parser rules, segmentation, or parse handlers — full reference for `parser.js`, both segmenter types, 5 handler idioms, 18-tool registry, pitfall case studies |
+| `docs/test.md` | Writing tests — test-first rule for parser changes, decision table, canonical templates, coverage backlog. **Read before editing `parser.js`, `parseRules`, or a `calculator.js`.** |
 | `docs/state.md` | Current project state, shipped features, pending roadmap, post-launch checklist |
 | `docs/brand.md` | Voice/tone, logo and wordmark asset inventory, colors, typography, brand guide |
 | `docs/compliance.md` | HIPAA / GDPR posture, Firestore schema, PHI policy, OWASP audit log, feedback widget data flow |
@@ -56,10 +57,11 @@ Read these on demand — don't load them unless they're relevant.
 - Validation badges: red warning = unvalidated, green check = validated. Add a tool ID to `VALIDATED_TOOLS` in `src/data/tools-registry.js` to flip it.
 
 ## Before Committing
-1. `npm run test:run` — 93 tests must pass
+1. `npm run test:run` — current full count must pass (165 tests as of Phase 2 rollout). If you added tests, the count goes up; if it went down, you broke something.
 2. `npm run build` — must complete cleanly
 3. `npm audit` — should report 0 vulnerabilities (check after dep upgrades)
 4. Test any touched tool in the browser end-to-end (`npm run dev`)
+5. **Test-first rule applies** for edits to `src/core/parser.js`, a tool's `definition.js` `parseRules`, or a `calculator.js`. Write the failing test in `parser.test.js` or `calculator.test.js` **before** the fix. See `docs/test.md` section 10 for the full policy.
 
 ## Critical Watch-Outs
 These are the ones that will break things if ignored. For the longer list organized by topic, see `docs/gotchas.md`.

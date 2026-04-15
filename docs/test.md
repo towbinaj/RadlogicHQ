@@ -502,3 +502,98 @@ A backlog for incremental retrofit. Each tool needs at least boundary tests for 
 4. **Measurement tools** (straightforward threshold tests, mechanical to write).
 
 ---
+
+## 10. Test discipline — the hard rule
+
+The rest of this doc explains how to write tests. This section is the commitment about **when you must**. Everything above is advice; this section is policy.
+
+### The test-first rule
+
+If the edit you're about to make falls into any of these categories, you write a failing test **before** the fix lands.
+
+- **`src/core/parser.js`** — any edit to `RIGHT_RE` / `LEFT_RE` / `BILATERAL_RE`, `SYNONYMS`, `buildParseRules`, `parseFindings`, `segmentByLaterality`, `segmentByItemIndex`, `parseSegmentedFindings`, `splitSentences`, `extractText`, or `getSynonyms`.
+- **A tool's `definition.js` `parseRules`** — adding, removing, or modifying any rule in the hand-written `parseRules` object.
+- **A tool's `calculator.js`** — any change to scoring, categorization, threshold logic, or state-shape branching (e.g., adding a bilateral branch).
+
+### The test-required rule
+
+These don't strictly require test-first, but **must not be committed without a test landing alongside**:
+
+- **New tool** — `calculator.test.js` co-located, covering the main scoring/categorization function + boundary cases.
+- **Bilateral state refactor** — both single-side and bilateral paths of the calculator must have tests before the refactor commit is pushed.
+
+### The enforced rule
+
+Before every commit:
+
+1. `npm run test:run` → must show full green (currently 165/165).
+2. `npm run build` → must complete cleanly.
+
+If you added tests, the count goes up. If the count went *down*, you removed or broke tests — don't commit until you understand why.
+
+### Exceptions
+
+- **Docs-only commits** don't need tests.
+- **Pure refactors** (renaming, reformatting, whitespace) don't need new tests — but the existing suite must still pass, and if no tests exist for the refactored code, consider whether to add them *after* the refactor.
+- **UI / CSS / HTML template changes** don't need unit tests — manual browser check instead (`npm run dev`, exercise the feature, verify end-to-end).
+- **Emergency hotfixes** for production issues can ship without a test *if* a follow-up commit with the test lands in the same session.
+
+### Why this rule exists
+
+The Phase 2 parser rollout (batches A/B/C) shipped 18 tools' worth of changes to `src/core/parser.js` and 10+ tools' `parseRules` **with zero new tests**. Every change was verified by ad-hoc `node -e "..."` one-liners that got thrown away after the commit. The full parser test suite (79 tests) caught some regressions but only because the existing coverage happened to overlap with the new behavior.
+
+The regressions that *weren't* caught (discovered during sanity checks that should have been tests):
+
+- `'us'` substring matching inside `'suspicion'` (BI-RADS false positive)
+- `'solid nodule'` beating `'part-solid'` on longest-match (lungrads/fleischner)
+- `'cystic'` overlapping with `'mixed cystic and solid'` (TI-RADS)
+- MSK organ anchors missing from laterality regex (kellgren-lawrence)
+- HU extraction matching across comma-separated phrases (adrenal-washout)
+- Modifier-word regex missing `"right lateral ventricle"` (fetal-ventricle)
+
+Each of these **should have been a failing test before the fix**. Each of them cost extra round-trips to discover via manual sanity-check scripts. Some of them shipped to production because the sanity check didn't cover the edge case.
+
+The test-first rule makes the regression-catching mechanism **explicit** — instead of relying on `node -e` scripts that disappear after the commit, the assertion lives in `parser.test.js` forever and the next developer who breaks it gets a clear failure message.
+
+### When you (Claude) are editing parser.js
+
+At the start of any edit to `src/core/parser.js`:
+
+1. State which section(s) of this doc apply to the edit.
+2. Write the failing test in `parser.test.js` first and run it to confirm it fails.
+3. Make the fix in `parser.js`.
+4. Re-run the specific test (`npx vitest parser -t "<test name>"`) to confirm it passes.
+5. Run the full parser suite (`npx vitest parser`) to check for collateral damage.
+6. Run the full test suite (`npm run test:run`) before committing.
+7. The commit message names the test file and test case that was added.
+
+This workflow is slower than "edit, verify manually, commit" — but every step after #2 is fast (~1s for the filtered test, <1s for the full parser suite). The slowness is a feature: it forces you to think about the failure mode before fixing it, which is how you catch the collateral-damage cases that ad-hoc scripts miss.
+
+### Retroactive coverage is welcome
+
+The 43-tool backlog in section 9 is a list of commits that shipped without tests during Phase 2. Writing tests for those commits **after the fact** is a legitimate follow-up and should be welcomed — it's how the debt gets paid down.
+
+A retroactive-test commit should:
+
+- Reference the original commit (`commit 06c811b shipped bilateral hydronephrosis without tests; this adds them`).
+- Include at least the three canonical bilateral tests from section 6b.
+- Not be bundled with new functional changes — a test-only commit is easier to review.
+
+### What a "failing test before the fix" commit looks like
+
+Two-commit pattern is sometimes cleaner for large parser changes:
+
+```
+commit <A>  test(parser): failing test for MSK knee anchor in laterality segmenter
+commit <B>  feat(parser): add MSK joint anchors to laterality regex (fixes <A>)
+```
+
+`<A>` fails the suite (test exists, fix doesn't). `<B>` lands the fix and the test passes. A bisect between them cleanly isolates the behavioral change.
+
+For small parser fixes, one-commit is fine — just make sure the commit message names both the test and the fix, and verify the test was added in the same commit via `git show`.
+
+---
+
+*Last updated: Phase 2 parser rollout retrospective. Test-first rule
+introduced retroactively after identifying 6 regressions that
+should have been caught by tests during the rollout itself.*
