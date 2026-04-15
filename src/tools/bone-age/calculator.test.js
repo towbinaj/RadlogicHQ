@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { calculateBoneAge } from './calculator.js';
 
 // Retroactive coverage for the MSK/orthopedic tool backlog.
-// See docs/test.md section 9. This file covers both bone-age
-// (Greulich & Pyle) and bone-age-sontag — the Sontag tool shares
-// calculateBoneAge and only differs in the `method` string it
-// passes in and the ossificationCount input wiring.
+// See docs/test.md section 9. As of the Sontag split, this file
+// covers ONLY the Greulich & Pyle calculator. Sontag-specific
+// tests (method label, ossification count passthrough) live in
+// src/tools/bone-age-sontag/calculator.test.js.
 
 describe('calculateBoneAge — concordance', () => {
   it('exact match → Concordant (level 1)', () => {
@@ -100,27 +100,16 @@ describe('calculateBoneAge — age formatting', () => {
   });
 });
 
-describe('calculateBoneAge — metadata + method', () => {
-  it('method defaults to Greulich & Pyle', () => {
+describe('calculateBoneAge — metadata', () => {
+  it('methodLabel is hardcoded to Greulich & Pyle', () => {
     const r = calculateBoneAge({ sex: 'male' });
     expect(r.methodLabel).toBe('Greulich & Pyle');
     expect(r.sexLabel).toBe('Male');
   });
 
-  it('Sontag method passed through', () => {
-    const r = calculateBoneAge({
-      sex: 'female', method: 'Sontag', ossificationCount: 4,
-    });
-    expect(r.methodLabel).toBe('Sontag');
+  it('female sex label', () => {
+    const r = calculateBoneAge({ sex: 'female' });
     expect(r.sexLabel).toBe('Female');
-    expect(r.ossificationCount).toBe(4);
-    expect(r.ossificationProvided).toBe(true);
-  });
-
-  it('ossificationCount = 0 still counted as provided', () => {
-    const r = calculateBoneAge({ ossificationCount: 0 });
-    expect(r.ossificationCount).toBe(0);
-    expect(r.ossificationProvided).toBe(true);
   });
 });
 

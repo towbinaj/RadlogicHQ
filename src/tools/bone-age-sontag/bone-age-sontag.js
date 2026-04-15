@@ -6,7 +6,7 @@ import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
 import { boneAgeSontagDefinition } from './definition.js';
-import { calculateBoneAge } from '../bone-age/calculator.js';
+import { calculateBoneAgeSontag } from './calculator.js';
 import { boneAgeSontagTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
 import { parseFindings } from '../../core/parser.js';
@@ -24,7 +24,7 @@ function init() {
   reportEl.definition = boneAgeSontagDefinition;
   reportEl.setTemplates(boneAgeSontagTemplates);
 
-  const formState = { sex: null, chronoYears: null, chronoMonths: null, boneAgeYears: null, boneAgeMonths: null, ossificationCount: null, method: 'Sontag' };
+  const formState = { sex: null, chronoYears: null, chronoMonths: null, boneAgeYears: null, boneAgeMonths: null, ossificationCount: null };
   let studyAdditionalFindings = '';
   additionalFindingsEl.addEventListener('input', () => { studyAdditionalFindings = additionalFindingsEl.value; updateReport(); });
 
@@ -70,14 +70,14 @@ function init() {
   }
 
   function update() {
-    const r = calculateBoneAge(formState);
+    const r = calculateBoneAgeSontag(formState);
     badgeBa.textContent = r.boneAgeLabel || '--';
     badgeDiff.textContent = r.differenceLabel; badgeDiff.dataset.level = r.level;
     updateReport();
   }
 
   function updateReport() {
-    const data = calculateBoneAge(formState);
+    const data = calculateBoneAgeSontag(formState);
     reportEl.renderFn = (config, _data) => {
       if (config.editorContent) { let text = renderEditorContent(config.editorContent, config.pillStates, data); if (studyAdditionalFindings.trim()) text += '\n\n' + (config.sectionHeaders?.additionalFindings ?? 'Other findings:') + '\n' + studyAdditionalFindings.trim(); return text; }
       const blocks = config.blocks || []; const headers = config.sectionHeaders || {}; const sections = [];
