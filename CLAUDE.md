@@ -57,7 +57,7 @@ Read these on demand — don't load them unless they're relevant.
 - Validation badges: red warning = unvalidated, green check = validated. Add a tool ID to `VALIDATED_TOOLS` in `src/data/tools-registry.js` to flip it.
 
 ## Before Committing
-1. `npm run test:run` — current full count must pass (1215 tests + 8 todo as of 2026-11-27). If you added tests, the count goes up; if it went down, you broke something.
+1. `npm run test:run` — current full count must pass (1230 tests + 8 todo as of 2026-11-27). If you added tests, the count goes up; if it went down, you broke something.
 2. `npm run build` — must complete cleanly
 3. `npm audit` — should report 0 vulnerabilities (check after dep upgrades)
 4. Test any touched tool in the browser end-to-end (`npm run dev`)
