@@ -16,6 +16,8 @@
  * section 10.
  */
 
+import { interpretBoneAge } from '../bone-age/brush.js';
+
 export function calculateBoneAgeSontag(formState) {
   const {
     sex,
@@ -44,18 +46,13 @@ export function calculateBoneAgeSontag(formState) {
   let difference = null;
   let interpretation = '';
   let level = 0;
+  let brush = interpretBoneAge(sex, null, null);
   if (hasChrono && boneAgeTotal != null) {
     difference = Math.round((boneAgeTotal - chronoTotal) * 10) / 10;
-    if (Math.abs(difference) <= 1) {
-      interpretation = 'Concordant with chronological age';
-      level = 1;
-    } else if (difference > 1) {
-      interpretation = `Advanced by approximately ${Math.abs(difference).toFixed(1)} years`;
-      level = 3;
-    } else {
-      interpretation = `Delayed by approximately ${Math.abs(difference).toFixed(1)} years`;
-      level = 3;
-    }
+    // Greulich & Pyle Brush Foundation SD by age and sex (CA +/- 2 SD).
+    brush = interpretBoneAge(sex, chronoTotal * 12, boneAgeTotal * 12);
+    interpretation = brush.interpretation;
+    level = brush.level;
   }
 
   return {
@@ -76,6 +73,12 @@ export function calculateBoneAgeSontag(formState) {
     interpretation,
     interpretationProvided: !!interpretation,
     level,
+    zLabel: brush.zLabel,
+    normalRangeLabel: brush.normalRangeLabel,
+    normalRangeProvided: !!brush.normalRangeLabel,
+    sdLabel: brush.sdLabel,
+    interpretationNote: brush.note,
+    interpretationNoteProvided: !!brush.note,
   };
 }
 

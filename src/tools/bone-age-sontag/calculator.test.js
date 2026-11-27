@@ -16,48 +16,35 @@ import { calculateBoneAgeSontag } from './calculator.js';
 //
 // See docs/test.md section 10 for the test-first rule.
 
-describe('calculateBoneAgeSontag — concordance (manual BA entry, current behavior)', () => {
-  it('exact match → Concordant (level 1)', () => {
-    const r = calculateBoneAgeSontag({
-      chronoYears: 1, chronoMonths: 0,
-      boneAgeYears: 1, boneAgeMonths: 0,
-    });
-    expect(r.difference).toBe(0);
-    expect(r.interpretation).toBe('Concordant with chronological age');
+// Interpretation uses the Greulich & Pyle Brush Foundation SDs (shared with
+// the G&P tool): normal = chronological age +/- 2 SD. Replaces the +/-1 year
+// band, which called a 38% lag at 2 years 'concordant'.
+describe('calculateBoneAgeSontag — interpretation by Brush SD', () => {
+  it('2 y with bone age 1 y 3 m is delayed (was concordant under +/-1 y)', () => {
+    // boy 24 mo, SD 3.92; -9 mo = -2.3 SD
+    const r = calculateBoneAgeSontag({ sex: 'male', chronoYears: 2, boneAgeYears: 1, boneAgeMonths: 3 });
+    expect(r.interpretation).toMatch(/delayed/i);
+    expect(r.level).toBe(3);
+  });
+
+  it('within 2 SD is within normal limits', () => {
+    const r = calculateBoneAgeSontag({ sex: 'female', chronoYears: 3, boneAgeYears: 3, boneAgeMonths: 6 });
+    expect(r.interpretation).toMatch(/within normal limits/i);
     expect(r.level).toBe(1);
   });
 
-  it('+1 year → still Concordant at the boundary', () => {
-    const r = calculateBoneAgeSontag({
-      chronoYears: 2, boneAgeYears: 3,
-    });
-    expect(r.difference).toBe(1);
-    expect(r.level).toBe(1);
+  it('beyond +2 SD is advanced', () => {
+    // girl 12 mo, SD 1.77; +6 mo = +3.4 SD
+    const r = calculateBoneAgeSontag({ sex: 'female', chronoYears: 1, boneAgeYears: 1, boneAgeMonths: 6 });
+    expect(r.interpretation).toMatch(/advanced/i);
+  });
+
+  it('no sex: no interpretation', () => {
+    expect(calculateBoneAgeSontag({ chronoYears: 2, boneAgeYears: 2 }).interpretation).toBe('');
   });
 });
 
-describe('calculateBoneAgeSontag — advanced / delayed', () => {
-  it('+1.5 years → Advanced (level 3)', () => {
-    // chrono 1y 0m (1.0) vs bone age 2y 6m (2.5) → +1.5
-    const r = calculateBoneAgeSontag({
-      chronoYears: 1, chronoMonths: 0,
-      boneAgeYears: 2, boneAgeMonths: 6,
-    });
-    expect(r.difference).toBe(1.5);
-    expect(r.interpretation).toMatch(/Advanced by approximately 1.5 years/);
-    expect(r.level).toBe(3);
-  });
-
-  it('-1.5 years → Delayed (level 3)', () => {
-    const r = calculateBoneAgeSontag({
-      chronoYears: 3, chronoMonths: 0,
-      boneAgeYears: 1, boneAgeMonths: 6,
-    });
-    expect(r.difference).toBe(-1.5);
-    expect(r.interpretation).toMatch(/Delayed by approximately 1.5 years/);
-    expect(r.level).toBe(3);
-  });
-
+describe('calculateBoneAgeSontag — difference label', () => {
   it('differenceLabel carries sign + one decimal', () => {
     const r = calculateBoneAgeSontag({
       chronoYears: 2, boneAgeYears: 4,

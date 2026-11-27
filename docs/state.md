@@ -73,7 +73,7 @@
 
 ### Testing
 - Vitest unit tests co-located with source (`*.test.js`)
-- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1230 tests + 8 todo, 52 files)
+- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1235 tests + 8 todo, 52 files)
 - `npm run test:run` for CI, `npm run test` for watch mode
 
 ### Build
@@ -256,9 +256,9 @@ Clinical decisions signed off and implemented: Agatston -> CAC-DRS 2018;
 Deauville -> Lugano 2014 response with uptake-vs-baseline and timing; fetal
 posterior fossa -> Cignini 2016 centiles (20-35 wk).
 
-Signed off, awaiting source data: bone age G&P SD by age/sex (needs a
-verified Greulich & Pyle / Brush Foundation SD table). Still open: pectus
-Haller index labelling.
+Bone age (G&P and Sontag) -> Greulich and Pyle Brush Foundation SD by
+age/sex, normal = CA +/- 2 SD (table from the atlas supplied by the user;
+src/tools/bone-age/brush.js). Still open: pectus Haller index labelling.
 
 Pending (major, not yet fixed): placeholder/premature impressions on empty
 forms across many tools; O-RADS menopausal status / solid components; Lung-

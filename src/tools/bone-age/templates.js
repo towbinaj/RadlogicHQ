@@ -6,6 +6,8 @@ const FINDINGS_BLOCKS = [
   { id: 'ossification', label: 'Ossification Centers', template: 'Ossification center count: {{ossificationCount}}', enabled: true, condition: 'ossificationProvided' },
   { id: 'difference', label: 'Difference', template: 'Difference: {{differenceLabel}}', enabled: true, condition: 'differenceProvided' },
   { id: 'interpretation', label: 'Interpretation', template: '{{interpretation}}', enabled: true, condition: 'interpretationProvided' },
+  { id: 'normalRange', label: 'Normal Range', template: 'Normal range for age (chronological age +/- 2 SD, Greulich and Pyle Brush data): {{normalRangeLabel}}', enabled: true, condition: 'normalRangeProvided' },
+  { id: 'interpretationNote', label: 'Interpretation Note', template: '{{interpretationNote}}', enabled: true, condition: 'interpretationNoteProvided' },
 ];
 
 function bts(blocks, headers, impression) {
