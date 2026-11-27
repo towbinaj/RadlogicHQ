@@ -105,7 +105,10 @@ export function renderBlocks(blocks, data, globalShowPoints = true) {
 
     // Append points if this block has a pointsTemplate and points are enabled
     if (block.pointsTemplate && block.showPoints && globalShowPoints) {
-      line += renderReport(block.pointsTemplate, data);
+      // renderReport() trims, so re-apply the template's leading whitespace
+      // (e.g. ' ({{xPoints}} pts)') to avoid "Not selected(0 pts)".
+      const lead = block.pointsTemplate.match(/^\s*/)[0];
+      line += lead + renderReport(block.pointsTemplate, data);
     }
 
     if (line) lines.push(line);

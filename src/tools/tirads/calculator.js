@@ -20,6 +20,22 @@ const MANAGEMENT = {
   5: { fna: 1.0, followUp: 0.5, note: 'FNA if >= 1.0 cm, follow-up if >= 0.5 cm' },
 };
 
+// One choice from each of these is required before a level can be assigned.
+// Echogenic foci are optional ("none" is a valid, scoring-neutral state).
+const REQUIRED_FEATURES = ['composition', 'echogenicity', 'shape', 'margin'];
+
+/**
+ * List the required features that have not been selected yet.
+ * Spongiform composition is complete on its own: per the ACR TI-RADS chart,
+ * no further points are added for other categories.
+ * @param {Object} formState - section id -> selected option id
+ * @returns {string[]} missing section ids, in display order
+ */
+export function getMissingFeatures(formState = {}) {
+  if (formState.composition === 'spongiform') return [];
+  return REQUIRED_FEATURES.filter((id) => formState[id] == null || formState[id] === '');
+}
+
 /**
  * Get TI-RADS level from total points.
  * @param {number} totalPoints
@@ -105,9 +121,29 @@ export function getManagement(tiradsLevel, sizeCm) {
  * Run the full TI-RADS calculation.
  * @param {number} totalScore - Sum from engine.calculateScore()
  * @param {number|null} sizeCm - Nodule size from form
+ * @param {string[]} [missing] - Required features not yet selected
+ *   (from getMissingFeatures). When non-empty, no level or management
+ *   recommendation is assigned.
  * @returns {Object} Result object with all fields needed for report templates
  */
-export function calculateTirads(totalScore, sizeCm) {
+export function calculateTirads(totalScore, sizeCm, missing = []) {
+  if (missing.length > 0) {
+    return {
+      totalScore,
+      tiradsLevel: 0,
+      tiradsName: 'Incomplete',
+      tiradsLabel: '',
+      tiradsFullLabel: 'Incomplete',
+      recommendation: `Select ${missing.join(', ')} to assign a TI-RADS level`,
+      recommendationDetail: '',
+      fnaRecommended: false,
+      followUpRecommended: false,
+      noduleSize: sizeCm,
+      noduleSizeProvided: sizeCm != null,
+      incomplete: true,
+    };
+  }
+
   const level = getTiradsLevel(totalScore);
   const mgmt = getManagement(level.level, sizeCm);
 
@@ -123,5 +159,6 @@ export function calculateTirads(totalScore, sizeCm) {
     followUpRecommended: mgmt.followUpRecommended,
     noduleSize: sizeCm,
     noduleSizeProvided: sizeCm != null,
+    incomplete: false,
   };
 }

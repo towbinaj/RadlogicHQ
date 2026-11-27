@@ -8,7 +8,7 @@ import { calculateScore } from '../../core/engine.js';
 import { renderReport, renderBlocks, buildTemplateData } from '../../core/report.js';
 import { renderEditorContent, splitEditorContent } from '../../core/pill-editor.js';
 import { tiradsDefinition } from './definition.js';
-import { calculateTirads } from './calculator.js';
+import { calculateTirads, getMissingFeatures } from './calculator.js';
 import { tiradsTemplates } from './templates.js';
 import { parseSegmentedFindings } from '../../core/parser.js';
 import { trackEvent } from '../../core/storage.js';
@@ -216,7 +216,7 @@ function init() {
     );
 
     const sizeCm = nodule.formState['nodule-size'] ?? null;
-    const tiradsResult = calculateTirads(totalScore, sizeCm);
+    const tiradsResult = calculateTirads(totalScore, sizeCm, getMissingFeatures(nodule.formState));
 
     scoreDisplay.textContent = totalScore;
     levelDisplay.textContent = tiradsResult.tiradsFullLabel;
@@ -233,7 +233,7 @@ function init() {
         nodule.formState
       );
       const sizeCm = nodule.formState['nodule-size'] ?? null;
-      const tiradsResult = calculateTirads(totalScore, sizeCm);
+      const tiradsResult = calculateTirads(totalScore, sizeCm, getMissingFeatures(nodule.formState));
 
       const templateData = buildTemplateData(
         tiradsDefinition,
