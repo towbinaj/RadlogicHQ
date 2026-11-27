@@ -8,7 +8,7 @@
  *   DWI determines category (1-5)
  *   Exception: DWI 3 + DCE positive → upgrade to PI-RADS 4
  *
- * TZ scoring:
+ * TZ scoring (v2.1: T2 2 + DWI >=4 -> 3; T2 3 + DWI 5 -> 4):
  *   T2 determines category (1-5)
  *   Exception: T2 3 + DWI 5 → upgrade to PI-RADS 4
  *
@@ -56,6 +56,12 @@ export function calculatePirads(formState) {
     if (t2 == null) return buildResult(null, formState, 'Select T2 score');
     category = t2;
     reason = `TZ dominant: T2 ${t2}`;
+
+    // v2.1: T2 2 + DWI >=4 -> 3
+    if (t2 === 2 && dwi != null && dwi >= 4) {
+      category = 3;
+      reason = `TZ: T2 2 + DWI ${dwi} -> upgraded to PI-RADS 3`;
+    }
 
     // T2 3 + DWI 5 → upgrade to 4
     if (t2 === 3 && dwi === 5) {
