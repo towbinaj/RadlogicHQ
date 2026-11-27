@@ -197,3 +197,18 @@ describe('calculateTirads with incomplete features', () => {
     expect(r.incomplete).toBe(false);
   });
 });
+
+// --- Audit fix: spongiform adds no points from other categories (ACR chart) ---
+describe('calculateTirads — spongiform', () => {
+  it('spongiform with high-risk features elsewhere is still TR1 with no FNA', () => {
+    // 15 raw points would otherwise be TR5
+    const r = calculateTirads(15, 2.0, [], { composition: 'spongiform' });
+    expect(r.tiradsName).toBe('TR1');
+    expect(r.totalScore).toBe(0);
+    expect(r.fnaRecommended).toBe(false);
+  });
+
+  it('non-spongiform scoring is unchanged when formState is passed', () => {
+    expect(calculateTirads(7, 2.0, [], { composition: 'solid' }).tiradsName).toBe('TR5');
+  });
+});

@@ -12,7 +12,7 @@ const FINDINGS_BLOCKS = [
   { id: 'shape', label: 'Shape', template: 'Shape: {{shape}}', pointsTemplate: ' ({{shapePoints}} pts)', enabled: true, showPoints: true },
   { id: 'margin', label: 'Margin', template: 'Margin: {{margin}}', pointsTemplate: ' ({{marginPoints}} pts)', enabled: true, showPoints: true },
   { id: 'echogenicFoci', label: 'Echogenic Foci', template: 'Echogenic Foci: {{echogenicFoci}}', pointsTemplate: ' ({{echogenicFociPoints}} pts)', enabled: true, showPoints: true },
-  { id: 'totalScore', label: 'Total Score', template: 'Total Score: {{totalScore}} points — {{tiradsFullLabel}}', enabled: true },
+  { id: 'totalScore', label: 'Total Score', template: 'Total Score: {{totalScore}} points - {{tiradsFullLabel}}', enabled: true },
 ];
 
 export const tiradsTemplates = {
