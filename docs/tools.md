@@ -11,7 +11,7 @@ For architecture and adding new tools, see `architecture.md` and `newtool.md`.
 - **PI-RADS** — prostate MRI risk stratification
 - **O-RADS** — ovarian-adnexal mass US risk
 - **Lung-RADS** — lung cancer screening CT
-- **BI-RADS** — breast imaging classification (mammo, US, MRI)
+- **BI-RADS** — v2025 assessment categories (mammo incl. DBT, US, MRI, CEM); category 0 split, optional clinical indication
 - **CAD-RADS** — coronary artery disease CTA (2.0 with modifiers)
 - **NI-RADS** — post-treatment head & neck surveillance
 

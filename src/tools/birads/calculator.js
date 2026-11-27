@@ -5,23 +5,28 @@
 import { biradsDefinition } from './definition.js';
 
 export function calculateBirads(formState) {
-  const { category, modality, laterality } = formState;
+  const { category, modality, laterality, indication } = formState;
 
   const catInfo = biradsDefinition.categories.find((c) => c.id === category);
-
-  const modalityLabels = { mammo: 'Mammography', us: 'Ultrasound', mri: 'MRI' };
+  const labelOf = (opts, id) => opts.find((o) => o.id === id)?.label || '';
   const lateralityLabels = { right: 'Right', left: 'Left', bilateral: 'Bilateral' };
+  const modalityLabel = labelOf(biradsDefinition.modalityOptions, modality);
+  const indicationLabel = labelOf(biradsDefinition.indicationOptions, indication);
 
   return {
-    category: category || '--',
+    // Both category 0 scenarios ('0', '0p') display and code as 0.
+    category: catInfo ? (catInfo.display || catInfo.id) : '--',
+    categoryId: catInfo ? catInfo.id : null,
     categoryLabel: catInfo?.label || '--',
     management: catInfo?.management || '',
     risk: catInfo?.risk || '',
     categoryProvided: !!category,
     managementProvided: !!catInfo?.management,
     riskProvided: !!catInfo?.risk,
-    modalityLabel: modalityLabels[modality] || '',
-    modalityProvided: !!modality,
+    modalityLabel,
+    modalityProvided: !!modalityLabel,
+    indicationLabel,
+    indicationProvided: !!indicationLabel,
     lateralityLabel: lateralityLabels[laterality] || '',
     lateralityProvided: !!laterality,
     level: catInfo ? getCategoryLevel(category) : 0,
@@ -29,7 +34,7 @@ export function calculateBirads(formState) {
 }
 
 function getCategoryLevel(cat) {
-  if (cat === '0') return 2;
+  if (cat === '0' || cat === '0p') return 2;
   if (cat === '1' || cat === '2') return 1;
   if (cat === '3') return 2;
   if (cat === '4a') return 3;

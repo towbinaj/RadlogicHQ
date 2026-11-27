@@ -501,7 +501,7 @@ export const toolsRegistry = [
   {
     id: 'birads',
     name: 'BI-RADS',
-    description: 'ACR BI-RADS breast imaging classification with management recommendations.',
+    description: 'ACR BI-RADS v2025 assessment categories with management recommendations.',
     icon: 'BI',
     path: '/src/tools/birads/birads.html',
     status: 'active',

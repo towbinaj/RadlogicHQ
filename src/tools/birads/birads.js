@@ -23,7 +23,7 @@ function init() {
   reportEl.definition = biradsDefinition;
   reportEl.setTemplates(biradsTemplates);
 
-  const formState = { category: null, modality: null, laterality: null };
+  const formState = { category: null, modality: null, laterality: null, indication: null };
   let studyAdditionalFindings = '';
 
   additionalFindingsEl.addEventListener('input', () => {
@@ -35,17 +35,26 @@ function init() {
     stepContainer.innerHTML = '';
     const def = biradsDefinition;
 
-    // Modality + laterality row
+    // Clinical indication + modality + laterality row
     const metaCard = document.createElement('div');
     metaCard.className = 'card';
     metaCard.innerHTML = `
       <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
+        <div class="input-group" style="flex:1 1 100%;">
+          <label title="BI-RADS v2025 standardized clinical indication categories (optional)">Clinical Indication</label>
+          <div class="toggle-group">
+            ${def.indicationOptions.map((o) => `
+              <button class="toggle-group__btn ${formState.indication === o.id ? 'toggle-group__btn--active' : ''}"
+                data-field="indication" data-value="${o.id}">${o.label}</button>
+            `).join('')}
+          </div>
+        </div>
         <div class="input-group" style="flex:1; min-width:140px;">
           <label>Modality</label>
           <div class="toggle-group">
             ${def.modalityOptions.map((o) => `
               <button class="toggle-group__btn ${formState.modality === o.id ? 'toggle-group__btn--active' : ''}"
-                data-field="modality" data-value="${o.id}">${o.label}</button>
+                data-field="modality" data-value="${o.id}" title="${o.title || o.label}">${o.short || o.label}</button>
             `).join('')}
           </div>
         </div>
@@ -63,9 +72,10 @@ function init() {
     metaCard.querySelectorAll('.toggle-group__btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const field = btn.dataset.field;
-        formState[field] = btn.dataset.value;
+        // Clicking the active choice clears it (all three fields are optional).
+        formState[field] = formState[field] === btn.dataset.value ? null : btn.dataset.value;
         metaCard.querySelectorAll(`.toggle-group__btn[data-field="${field}"]`).forEach((b) =>
-          b.classList.toggle('toggle-group__btn--active', b === btn));
+          b.classList.toggle('toggle-group__btn--active', formState[field] === b.dataset.value));
         update();
       });
     });
@@ -79,7 +89,7 @@ function init() {
       <div class="benign-choices" style="display:flex; flex-direction:column; gap:var(--space-xs);">
         ${def.categories.map((c) => `
           <button class="benign-choice ${formState.category === c.id ? 'benign-choice--active' : ''}"
-            data-cat="${c.id}" style="text-align:left; justify-content:flex-start;">
+            data-cat="${c.id}" ${c.title ? `title="${c.title}"` : ''} style="text-align:left; justify-content:flex-start;">
             ${c.label}
           </button>
         `).join('')}
@@ -101,7 +111,7 @@ function init() {
       const info = catCard.querySelector('#birads-info');
       const cat = def.categories.find((c) => c.id === formState.category);
       if (cat) {
-        info.textContent = `Risk: ${cat.risk} | ${cat.management}`;
+        info.textContent = `Risk: ${cat.risk}. ${cat.management}.`;
       } else {
         info.textContent = '';
       }

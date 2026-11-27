@@ -44,9 +44,9 @@ describe('calculateBirads — category metadata', () => {
     expect(r.risk).toBe('<2%');
   });
 
-  it('category 4b has 10–50% risk', () => {
+  it('category 4b has 10-50% risk', () => {
     const r = calculateBirads({ category: '4b' });
-    expect(r.risk).toBe('10–50%');
+    expect(r.risk).toBe('10-50%');
     expect(r.management).toMatch(/Tissue diagnosis/);
   });
 
@@ -55,10 +55,11 @@ describe('calculateBirads — category metadata', () => {
     expect(r.risk).toBe('>95%');
   });
 
-  it('category 6 has 100% risk and surgical management', () => {
+  it('category 6 (v2025): definitive therapy per multidisciplinary team, not surgery by default', () => {
     const r = calculateBirads({ category: '6' });
     expect(r.risk).toBe('100%');
-    expect(r.management).toMatch(/Surgical/);
+    expect(r.management).toMatch(/multidisciplinary/i);
+    expect(r.management).not.toMatch(/Surgical excision/);
   });
 
   it('category 0 has N/A risk', () => {
@@ -95,5 +96,97 @@ describe('calculateBirads — modality + laterality', () => {
     expect(r.lateralityLabel).toBe('');
     expect(r.modalityProvided).toBe(false);
     expect(r.lateralityProvided).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BI-RADS v2025 (ACR BI-RADS v2025 Manual; summarized in Minichetti P et al.,
+// AJR 2026;227:e2635051). Category structure and risk thresholds unchanged;
+// category 0 split into two scenarios; category 6 clarified; CEM formally
+// incorporated; standardized clinical indication categories.
+// ---------------------------------------------------------------------------
+import { biradsDefinition } from './definition.js';
+import { parseFindings } from '../../core/parser.js';
+
+describe('BI-RADS v2025 — category 0 has two scenarios', () => {
+  it('0 = needs additional imaging evaluation', () => {
+    const r = calculateBirads({ category: '0' });
+    expect(r.category).toBe('0');
+    expect(r.categoryLabel).toMatch(/additional imaging/i);
+    expect(r.management).toMatch(/additional imaging/i);
+    expect(r.level).toBe(2);
+  });
+
+  it('0p = needs comparison with prior examinations, displayed as category 0', () => {
+    const r = calculateBirads({ category: '0p' });
+    expect(r.category).toBe('0');
+    expect(r.categoryLabel).toMatch(/prior exam/i);
+    expect(r.management).toMatch(/prior exam/i);
+    expect(r.risk).toBe('N/A');
+    expect(r.level).toBe(2);
+  });
+
+  it('lists ten assessment choices (0, 0p, 1-3, 4a-c, 5, 6)', () => {
+    expect(biradsDefinition.categories.map((c) => c.id))
+      .toEqual(['0', '0p', '1', '2', '3', '4a', '4b', '4c', '5', '6']);
+  });
+});
+
+describe('BI-RADS v2025 — modality and clinical indication', () => {
+  it('contrast-enhanced mammography is a modality', () => {
+    const r = calculateBirads({ category: '2', modality: 'cem' });
+    expect(r.modalityLabel).toBe('Contrast-enhanced mammography');
+  });
+
+  it.each([
+    ['screening', 'Screening'],
+    ['diagnostic', 'Diagnostic evaluation'],
+    ['known-cancer', 'Known breast cancer evaluation'],
+  ])('indication %s -> %s', (indication, label) => {
+    const r = calculateBirads({ category: '2', indication });
+    expect(r.indicationLabel).toBe(label);
+    expect(r.indicationProvided).toBe(true);
+  });
+
+  it('indication is optional', () => {
+    const r = calculateBirads({ category: '2' });
+    expect(r.indicationLabel).toBe('');
+    expect(r.indicationProvided).toBe(false);
+  });
+});
+
+describe('BI-RADS v2025 — report text is ASCII and HL7-safe', () => {
+  it('no non-ASCII or HL7 delimiters in labels, management, risk, options', () => {
+    const texts = [
+      ...biradsDefinition.categories.flatMap((c) => [c.label, c.management, c.risk, c.title || '']),
+      ...biradsDefinition.modalityOptions.flatMap((o) => [o.label, o.title || '']),
+      ...biradsDefinition.indicationOptions.map((o) => o.label),
+    ];
+    for (const t of texts) expect(t).not.toMatch(/[|~^&\\]|[^\x20-\x7E]/);
+  });
+});
+
+describe('BI-RADS v2025 — parse rules', () => {
+  const cat = (t) => parseFindings(t, biradsDefinition).formState.category;
+
+  it.each([
+    ['BI-RADS 0: additional imaging evaluation needed.', '0'],
+    ['BI-RADS 0, incomplete.', '0'],
+    ['BI-RADS 0 pending comparison with prior examinations.', '0p'],
+    ['Incomplete: awaiting prior exams for comparison.', '0p'],
+    ['BI-RADS 4a: low suspicion for malignancy.', '4a'],
+    ['BI-RADS 6, known biopsy-proven malignancy.', '6'],
+  ])('"%s" -> %s', (text, expected) => {
+    expect(cat(text)).toBe(expected);
+  });
+
+  it('a routine comparison section does not trigger category 0', () => {
+    expect(cat('Comparison with prior examinations from 2023. BI-RADS 2: Benign.')).toBe('2');
+  });
+});
+
+describe('BI-RADS v2025 — 4A/4B/4C display uppercase', () => {
+  it.each([['4a', '4A'], ['4b', '4B'], ['4c', '4C']])('%s displays as %s', (id, shown) => {
+    expect(calculateBirads({ category: id }).category).toBe(shown);
   });
 });

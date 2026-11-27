@@ -1,8 +1,9 @@
 /**
- * BI-RADS report templates.
+ * BI-RADS report templates (v2025: clinical indication leads the report).
  */
 
 const FINDINGS_BLOCKS = [
+  { id: 'indication', label: 'Clinical Indication', template: 'Clinical indication: {{indicationLabel}}', enabled: true, condition: 'indicationProvided' },
   { id: 'modality', label: 'Modality', template: 'Modality: {{modalityLabel}}', enabled: true, condition: 'modalityProvided' },
   { id: 'laterality', label: 'Laterality', template: 'Laterality: {{lateralityLabel}}', enabled: true, condition: 'lateralityProvided' },
   { id: 'category', label: 'BI-RADS Category', template: 'BI-RADS: {{categoryLabel}}', enabled: true, condition: 'categoryProvided' },
@@ -29,6 +30,7 @@ export const biradsTemplates = {
   radai: {
     label: 'RadAI Omni',
     ...buildTemplateSet([
+      { id: 'indication', label: 'Clinical Indication', template: 'Clinical_Indication: {{indicationLabel}}', enabled: true, condition: 'indicationProvided' },
       { id: 'category', label: 'BI-RADS', template: 'BIRADS_Category: {{category}}', enabled: true, condition: 'categoryProvided' },
       { id: 'risk', label: 'Risk', template: 'Malignancy_Risk: {{risk}}', enabled: true, condition: 'riskProvided' },
       { id: 'management', label: 'Management', template: 'Recommendation: {{management}}', enabled: true, condition: 'managementProvided' },

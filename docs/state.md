@@ -73,7 +73,7 @@
 
 ### Testing
 - Vitest unit tests co-located with source (`*.test.js`)
-- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1036 tests + 8 todo, 52 files)
+- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1055 tests + 8 todo, 52 files)
 - `npm run test:run` for CI, `npm run test` for watch mode
 
 ### Build
@@ -219,7 +219,7 @@ Pending — need radiologist sign-off on grade tables before shipping:
 - [x] **AAST Pancreas 2024** (Notrica et al., J Trauma Acute Care Surg 2025;98(3):442-447) — implemented from Table 1 with subgrades (I-A..V-D); replaces 1990 scale. Awaiting radiologist sign-off.
 - [x] **AAST Kidney 2025** (Keihani et al., J Trauma Acute Care Surg 2025;98(3):448-451) — implemented from Table 1 imaging criteria with a 2018/2025 toggle (default 2025, shared with AAST Multi). Awaiting radiologist sign-off.
 - [ ] **Parser negation** — multi-select parse matches negated phrases ("no urinary extravasation"); affects 2018 kidney rules most. Suggested as a separate task.
-- [ ] **BI-RADS v2025** (ACR, Dec 2025) — category 0 split, category 6 wording, density and lexicon changes
+- [x] **BI-RADS v2025** (ACR BI-RADS v2025 Manual; Minichetti et al., AJR 2026) — category 0 split (additional imaging vs prior examinations), category 6 per multidisciplinary team, CEM modality, optional clinical indication, ASCII report text. Lexicon/density changes do not apply (tool is category-level). Exact ACR wording for the two category 0 labels unverified against the manual itself. Awaiting radiologist sign-off.
 - [ ] **NI-RADS MRI** (Bunch et al., JACR 2025) — add MRI pathway or label tool CT/PET-CT only
 - [ ] **ASPECTS** — untouched form reports "10/10. No early ischemic changes"; decide whether the default should be blank
 - [ ] Watch: O-RADS MRI update (expected 2026), Lugano revision (ICML 2025 workshop)
