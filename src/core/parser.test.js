@@ -303,7 +303,9 @@ describe('buildParseRules', () => {
     };
     const rules = buildParseRules(def);
     expect(rules.dce).toBeDefined();
-    expect(rules.dce.options.negative).toContain('Negative');
+    // Generic labels are qualified with the field label, never bare.
+    expect(rules.dce.options.negative).toContain('dce negative');
+    expect(rules.dce.options.negative).not.toContain('Negative');
   });
 
   it('generates rules from sideOptions', () => {
@@ -1144,5 +1146,68 @@ describe('parseFindings — negation with the real AAST kidney rules', () => {
 
   it('2025: positive control "active bleeding is present"', () => {
     expect(f25('Active bleeding is present.')).toContain('active-bleeding');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Audit fixes (docs/test.md section 10: parseFindings / buildParseRules):
+// single-select negation, short-keyword word boundaries, generic labels in
+// auto-generated option groups.
+// ---------------------------------------------------------------------------
+import { hipDysplasiaDefinition } from '../tools/hip-dysplasia/definition.js';
+import { oradsDefinition } from '../tools/orads/definition.js';
+import { piradsDefinition } from '../tools/pirads/definition.js';
+
+describe('parseFindings — negation in single-select rules', () => {
+  const def = {
+    parseRules: {
+      grade: { options: { C: ['grade c', 'peripancreatic inflammation'], E: ['retroperitoneal gas', 'grade e'] } },
+    },
+  };
+
+  it('a negated keyword does not select its option', () => {
+    expect(parseFindings('Grade C. No retroperitoneal gas.', def).formState.grade).toBe('C');
+  });
+
+  it('a non-negated keyword still selects it', () => {
+    expect(parseFindings('Retroperitoneal gas is present.', def).formState.grade).toBe('E');
+  });
+
+  it('hip: "not dislocated" does not override an explicit Graf type', () => {
+    const r = parseFindings('Left hip is not dislocated. Graf type IIa+.', hipDysplasiaDefinition);
+    const vals = Object.values(r.formState);
+    expect(vals).not.toContain('IV');
+    expect(vals).toContain('IIa-plus');
+  });
+});
+
+describe('parseFindings — short keywords need word boundaries', () => {
+  const def = { parseRules: { side: { options: { right: ['right', 'rt'], left: ['left', 'lt'] } } } };
+
+  it('"rt" does not match inside "portal"; "lt" not inside "result"', () => {
+    expect(parseFindings('Portal venous: 60 HU.', def).formState.side).toBeUndefined();
+    expect(parseFindings('Adrenal nodule, result pending.', def).formState.side).toBeUndefined();
+  });
+
+  it('standalone "rt" still matches', () => {
+    expect(parseFindings('Rt adrenal nodule.', def).formState.side).toBe('right');
+  });
+});
+
+describe('buildParseRules — generic option labels are qualified by the field label', () => {
+  it('O-RADS: "vascularity present" does not set ascites or peritoneal nodularity', () => {
+    const r = parseFindings('Right ovary 2.5 cm simple cyst. Vascularity present in the adjacent ovarian stroma.', oradsDefinition);
+    expect(r.formState.ascites).toBeUndefined();
+    expect(r.formState.peritoneal).toBeUndefined();
+  });
+
+  it('O-RADS: "ascites present" still sets ascites', () => {
+    expect(parseFindings('Ascites present.', oradsDefinition).formState.ascites).toBe('present');
+  });
+
+  it('PI-RADS: bare digits in the text do not set T2/DWI scores', () => {
+    const r = parseFindings('12 mm lesion in the left peripheral zone.', piradsDefinition);
+    expect(r.formState.t2Score).toBeUndefined();
+    expect(r.formState.dwiScore).toBeUndefined();
   });
 });
