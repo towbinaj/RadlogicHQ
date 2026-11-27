@@ -73,7 +73,7 @@
 
 ### Testing
 - Vitest unit tests co-located with source (`*.test.js`)
-- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1085 tests + 8 todo, 52 files)
+- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1215 tests + 8 todo, 52 files)
 - `npm run test:run` for CI, `npm run test` for watch mode
 
 ### Build
@@ -225,6 +225,44 @@ Pending — need radiologist sign-off on grade tables before shipping:
 - [ ] Watch: O-RADS MRI update (expected 2026), Lugano revision (ICML 2025 workshop)
 
 Current as of the audit (no newer version found): TI-RADS 2017, LI-RADS v2018 diagnostic, PI-RADS v2.1, Lung-RADS v2022, CAD-RADS 2.0, Bosniak v2019, Fleischner 2017, RECIST 1.1, mRECIST, AAST liver/spleen 2018, UTD 2014, IDRF 2009, adrenal washout thresholds.
+
+## Full Tool Audit (2026-11-27)
+
+Seven parallel audits exercised every option of all 48 tools against their
+cited sources (calculator logic, thresholds, report text in all templates,
+browser, parse). Critical findings fixed (tests first, one commit per area):
+- AAST 2018: liver pseudoaneurysm/contained bleeding -> III; kidney contained
+  Gerota bleeding -> III, thrombosis/infarction -> IV, <=1 cm laceration -> II;
+  multiple injuries advance ONE grade up to III; paste crash on liver/spleen/
+  pancreas/Multi.
+- RECIST/mRECIST: PD checked before PR; CR + non-target not evaluated = PR
+  ('None at baseline' option); reappearance after nadir 0 = PD; partial nadir.
+- RAPNO: clinical worsening = PD, increased steroids cap at SD, steroid parse.
+- PRETEXT: group computed from contiguous free sections (2 table errors).
+- Lung-RADS: v2022 new/growing table; part-solid missing solid size = incomplete.
+- LI-RADS: 10-19 mm APHE + washout/growth = LR-5; no <10 mm no-APHE row;
+  fat in mass favors HCC; non-v2018 'homogeneous signal' removed.
+- PI-RADS: TZ T2 2 + DWI >=4 -> 3. TI-RADS: spongiform totals 0 (TR1).
+- O-RADS: ascites -> 5; classic lesions >=10 cm -> 3; solid smooth CS mapping;
+  cystic lesions by morphology/size.
+- Bosniak: few (1-3) septa II, many (>=4) IIF; calcification excludes I.
+- Adrenal non-enhancing lesions; Agatston decimal gaps; kyphosis
+  hypokyphosis; hip IIa- description; bone-age method label; hydronephrosis
+  bilateral severity + P2/P3 text; GMH empty impression; ventricle 12.0 mm.
+- Parser: single-select negation; whole-word short keywords; generic option
+  labels qualified by field label.
+
+Pending clinical decisions: Agatston threshold scheme/recommendations; bone
+age G&P SD by age/sex instead of +/-1 y; fetal posterior fossa Cignini SD
+bands; Deauville baseline-comparison input; pectus Haller labelling.
+
+Pending (major, not yet fixed): placeholder/premature impressions on empty
+forms across many tools; O-RADS menopausal status / solid components; Lung-
+RADS stable/slow-growth, cat 0/1, airway, cysts, S modifier, exam category;
+CAD-RADS 2.0 modifiers; Bosniak enhancement requirement + MRI criteria;
+Fleischner rounding + negated risk factors; RECIST node short-axis rule;
+Lugano E/A-B rules; IDRF/PRETEXT/Curie parse key mismatches; kidney
+laterality parse; BI-RADS CEM button overlap; NI-RADS management.
 
 ## Repo Housekeeping
 
