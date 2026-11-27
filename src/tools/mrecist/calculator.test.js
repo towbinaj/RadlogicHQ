@@ -6,7 +6,7 @@ import { calculateMrecist } from './calculator.js';
 
 describe('calculateMrecist — target response', () => {
   it('all enhancing diameters = 0 → CR', () => {
-    const r = calculateMrecist({}, [
+    const r = calculateMrecist({ nonTarget: 'none' }, [
       { baseline: 20, current: 0 },
       { baseline: 15, current: 0 },
     ]);
@@ -34,16 +34,16 @@ describe('calculateMrecist — target response', () => {
       { baseline: 40, current: 12, nadir: 10 },
     ]);
     expect(r.pctFromBaseline).toBe(-70);
-    // Baseline rule fires first: -70% → PR. PD check only runs if PR not met.
-    expect(r.overallResponse).toBe('PR');
+    // PD from nadir is checked before PR from baseline (+20% from nadir -> PD).
+    expect(r.overallResponse).toBe('PD');
   });
 
-  it('nadir +20% beats SD when baseline unchanged', () => {
-    // baseline 100, nadir 50, current 60 → -40% from baseline (PR wins first)
+  it('+20% from nadir is PD even when still -40% from baseline', () => {
+    // baseline 100, nadir 50, current 60 → +20% from nadir → PD (checked before PR)
     const r = calculateMrecist({}, [
       { baseline: 100, current: 60, nadir: 50 },
     ]);
-    expect(r.overallResponse).toBe('PR');
+    expect(r.overallResponse).toBe('PD');
   });
 
   it('PD when baseline flat but nadir+20% with no PR', () => {
@@ -135,5 +135,28 @@ describe('calculateMrecist — incomplete', () => {
     expect(r.baselineSumProvided).toBe(true);
     expect(r.currentSumProvided).toBe(false);
     expect(r.overallResponse).toBe('--');
+  });
+});
+
+// --- Audit fixes (Lencioni 2010, mRECIST) ---
+describe('calculateMrecist — audit fixes', () => {
+  it('PD from nadir is evaluated before PR', () => {
+    const r = calculateMrecist({ nonTarget: 'none' }, [{ baseline: 100, nadir: 50, current: 65 }]);
+    expect(r.targetResponse).toBe('PD');
+  });
+
+  it('reappearance after a nadir of 0 is PD', () => {
+    const r = calculateMrecist({ nonTarget: 'none' }, [{ baseline: 30, nadir: 0, current: 10 }]);
+    expect(r.targetResponse).toBe('PD');
+  });
+
+  it('target CR + non-target not evaluated -> PR; + none -> CR', () => {
+    expect(calculateMrecist({}, [{ baseline: 20, current: 0 }]).overallResponse).toBe('PR');
+    expect(calculateMrecist({ nonTarget: 'none' }, [{ baseline: 20, current: 0 }]).overallResponse).toBe('CR');
+  });
+
+  it('ignores partial nadir entries', () => {
+    const r = calculateMrecist({ nonTarget: 'none' }, [{ baseline: 50, current: 50 }, { baseline: 50, nadir: 10, current: 52 }]);
+    expect(r.targetResponse).toBe('SD');
   });
 });

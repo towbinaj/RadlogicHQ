@@ -27,6 +27,9 @@ export function calculateMrecist(formState, targets) {
     if (t.current != null && t.current >= 0) { currentSum += t.current; hasCurrent = true; }
     if (t.nadir != null && t.nadir >= 0) { nadirSum += t.nadir; hasNadir = true; }
   }
+  // Nadir counts only when given for every measured target.
+  const measured = targets.filter((t) => t.baseline > 0 || (t.current != null && t.current >= 0));
+  if (hasNadir && !measured.every((t) => t.nadir != null && t.nadir >= 0)) { nadirSum = 0; hasNadir = false; }
 
   if (!hasNadir && hasBaseline) { nadirSum = baselineSum; hasNadir = true; }
 
@@ -35,17 +38,19 @@ export function calculateMrecist(formState, targets) {
 
   let targetResponse = null;
   if (hasBaseline && hasCurrent) {
+    // PD (from nadir) before PR (from baseline); reappearance after CR is PD.
     if (currentSum === 0) targetResponse = 'CR';
-    else if (pctFromBaseline <= -30) targetResponse = 'PR';
     else if (pctFromNadir != null && pctFromNadir >= 20) targetResponse = 'PD';
+    else if (hasNadir && nadirSum === 0 && currentSum > 0) targetResponse = 'PD';
+    else if (pctFromBaseline <= -30) targetResponse = 'PR';
     else targetResponse = 'SD';
   }
 
   let overallResponse = null;
   if (newLesion === 'yes' || nonTarget === 'progression') overallResponse = 'PD';
   else if (targetResponse === 'PD') overallResponse = 'PD';
-  else if (targetResponse === 'CR' && (nonTarget === 'absent' || !nonTarget)) overallResponse = 'CR';
-  else if (targetResponse === 'CR' && nonTarget === 'present') overallResponse = 'PR';
+  else if (targetResponse === 'CR' && (nonTarget === 'absent' || nonTarget === 'none')) overallResponse = 'CR';
+  else if (targetResponse === 'CR') overallResponse = 'PR'; // non-target present or not evaluated
   else if (targetResponse) overallResponse = targetResponse;
 
   const overallInfo = overallResponse ? RESPONSE_INFO[overallResponse] : null;
@@ -57,10 +62,11 @@ export function calculateMrecist(formState, targets) {
     currentSumProvided: hasCurrent,
     pctFromBaseline,
     pctLabel: pctFromBaseline != null ? `${pctFromBaseline >= 0 ? '+' : ''}${pctFromBaseline}%` : '--',
+    targetResponse: targetResponse || '--',
     overallResponse: overallResponse || '--',
     overallResponseLabel: overallInfo?.label || 'Incomplete',
     overallResponseLevel: overallInfo?.level || 0,
-    nonTargetLabel: { absent: 'Absent (CR)', present: 'Present (non-CR/non-PD)', progression: 'Unequivocal progression' }[nonTarget] || 'Not assessed',
+    nonTargetLabel: { none: 'No non-target lesions', absent: 'Absent (CR)', present: 'Present (non-CR/non-PD)', progression: 'Unequivocal progression' }[nonTarget] || 'Not assessed',
     nonTargetProvided: !!nonTarget,
     newLesionLabel: newLesion === 'yes' ? 'Yes' : newLesion === 'no' ? 'No' : 'Not assessed',
     newLesionProvided: !!newLesion,

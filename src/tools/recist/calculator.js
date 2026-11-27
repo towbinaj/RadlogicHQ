@@ -59,6 +59,11 @@ export function calculateRecist(formState, targets) {
     }
   }
 
+  // Nadir counts only when given for every measured target; a partial set
+  // would compare a partial sum against a full current sum.
+  const nadirComplete = validTargets.length > 0 && validTargets.every((t) => t.nadir != null);
+  if (hasNadir && !nadirComplete) { nadirSum = 0; hasNadir = false; }
+
   // If no nadir provided, use baseline as nadir
   if (!hasNadir && hasBaseline) {
     nadirSum = baselineSum;
@@ -83,12 +88,17 @@ export function calculateRecist(formState, targets) {
   // Target lesion response
   let targetResponse = null;
   if (hasBaseline && hasCurrent) {
+    // Order matters: PD (relative to nadir) is checked before PR (relative
+    // to baseline), so regrowth after a response is not reported as PR.
     if (currentSum === 0) {
       targetResponse = 'CR';
-    } else if (pctFromBaseline != null && pctFromBaseline <= -30) {
-      targetResponse = 'PR';
     } else if (pctFromNadir != null && pctFromNadir >= 20 && absIncreaseFromNadir >= 5) {
       targetResponse = 'PD';
+    } else if (hasNadir && nadirSum === 0 && currentSum > 0) {
+      // Reappearance after a complete response is progression.
+      targetResponse = 'PD';
+    } else if (pctFromBaseline != null && pctFromBaseline <= -30) {
+      targetResponse = 'PR';
     } else {
       targetResponse = 'SD';
     }
@@ -103,9 +113,10 @@ export function calculateRecist(formState, targets) {
     overallResponse = 'PD';
   } else if (targetResponse === 'PD') {
     overallResponse = 'PD';
-  } else if (targetResponse === 'CR' && (nonTarget === 'absent' || !nonTarget)) {
+  } else if (targetResponse === 'CR' && (nonTarget === 'absent' || nonTarget === 'none')) {
     overallResponse = 'CR';
-  } else if (targetResponse === 'CR' && nonTarget === 'present') {
+  } else if (targetResponse === 'CR') {
+    // Non-target present or not evaluated -> PR (RECIST 1.1 Table 1).
     overallResponse = 'PR';
   } else if (targetResponse === 'PR') {
     overallResponse = 'PR';
@@ -119,6 +130,7 @@ export function calculateRecist(formState, targets) {
   const overallInfo = overallResponse ? RESPONSE_INFO[overallResponse] : null;
 
   const nonTargetLabels = {
+    none: 'No non-target lesions',
     absent: 'Absent (CR)',
     present: 'Present (non-CR/non-PD)',
     progression: 'Unequivocal progression',
