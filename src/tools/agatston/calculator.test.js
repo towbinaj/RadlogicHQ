@@ -65,3 +65,13 @@ describe('calculateAgatston — edge cases', () => {
     expect(r.level).toBe(0);
   });
 });
+
+// --- Audit fix: decimal scores between integer category ranges ---
+describe('calculateAgatston — decimal scores', () => {
+  it.each([[0.5, 'Minimal calcium'], [10.5, 'Mild calcium'], [99.5, 'Moderate calcium'], [299.4, 'Severe calcium'], [999.9, 'Extensive calcium']])(
+    '%s gets a category (%s)', (score, label) => {
+      const r = calculateAgatston({ score });
+      expect(r.categoryLabel).toBe(label);
+      expect(r.level).toBeGreaterThan(0);
+    });
+});

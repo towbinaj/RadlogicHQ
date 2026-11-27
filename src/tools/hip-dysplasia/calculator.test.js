@@ -190,3 +190,13 @@ describe('calculateHipDysplasia — edge cases', () => {
     expect(r.betaLabel).toBe('');
   });
 });
+
+// --- Audit fix: Graf IIa- description (immature for age, under 12 weeks) ---
+import { hipDysplasiaDefinition } from './definition.js';
+describe('hip dysplasia — Graf IIa- description', () => {
+  it('IIa- is described as under 3 months with a maturity deficit, not >3 months (that is IIb)', () => {
+    const t = hipDysplasiaDefinition.grafTypes.find((g) => g.id === 'IIa-minus');
+    expect(t.description).not.toMatch(/>\s*3 months/);
+    expect(t.description).toMatch(/<\s*3 months|under 3 months|6-12 weeks/i);
+  });
+});

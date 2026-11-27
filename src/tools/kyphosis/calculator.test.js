@@ -6,7 +6,7 @@ import { calculateKyphosis } from './calculator.js';
 
 describe('calculateKyphosis — thoracic angle interpretation', () => {
   it.each([
-    [0,  'Normal',                     1],
+    [0,  'Decreased (hypokyphosis)',   2],
     [20, 'Normal',                     1],
     [40, 'Normal',                     1],
     [41, 'Borderline increased',       2],
@@ -94,5 +94,15 @@ describe('calculateKyphosis — prior measurements passthrough', () => {
     expect(r.priorThoracicText).toBe('42° last year');
     expect(r.priorThoracicProvided).toBe(true);
     expect(r.priorLumbarText).toBe('50° last year');
+  });
+});
+
+// --- Audit fix: hypokyphosis below the 20-40 degree normal range ---
+describe('calculateKyphosis — hypokyphosis', () => {
+  it.each([[0], [10], [19.9]])('thoracic %s deg is decreased, not normal', (a) => {
+    expect(calculateKyphosis({ thoracicAngle: a }).thoracicInterpretation).toMatch(/hypokyphosis/i);
+  });
+  it('20 deg is normal', () => {
+    expect(calculateKyphosis({ thoracicAngle: 20 }).thoracicInterpretation).toBe('Normal');
   });
 });

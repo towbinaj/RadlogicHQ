@@ -69,3 +69,20 @@ describe('calculateGmh — side labels', () => {
     expect(r.sideProvided).toBe(false);
   });
 });
+
+// --- Audit fix: an empty form must not assert hemorrhage ---
+import { gmhTemplates } from './templates.js';
+describe('calculateGmh — impression', () => {
+  it('no grade: impression does not mention hemorrhage', () => {
+    const r = calculateGmh({});
+    expect(r.impressionText).not.toMatch(/hemorrhage/i);
+    expect(calculateGmh({ side: 'right' }).impressionText).not.toMatch(/hemorrhage/i);
+  });
+  it('graded: impression states side and grade, capitalized', () => {
+    expect(calculateGmh({ side: 'left', grade: 'III' }).impressionText).toMatch(/^Left germinal matrix hemorrhage, /);
+    expect(calculateGmh({ grade: 'I' }).impressionText).toMatch(/^Germinal matrix hemorrhage, /);
+  });
+  it('templates use impressionText', () => {
+    expect(gmhTemplates.ps360.impression.template).toContain('{{impressionText}}');
+  });
+});

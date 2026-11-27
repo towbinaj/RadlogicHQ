@@ -138,3 +138,13 @@ describe('calculateBoneAge — incomplete', () => {
     expect(r.level).toBe(0);
   });
 });
+
+// --- Audit fix: templates must use fields the calculator returns ---
+import { boneAgeTemplates } from './templates.js';
+describe('bone-age templates', () => {
+  it('reference methodLabel (returned) rather than modeLabel (never set)', () => {
+    const all = JSON.stringify(boneAgeTemplates);
+    expect(all).not.toMatch(/modeLabel/);
+    expect(all).toMatch(/methodLabel/);
+  });
+});

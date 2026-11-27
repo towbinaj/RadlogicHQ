@@ -175,3 +175,15 @@ describe('calculateHydronephrosis — edge cases', () => {
     expect(r.aprpdLabel).toBe('');
   });
 });
+
+// --- Audit fix: bilateral management from the more severe side ---
+describe('calculateHydronephrosis — bilateral severity', () => {
+  it('Right P2 + Left P3 uses the P3 management', () => {
+    const r = calculateHydronephrosis({ side: 'bilateral', rightGrade: 'P2', leftGrade: 'P3' }, 'utd-postnatal');
+    expect(r.management).toBe('Further evaluation recommended');
+  });
+  it('Right P3 + Left P2 uses the P3 management', () => {
+    const r = calculateHydronephrosis({ side: 'bilateral', rightGrade: 'P3', leftGrade: 'P2' }, 'utd-postnatal');
+    expect(r.management).toBe('Further evaluation recommended');
+  });
+});

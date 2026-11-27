@@ -11,7 +11,8 @@ export function calculateKyphosis(formState) {
   let thoracicInterpretation = '';
   let thoracicLevel = 0;
   if (hasThoracic) {
-    if (thoracicAngle <= 40) { thoracicInterpretation = 'Normal'; thoracicLevel = 1; }
+    if (thoracicAngle < 20) { thoracicInterpretation = 'Decreased (hypokyphosis)'; thoracicLevel = 2; }
+    else if (thoracicAngle <= 40) { thoracicInterpretation = 'Normal'; thoracicLevel = 1; }
     else if (thoracicAngle <= 45) { thoracicInterpretation = 'Borderline increased'; thoracicLevel = 2; }
     else { thoracicInterpretation = 'Increased (hyperkyphosis)'; thoracicLevel = 3; }
   }

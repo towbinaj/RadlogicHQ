@@ -34,10 +34,10 @@ describe('calculateFetalVentricle — single-side category boundaries', () => {
     expect(r.level).toBe(2);
   });
 
-  it('width 12 mm → Moderate (mild→moderate boundary)', () => {
+  it('width 12 mm → Mild (label says Mild 10-12 mm; moderate starts above 12)', () => {
     const r = calculateFetalVentricle({ side: 'right', width: 12 });
-    expect(r.category).toBe('Moderate ventriculomegaly');
-    expect(r.level).toBe(3);
+    expect(r.category).toBe('Mild ventriculomegaly');
+    expect(r.level).toBe(2);
   });
 
   it('width 14.9 mm → Moderate (just under severe)', () => {
@@ -139,5 +139,15 @@ describe('calculateFetalVentricle — edge cases', () => {
     const r = calculateFetalVentricle({ side: 'right', width: 8, ga: 22 });
     expect(r.gaLabel).toBe('22 weeks');
     expect(r.gaProvided).toBe(true);
+  });
+});
+
+// --- Audit fix: 12.0 mm is mild (tool label: Mild 10-12 mm) ---
+describe('calculateFetalVentricle — 12 mm boundary', () => {
+  it('12.0 mm is mild ventriculomegaly', () => {
+    expect(calculateFetalVentricle({ width: 12 }).category).toMatch(/Mild/);
+  });
+  it('12.1 mm is moderate', () => {
+    expect(calculateFetalVentricle({ width: 12.1 }).category).toMatch(/Moderate/);
   });
 });

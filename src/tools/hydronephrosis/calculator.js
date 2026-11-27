@@ -49,8 +49,11 @@ export function calculateHydronephrosis(formState, mode) {
     if (leftAprpd != null) aprpdParts.push(`Left ${leftAprpd} mm`);
 
     // Management from the more severe side so the report reflects the
-    // dominant clinical concern.
-    const primaryInfo = rLevel >= lLevel ? rInfo : lInfo;
+    // dominant clinical concern. Rank by position in the mode's grade list
+    // (ordered least to most severe); the display level groups P2 and P3.
+    const list = mode === 'utd-postnatal' ? def.utdPostnatal : mode === 'utd-antenatal' ? def.utdAntenatal : def.sfuGrades;
+    const rank = (info) => (info ? list.indexOf(info) : -1);
+    const primaryInfo = rank(rInfo) >= rank(lInfo) ? rInfo : lInfo;
 
     return {
       gradeLabel: gradeParts.length ? gradeParts.join(', ') : '--',
