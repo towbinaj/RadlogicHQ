@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Not Found | RadioLogicHQ</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-header__logo"><img src="/brand/wordmark-white-400.png" srcset="/brand/wordmark-white-400.png 400w, /brand/wordmark-white-800.png 800w, /brand/wordmark-white-1200.png 1200w" sizes="172px" alt="RadioLogic HQ" class="site-header__wordmark"></a>
+      <nav class="site-header__nav">
+        <a href="/">All Tools</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container not-found">
+    <h1>Page not found</h1>
+    <p class="not-found__lead">That page doesn't exist or has moved.</p>
+
+    <section class="not-found__suggest" id="nf-suggest" hidden>
+      <h2>Were you looking for?</h2>
+      <ul class="not-found__list" id="nf-suggest-list"></ul>
+    </section>
+
+    <label class="not-found__search-label" for="nf-search">Find a calculator</label>
+    <input type="search" id="nf-search" class="not-found__search" placeholder="e.g. TI-RADS, Bosniak, AAST..." autocomplete="off">
+    <ul class="not-found__list" id="nf-results"></ul>
+
+    <p class="not-found__home"><a href="/">Browse all tools</a></p>
+  </main>
+
+  <script type="module" src="/src/pages/not-found.js"></script>
+</body>
+</html>

@@ -3,7 +3,11 @@ import { readdirSync } from 'fs';
 import { defineConfig } from 'vite';
 
 // Auto-discover all HTML entry points
-const input = { main: resolve(__dirname, 'index.html') };
+const input = {
+  main: resolve(__dirname, 'index.html'),
+  // Root-level 404.html: Cloudflare Pages serves dist/404.html for unknown paths.
+  notFound: resolve(__dirname, '404.html'),
+};
 
 // Tools: src/tools/{toolId}/{toolId}.html
 for (const dir of readdirSync('src/tools', { withFileTypes: true })) {
