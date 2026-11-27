@@ -429,7 +429,7 @@ export const toolsRegistry = [
   {
     id: 'aast-pancreas',
     name: 'AAST Pancreas',
-    description: 'AAST 2018 pancreas injury grading with ductal injury criteria.',
+    description: 'AAST pancreas injury grading (1990 scale) with ductal injury criteria.',
     icon: 'AP',
     path: '/src/tools/aast-pancreas/aast-pancreas.html',
     status: 'active',
@@ -585,7 +585,7 @@ export const toolsRegistry = [
   {
     id: 'aast-multi',
     name: 'AAST Multi-Trauma',
-    description: 'Combined AAST 2018 multi-organ trauma grading — liver, spleen, kidney, and pancreas.',
+    description: 'Combined AAST multi-organ trauma grading — liver, spleen, kidney, and pancreas.',
     icon: 'MT',
     path: '/src/tools/aast-multi/aast-multi.html',
     status: 'active',

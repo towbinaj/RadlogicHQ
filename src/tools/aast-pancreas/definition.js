@@ -1,7 +1,10 @@
 /**
- * AAST Pancreas Injury Scale (2018) — definition.
+ * AAST Pancreas Injury Scale (1990) — definition.
  *
- * Reference: Kozar RA et al. J Trauma Acute Care Surg 2018;85(6):1119-1122.
+ * Reference: Moore EE et al. Organ injury scaling, II: Pancreas, duodenum, small
+ *   bowel, colon, and rectum. J Trauma 1990;30(11):1427-1429.
+ *   (Kozar 2018 revised spleen, liver and kidney only. AAST published a revised
+ *   pancreas scale in 2024 -- Notrica et al., J Trauma Acute Care Surg 2025.)
  */
 
 export const aastPancreasDefinition = {
