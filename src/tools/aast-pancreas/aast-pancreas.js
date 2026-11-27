@@ -13,7 +13,7 @@ import { parseFindings } from '../../core/parser.js';
 import '../../core/tool-name.js';
 
 const definition = aastPancreasDefinition;
-const templates = buildAastTemplates(definition.organ);
+const templates = buildAastTemplates(definition.organ, definition.scaleVersion);
 
 function init() {
   trackEvent('tool:aast-pancreas:opens');
@@ -40,7 +40,7 @@ function init() {
         <div class="aast-category">
           ${cat.findings.map((f) => `
             <button class="benign-choice ${formState.selectedFindings.has(f.id) ? 'benign-choice--active' : ''}"
-              data-finding="${f.id}" title="Grade ${f.grade}">${f.label}</button>
+              data-finding="${f.id}" title="Grade ${['', 'I', 'II', 'III', 'IV', 'V'][f.grade]}${f.subgrade ? `-${f.subgrade}` : ''}${f.title ? `. ${f.title}` : ''}">${f.label}</button>
           `).join('')}
         </div>
       `;
@@ -54,11 +54,15 @@ function init() {
       });
       stepContainer.appendChild(card);
     }
-    const multiCard = document.createElement('div');
-    multiCard.className = 'card';
-    multiCard.innerHTML = `<label class="aast-multi-check"><input type="checkbox" id="multi-injuries" ${formState.multipleInjuries ? 'checked' : ''}>Multiple Grade I/II injuries present (advances to Grade III)</label>`;
-    multiCard.querySelector('#multi-injuries').addEventListener('change', (e) => { formState.multipleInjuries = e.target.checked; update(); });
-    stepContainer.appendChild(multiCard);
+    // The 2024 scale has no multiple-injury advancement; only show the
+    // checkbox for definitions that still use it.
+    if (definition.advanceMultipleInjuries !== false) {
+      const multiCard = document.createElement('div');
+      multiCard.className = 'card';
+      multiCard.innerHTML = `<label class="aast-multi-check"><input type="checkbox" id="multi-injuries" ${formState.multipleInjuries ? 'checked' : ''}>Multiple Grade I/II injuries present (advances to Grade III)</label>`;
+      multiCard.querySelector('#multi-injuries').addEventListener('change', (e) => { formState.multipleInjuries = e.target.checked; update(); });
+      stepContainer.appendChild(multiCard);
+    }
     update();
   }
 

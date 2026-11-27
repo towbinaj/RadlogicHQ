@@ -113,7 +113,7 @@ function init() {
         <div class="aast-category">
           ${cat.findings.map((f) => `
             <button class="benign-choice ${os.formState.selectedFindings.has(f.id) ? 'benign-choice--active' : ''}"
-              data-finding="${f.id}" title="Grade ${f.grade}">${f.label}</button>
+              data-finding="${f.id}" title="Grade ${['', 'I', 'II', 'III', 'IV', 'V'][f.grade]}${f.subgrade ? `-${f.subgrade}` : ''}${f.title ? `. ${f.title}` : ''}">${f.label}</button>
           `).join('')}
         </div>
       `;
@@ -135,7 +135,9 @@ function init() {
       body.appendChild(catEl);
     }
 
-    // Multiple injuries checkbox
+    // Multiple injuries checkbox -- only for scales that still advance
+    // multiple Grade I/II injuries (not pancreas 2024 / kidney 2025).
+    if (os.definition.advanceMultipleInjuries === false) return;
     const multiLabel = document.createElement('label');
     multiLabel.className = 'aast-multi-check';
     multiLabel.innerHTML = `
@@ -191,7 +193,7 @@ function init() {
       if (activeOrgans.length > 0) {
         const findingsLines = activeOrgans.map((os) => {
           const r = os.result;
-          let text = `${os.definition.organ}: AAST ${r.gradeLabel}`;
+          let text = `${os.definition.organ}: AAST${scaleSuffix(r)} ${r.gradeLabel}`;
           if (r.findingsProvided) text += '\n' + r.findingsText;
           return text;
         });
@@ -224,10 +226,15 @@ function init() {
     reportEl.updateReport(primaryData);
   }
 
+  // ' (2024 OIS)' when the organ's scale declares a version, else ''.
+  function scaleSuffix(result) {
+    return result.scaleVersion ? ` (${result.scaleVersion} OIS)` : '';
+  }
+
   function buildImpression(activeOrgans) {
     if (activeOrgans.length === 0) return 'No organ injuries assessed.';
     return activeOrgans
-      .map((os) => `AAST ${os.definition.organ} injury: ${os.result.gradeLabel}.`)
+      .map((os) => `AAST ${os.definition.organ} injury${scaleSuffix(os.result)}: ${os.result.gradeLabel}.`)
       .join('\n');
   }
 

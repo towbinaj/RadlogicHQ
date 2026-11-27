@@ -142,7 +142,7 @@ describe('aast-multi — calculateAast accepts every organ definition', () => {
 describe('aast-multi — multi-organ scenario', () => {
   it('simulates a polytrauma case by running each organ independently', () => {
     // Polytrauma: liver Grade III lac + spleen Grade IV devasc +
-    // kidney Grade II subcap + pancreas Grade IV proximal transection.
+    // kidney Grade II subcap + pancreas Grade IV-N deep head injury.
     // aast-multi would store one formState per organ and call
     // calculateAast for each. We assert each per-organ result lines
     // up correctly — the multi-tool is just a 4x loop over this.
@@ -159,7 +159,7 @@ describe('aast-multi — multi-organ scenario', () => {
       organs.find((o) => o.id === 'aast-kidney'),
     );
     const pancreas = calculateAast(
-      side(['proximal-transection']),  // Grade IV pancreas duct injury
+      side(['deep-head-n']),  // Grade IV-N pancreas: >=50% depth in head, no duct eval
       organs.find((o) => o.id === 'aast-pancreas'),
     );
 

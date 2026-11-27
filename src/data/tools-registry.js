@@ -429,7 +429,7 @@ export const toolsRegistry = [
   {
     id: 'aast-pancreas',
     name: 'AAST Pancreas',
-    description: 'AAST pancreas injury grading (1990 scale) with ductal injury criteria.',
+    description: 'AAST 2024 pancreas injury grading with main duct subgrades (N, A, B).',
     icon: 'AP',
     path: '/src/tools/aast-pancreas/aast-pancreas.html',
     status: 'active',
