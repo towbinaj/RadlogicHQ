@@ -48,105 +48,71 @@ describe('calculateOrads — short-circuit branches', () => {
   });
 });
 
-describe('calculateOrads — unilocular smooth', () => {
-  it('color score 1 → O-RADS 2', () => {
-    const r = calculateOrads({
-      morphology: 'unilocularSmooth', colorScore: '1',
-    });
-    expect(r.categoryShort).toBe('2');
+// O-RADS US risk stratification (Andreotti 2020; v2022 update, Strachowski
+// 2023). Color score drives the category only for solid lesions; cystic
+// lesions without a solid component are graded by morphology and size.
+describe('calculateOrads — cystic lesions without solid component', () => {
+  const c = (fs) => calculateOrads(fs).categoryShort;
+
+  it.each([
+    [{ morphology: 'unilocularSmooth', size: 50, colorScore: '1' }, '2'],
+    [{ morphology: 'unilocularSmooth', size: 50, colorScore: '4' }, '2'],
+    [{ morphology: 'unilocularSmooth', size: 100, colorScore: '1' }, '3'],
+    [{ morphology: 'unilocularSmooth', size: 120 }, '3'],
+    [{ morphology: 'unilocularIrregular', size: 40, colorScore: '1' }, '3'],
+    [{ morphology: 'unilocularIrregular', size: 40, colorScore: '4' }, '3'],
+    [{ morphology: 'multilocularSmooth', size: 50, colorScore: '1' }, '3'],
+    [{ morphology: 'multilocularSmooth', size: 50, colorScore: '3' }, '3'],
+    [{ morphology: 'multilocularSmooth', size: 100, colorScore: '2' }, '4'],
+    [{ morphology: 'multilocularSmooth', size: 50, colorScore: '4' }, '4'],
+    [{ morphology: 'multilocularIrregular', size: 50, colorScore: '1' }, '4'],
+    [{ morphology: 'multilocularIrregular', size: 50, colorScore: '4' }, '4'],
+  ])('%j -> O-RADS %s', (fs, cat) => {
+    expect(c(fs)).toBe(cat);
   });
 
-  it('color score 2 → O-RADS 2', () => {
-    const r = calculateOrads({
-      morphology: 'unilocularSmooth', colorScore: '2',
-    });
-    expect(r.categoryShort).toBe('2');
+  it('unilocular smooth without size is incomplete', () => {
+    expect(c({ morphology: 'unilocularSmooth', colorScore: '1' })).toBe('--');
   });
 
-  it('color score 3 → O-RADS 3', () => {
-    const r = calculateOrads({
-      morphology: 'unilocularSmooth', colorScore: '3',
-    });
-    expect(r.categoryShort).toBe('3');
-  });
-
-  it('color score 4 → O-RADS 3', () => {
-    const r = calculateOrads({
-      morphology: 'unilocularSmooth', colorScore: '4',
-    });
-    expect(r.categoryShort).toBe('3');
-  });
-
-  it('no color score → incomplete', () => {
-    const r = calculateOrads({ morphology: 'unilocularSmooth' });
-    expect(r.categoryShort).toBe('--');
+  it('multilocular smooth CS 1-3 without size is incomplete', () => {
+    expect(c({ morphology: 'multilocularSmooth', colorScore: '2' })).toBe('--');
   });
 });
 
-describe('calculateOrads — unilocular irregular', () => {
-  it('color score 1-2 → O-RADS 3', () => {
-    const r = calculateOrads({
-      morphology: 'unilocularIrregular', colorScore: '2',
-    });
-    expect(r.categoryShort).toBe('3');
+describe('calculateOrads — solid lesions', () => {
+  const c = (fs) => calculateOrads(fs).categoryShort;
+
+  it.each([
+    ['1', '3'], ['2', '4'], ['3', '4'], ['4', '5'],
+  ])('solid smooth, color score %s -> O-RADS %s', (cs, cat) => {
+    expect(c({ morphology: 'solidSmooth', colorScore: cs })).toBe(cat);
   });
 
-  it('color score 3-4 → O-RADS 4', () => {
-    const r = calculateOrads({
-      morphology: 'unilocularIrregular', colorScore: '3',
-    });
-    expect(r.categoryShort).toBe('4');
-  });
-});
-
-describe('calculateOrads — multilocular', () => {
-  it('multilocular smooth + CS 1-2 → O-RADS 3', () => {
-    const r = calculateOrads({
-      morphology: 'multilocularSmooth', colorScore: '1',
-    });
-    expect(r.categoryShort).toBe('3');
+  it('solid irregular -> O-RADS 5 (color score irrelevant)', () => {
+    expect(c({ morphology: 'solidIrregular', colorScore: '1' })).toBe('5');
   });
 
-  it('multilocular smooth + CS 3-4 → O-RADS 4', () => {
-    const r = calculateOrads({
-      morphology: 'multilocularSmooth', colorScore: '4',
-    });
-    expect(r.categoryShort).toBe('4');
-  });
-
-  it('multilocular irregular + CS 1-2 → O-RADS 4', () => {
-    const r = calculateOrads({
-      morphology: 'multilocularIrregular', colorScore: '2',
-    });
-    expect(r.categoryShort).toBe('4');
-  });
-
-  it('multilocular irregular + CS 3-4 → O-RADS 5', () => {
-    const r = calculateOrads({
-      morphology: 'multilocularIrregular', colorScore: '4',
-    });
-    expect(r.categoryShort).toBe('5');
+  it('solid smooth without color score is incomplete', () => {
+    expect(c({ morphology: 'solidSmooth' })).toBe('--');
   });
 });
 
-describe('calculateOrads — solid', () => {
-  it('solid smooth + CS 1-2 → O-RADS 3', () => {
-    const r = calculateOrads({
-      morphology: 'solidSmooth', colorScore: '1',
-    });
-    expect(r.categoryShort).toBe('3');
+describe('calculateOrads — ascites and classic lesions', () => {
+  const c = (fs) => calculateOrads(fs).categoryShort;
+
+  it('ascites -> O-RADS 5', () => {
+    expect(c({ morphology: 'solidSmooth', colorScore: '1', ascites: 'present' })).toBe('5');
   });
 
-  it('solid smooth + CS 3-4 → O-RADS 4', () => {
-    const r = calculateOrads({
-      morphology: 'solidSmooth', colorScore: '4',
-    });
-    expect(r.categoryShort).toBe('4');
+  it('classic benign lesion >=10 cm -> O-RADS 3', () => {
+    expect(c({ classicBenign: 'endometrioma', size: 100 })).toBe('3');
+    expect(c({ classicBenign: 'dermoid', size: 150 })).toBe('3');
+    expect(c({ classicBenign: 'simpleCyst', size: 110 })).toBe('3');
   });
 
-  it('solid irregular → O-RADS 5 (color score irrelevant)', () => {
-    const r = calculateOrads({ morphology: 'solidIrregular' });
-    expect(r.categoryShort).toBe('5');
+  it('classic benign lesion <10 cm stays O-RADS 2', () => {
+    expect(c({ classicBenign: 'endometrioma', size: 99 })).toBe('2');
   });
 });
 
@@ -155,8 +121,8 @@ describe('calculateOrads — metadata', () => {
     const r = calculateOrads({
       morphology: 'multilocularIrregular', colorScore: '3', size: 45,
     });
-    expect(r.category).toBe('O-RADS 5');
-    expect(r.categoryLabel).toBe('High Risk');
+    expect(r.category).toBe('O-RADS 4');
+    expect(r.categoryLabel).toBe('Intermediate Risk');
     expect(r.morphologyLabel).toBe('Multilocular, irregular');
     expect(r.colorScoreLabel).toContain('Moderate');
     expect(r.sizeCm).toBe('4.5');

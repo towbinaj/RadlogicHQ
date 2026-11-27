@@ -1,7 +1,11 @@
 /**
  * O-RADS US v2022 classification logic.
  *
- * Reference: Andreotti RF et al. Radiology 2020;294(1):168-185.
+ * Reference: Andreotti RF et al. Radiology 2020;294(1):168-185; v2022 update
+ * Strachowski LM et al. Radiology 2023;308(3):e230685.
+ *
+ * Not yet modelled: menopausal status, solid components / papillary
+ * projections within cystic lesions, bilocular cysts (v2022).
  *
  * Classification:
  *   0 — Incomplete / cannot be classified
@@ -29,16 +33,22 @@ export function calculateOrads(formState) {
   const { classicBenign, morphology, colorScore, ascites, peritoneal } = formState;
   const sizeMm = formState.size;
 
-  // Peritoneal nodularity → O-RADS 5
+  // Ascites and/or peritoneal nodules -> O-RADS 5
   if (peritoneal === 'present') {
     return buildResult(5, formState, 'Peritoneal nodularity');
   }
+  if (ascites === 'present') {
+    return buildResult(5, formState, 'Ascites');
+  }
 
-  // Classic benign descriptors → O-RADS 2
+  // Classic (typical) benign lesions: O-RADS 2 if <10 cm, 3 if >=10 cm
   if (classicBenign && classicBenign !== 'no') {
-    // Simple cyst ≤3 cm could be O-RADS 1 (physiologic)
+    // Simple cyst <=3 cm could be O-RADS 1 (physiologic)
     if (classicBenign === 'simpleCyst' && sizeMm != null && sizeMm <= 30) {
-      return buildResult(1, formState, 'Simple cyst ≤3 cm (physiologic)');
+      return buildResult(1, formState, 'Simple cyst <=3 cm (physiologic)');
+    }
+    if (sizeMm != null && sizeMm >= 100) {
+      return buildResult(3, formState, 'Classic benign lesion >=10 cm');
     }
     return buildResult(2, formState, 'Classic benign descriptor');
   }
@@ -48,43 +58,42 @@ export function calculateOrads(formState) {
   }
 
   const cs = colorScore ? parseInt(colorScore) : null;
+  const big = sizeMm != null && sizeMm >= 100;
 
-  // Unilocular, smooth inner wall
+  // Cystic lesions without a solid component are graded by morphology and
+  // size; color score matters only for multilocular CS4 and solid lesions.
   if (morphology === 'unilocularSmooth') {
-    if (cs === 1 || cs === 2) return buildResult(2, formState, 'Unilocular smooth, color score 1-2');
-    if (cs === 3 || cs === 4) return buildResult(3, formState, 'Unilocular smooth, color score 3-4');
-    return buildResult(null, formState, 'Select color score');
+    if (sizeMm == null) return buildResult(null, formState, 'Enter size');
+    return big
+      ? buildResult(3, formState, 'Unilocular smooth, >=10 cm')
+      : buildResult(2, formState, 'Unilocular smooth, <10 cm');
   }
 
-  // Unilocular, irregular inner wall
   if (morphology === 'unilocularIrregular') {
-    if (cs === 1 || cs === 2) return buildResult(3, formState, 'Unilocular irregular, color score 1-2');
-    if (cs === 3 || cs === 4) return buildResult(4, formState, 'Unilocular irregular, color score 3-4');
-    return buildResult(null, formState, 'Select color score');
+    return buildResult(3, formState, 'Unilocular, irregular inner wall, no solid component');
   }
 
-  // Multilocular, smooth
   if (morphology === 'multilocularSmooth') {
-    if (cs === 1 || cs === 2) return buildResult(3, formState, 'Multilocular smooth, color score 1-2');
-    if (cs === 3 || cs === 4) return buildResult(4, formState, 'Multilocular smooth, color score 3-4');
-    return buildResult(null, formState, 'Select color score');
+    if (cs === 4) return buildResult(4, formState, 'Multilocular smooth, color score 4');
+    if (cs == null) return buildResult(null, formState, 'Select color score');
+    if (sizeMm == null) return buildResult(null, formState, 'Enter size');
+    return big
+      ? buildResult(4, formState, 'Multilocular smooth, >=10 cm, color score 1-3')
+      : buildResult(3, formState, 'Multilocular smooth, <10 cm, color score 1-3');
   }
 
-  // Multilocular, irregular
   if (morphology === 'multilocularIrregular') {
-    if (cs === 1 || cs === 2) return buildResult(4, formState, 'Multilocular irregular, color score 1-2');
-    if (cs === 3 || cs === 4) return buildResult(5, formState, 'Multilocular irregular, color score 3-4');
-    return buildResult(null, formState, 'Select color score');
+    return buildResult(4, formState, 'Multilocular, irregular inner wall and/or septation, no solid component');
   }
 
-  // Solid, smooth
+  // Solid smooth: CS1 -> 3, CS2-3 -> 4, CS4 -> 5
   if (morphology === 'solidSmooth') {
-    if (cs === 1 || cs === 2) return buildResult(3, formState, 'Solid smooth, color score 1-2');
-    if (cs === 3 || cs === 4) return buildResult(4, formState, 'Solid smooth, color score 3-4');
+    if (cs === 1) return buildResult(3, formState, 'Solid smooth, color score 1');
+    if (cs === 2 || cs === 3) return buildResult(4, formState, 'Solid smooth, color score 2-3');
+    if (cs === 4) return buildResult(5, formState, 'Solid smooth, color score 4');
     return buildResult(null, formState, 'Select color score');
   }
 
-  // Solid, irregular
   if (morphology === 'solidIrregular') {
     return buildResult(5, formState, 'Solid irregular morphology');
   }
