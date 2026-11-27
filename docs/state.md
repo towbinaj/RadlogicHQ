@@ -73,7 +73,7 @@
 
 ### Testing
 - Vitest unit tests co-located with source (`*.test.js`)
-- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1055 tests + 8 todo, 52 files)
+- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1067 tests + 8 todo, 52 files)
 - `npm run test:run` for CI, `npm run test` for watch mode
 
 ### Build
@@ -221,7 +221,7 @@ Pending — need radiologist sign-off on grade tables before shipping:
 - [ ] **Parser negation** — multi-select parse matches negated phrases ("no urinary extravasation"); affects 2018 kidney rules most. Suggested as a separate task.
 - [x] **BI-RADS v2025** (ACR BI-RADS v2025 Manual; Minichetti et al., AJR 2026) — category 0 split (additional imaging vs prior examinations), category 6 per multidisciplinary team, CEM modality, optional clinical indication, ASCII report text. Lexicon/density changes do not apply (tool is category-level). Exact ACR wording for the two category 0 labels unverified against the manual itself. Awaiting radiologist sign-off.
 - [ ] **NI-RADS MRI** (Bunch et al., JACR 2025) — add MRI pathway or label tool CT/PET-CT only
-- [ ] **ASPECTS** — untouched form reports "10/10. No early ischemic changes"; decide whether the default should be blank
+- [x] **ASPECTS** — blank by default; 10/10 only after marking regions or confirming "No early ischemic changes" (button or pasted text)
 - [ ] Watch: O-RADS MRI update (expected 2026), Lugano revision (ICML 2025 workshop)
 
 Current as of the audit (no newer version found): TI-RADS 2017, LI-RADS v2018 diagnostic, PI-RADS v2.1, Lung-RADS v2022, CAD-RADS 2.0, Bosniak v2019, Fleischner 2017, RECIST 1.1, mRECIST, AAST liver/spleen 2018, UTD 2014, IDRF 2009, adrenal washout thresholds.
