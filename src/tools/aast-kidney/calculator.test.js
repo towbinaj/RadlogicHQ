@@ -27,7 +27,7 @@ describe('calculateAast + aastKidneyDefinition — single finding grades', () =>
     ['lac-lt1',                2],
     ['lac-gt1',                3],
     ['contained',              3],
-    ['active-sub',             4],
+    ['active-sub',             3],  // Kozar 2018: active bleeding contained within Gerota fascia = III
     ['active-beyond',          4],
     ['urine-extrav',           4],
     ['lac-pelvis',             4],
@@ -68,14 +68,14 @@ describe('calculateAast + aastKidneyDefinition — max-grade rule', () => {
 });
 
 describe('calculateAast + aastKidneyDefinition — multiple-injury upgrade', () => {
-  it('two Grade I findings + multipleInjuries → upgraded to Grade III', () => {
+  it('Grade I findings + multipleInjuries → advanced one grade to II (Kozar 2018)', () => {
     const r = calculateAast(
       side(['sub-nonexpanding'], true),
       aastKidneyDefinition,
     );
-    // Grade 1 base, upgraded by the multipleInjuries flag.
-    expect(r.grade).toBe(3);
-    expect(r.gradeLabel).toBe('Grade III');
+    // Grade 1 base, advanced one grade by the multipleInjuries flag.
+    expect(r.grade).toBe(2);
+    expect(r.gradeLabel).toBe('Grade II');
     expect(r.multipleInjuries).toBe(true);
     expect(r.findingsText).toContain('Multiple low-grade injuries present');
   });
@@ -314,5 +314,42 @@ describe('AAST kidney 2025 — comparison phrasing is not a measurement', () => 
   });
   it('"perinephric hematoma less than 3.5 cm" is not >=3.5', () => {
     expect(parse('perinephric hematoma less than 3.5 cm')).not.toContain('hrd-ge35');
+  });
+});
+
+// --- 2018 kidney fixes vs Kozar 2018 table ---
+describe('AAST kidney 2018 — corrected grades (Kozar 2018)', () => {
+  const g = (ids) => calculateAast({ selectedFindings: new Set(ids) }, aastKidneyDefinition).grade;
+  const p = (t) => parseFindings(t, aastKidneyDefinition).formState.selectedFindings || [];
+
+  it('parenchymal contusion without laceration is Grade I', () => {
+    expect(g(['contusion'])).toBe(1);
+  });
+
+  it('main vessel thrombosis with infarction (no active bleeding) is Grade IV, not V', () => {
+    expect(g(['thrombosis-infarct'])).toBe(4);
+  });
+
+  it('main renal artery/vein laceration or hilar avulsion stays Grade V', () => {
+    expect(g(['devasc-main'])).toBe(5);
+    expect(aastKidneyDefinition.categories.flatMap((c) => c.findings).find((f) => f.id === 'devasc-main').label).not.toMatch(/thrombosis/i);
+  });
+
+  it('a laceration of exactly 1 cm is Grade II (<=1 cm depth)', () => {
+    expect(p('1 cm laceration of the lower pole')).toContain('lac-lt1');
+    expect(p('1 cm laceration of the lower pole')).not.toContain('lac-gt1');
+    expect(p('laceration measuring 10 mm')).toContain('lac-lt1');
+    expect(p('1.2 cm laceration')).toContain('lac-gt1');
+  });
+
+  it('main renal artery thrombosis parses to the Grade IV infarction finding', () => {
+    const r = p('Main renal artery thrombosis with global infarction.');
+    expect(r).toContain('thrombosis-infarct');
+    expect(r).not.toContain('devasc-main');
+  });
+
+  it('perinephric stranding or fluid alone is not a hematoma', () => {
+    expect(p('Mild perinephric stranding.')).not.toContain('perirenal-nonexpanding');
+    expect(p('Small amount of perinephric fluid.')).not.toContain('perirenal-nonexpanding');
   });
 });

@@ -60,12 +60,12 @@ describe('calculateAast + aastSpleenDefinition — max-grade rule', () => {
 });
 
 describe('calculateAast + aastSpleenDefinition — multiple-injury upgrade', () => {
-  it('Grade I + multipleInjuries → upgraded to III', () => {
+  it('Grade I + multipleInjuries → advanced one grade to II (Kozar 2018)', () => {
     const r = calculateAast(
       side(['sub-lt10'], true),
       aastSpleenDefinition,
     );
-    expect(r.grade).toBe(3);
+    expect(r.grade).toBe(2);
     expect(r.findingsText).toContain('Multiple low-grade injuries present');
   });
 

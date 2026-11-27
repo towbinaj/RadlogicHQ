@@ -1132,7 +1132,7 @@ describe('parseFindings — negation with the real AAST kidney rules', () => {
   });
 
   it('2018: tool labels no longer select the negated findings they mention', () => {
-    expect(f18('<1 cm depth, no urinary extravasation')).toEqual(['lac-lt1']);
+    expect(f18('<=1 cm depth, no urinary extravasation')).toEqual(['lac-lt1']);
     expect(f18('>1 cm depth, no collecting system rupture or urinary extravasation')).toEqual(['lac-gt1']);
   });
 

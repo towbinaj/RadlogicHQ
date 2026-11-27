@@ -240,7 +240,7 @@ function init() {
     multiCard.innerHTML = `
       <label class="aast-multi-check">
         <input type="checkbox" id="${checkboxId}" ${sideState.multipleInjuries ? 'checked' : ''}>
-        Multiple Grade I/II injuries present (advances to Grade III)
+        Multiple injuries present (advance one grade, up to Grade III)
       </label>
     `;
     multiCard.querySelector(`#${checkboxId}`).addEventListener('change', (e) => {
