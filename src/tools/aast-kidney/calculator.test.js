@@ -307,6 +307,18 @@ describe('AAST kidney 2025 — label round-trip (no keyword collisions)', () => 
   });
 });
 
+describe('AAST kidney 2018 — label round-trip (no keyword collisions)', () => {
+  const all = aastKidneyDefinition.categories.flatMap((c) => c.findings);
+  // Overlaps that are clinically correct, not collisions: a laceration into
+  // the renal pelvis "with urinary extravasation" does assert urinary
+  // extravasation (same grade, IV), so selecting both is accurate.
+  const IMPLIED = { 'lac-pelvis': ['urine-extrav'] };
+  it.each(all.map((f) => [f.id, f.label]))('label of %s selects only itself', (id, label) => {
+    const found = parseFindings(label, aastKidneyDefinition).formState.selectedFindings || [];
+    expect([...found].sort()).toEqual([id, ...(IMPLIED[id] || [])].sort());
+  });
+});
+
 describe('AAST kidney 2025 — comparison phrasing is not a measurement', () => {
   const parse = (t) => parseFindings(t, aastKidney2025Definition).formState.selectedFindings || [];
   it('"subcapsular hematoma <3.5 cm" stays Grade I', () => {
