@@ -155,7 +155,7 @@ describe('aast-multi — multi-organ scenario', () => {
       organs.find((o) => o.id === 'aast-spleen'),
     );
     const kidney = calculateAast(
-      side(['perirenal-nonexpanding']),  // Grade II kidney hematoma
+      side(['hrd-lt35']),  // Grade II kidney hematoma (2025 scale: HRD <3.5 cm)
       organs.find((o) => o.id === 'aast-kidney'),
     );
     const pancreas = calculateAast(

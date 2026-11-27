@@ -8,6 +8,7 @@ export const aastKidneyDefinition = {
   id: 'aast-kidney',
   name: 'AAST Kidney',
   organ: 'Kidney',
+  scaleVersion: '2018',
 
   categories: [
     {

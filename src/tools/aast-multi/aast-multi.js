@@ -9,7 +9,8 @@ import { renderEditorContent } from '../../core/pill-editor.js';
 import { aastMultiDefinition, organs } from './definition.js';
 import { calculateAast } from '../aast-liver/calculator.js';
 import { buildMultiTraumaTemplates } from './templates.js';
-import { trackEvent } from '../../core/storage.js';
+import { trackEvent, getStored, setStored } from '../../core/storage.js';
+import { getKidneyDefinition, KIDNEY_SCALES, KIDNEY_SCALE_STORAGE_KEY, DEFAULT_KIDNEY_SCALE } from '../aast-kidney/scales.js';
 import { parseFindings } from '../../core/parser.js';
 import '../../core/tool-name.js';
 
@@ -28,8 +29,10 @@ function init() {
   reportEl.setTemplates(templates);
 
   // Per-organ state
+  // Kidney follows the stored 2018/2025 choice shared with the kidney tool.
+  const storedKidneyDef = getKidneyDefinition(getStored(KIDNEY_SCALE_STORAGE_KEY, DEFAULT_KIDNEY_SCALE));
   const organStates = organs.map((def) => ({
-    definition: def,
+    definition: def.id === 'aast-kidney' ? storedKidneyDef : def,
     formState: { selectedFindings: new Set(), multipleInjuries: false },
     enabled: false,
   }));
@@ -105,6 +108,7 @@ function init() {
   }
 
   function buildOrganBody(os, body) {
+    if (os.definition.id === 'aast-kidney') body.appendChild(buildKidneyScaleTabs(os));
     for (const cat of os.definition.categories) {
       const catEl = document.createElement('div');
       catEl.className = 'organ-section__category';
@@ -224,6 +228,30 @@ function init() {
       ? { ...activeOrgans[0].result, impressionText: buildImpression(activeOrgans) }
       : { gradeLabel: '--', gradeLevel: 0, impressionText: 'No organ injuries assessed.' };
     reportEl.updateReport(primaryData);
+  }
+
+  // 2018 / 2025 kidney scale switch inside the kidney section.
+  function buildKidneyScaleTabs(os) {
+    const bar = document.createElement('div');
+    bar.className = 'mode-tabs-bar';
+    for (const s of KIDNEY_SCALES) {
+      const tab = document.createElement('button');
+      tab.className = `obs-tab ${os.definition === s.definition ? 'active' : ''}`;
+      tab.textContent = s.label;
+      tab.addEventListener('click', () => {
+        if (os.definition === s.definition) return;
+        os.definition = s.definition;
+        setStored(KIDNEY_SCALE_STORAGE_KEY, s.id);
+        // Finding ids differ between scales: start fresh.
+        os.formState.selectedFindings.clear();
+        os.formState.multipleInjuries = false;
+        os._bodyEl.innerHTML = '';
+        buildOrganBody(os, os._bodyEl);
+        update();
+      });
+      bar.appendChild(tab);
+    }
+    return bar;
   }
 
   // ' (2024 OIS)' when the organ's scale declares a version, else ''.

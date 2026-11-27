@@ -549,7 +549,7 @@ export const toolsRegistry = [
   {
     id: 'aast-kidney',
     name: 'AAST Kidney',
-    description: 'AAST 2018 kidney injury grading with vascular injury criteria.',
+    description: 'AAST 2025 kidney injury grading (2018 scale via toggle), bilateral.',
     icon: 'AK',
     path: '/src/tools/aast-kidney/aast-kidney.html',
     status: 'active',
