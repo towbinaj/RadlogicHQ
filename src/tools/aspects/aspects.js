@@ -6,7 +6,7 @@ import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
 import { aspectsDefinition } from './definition.js';
-import { calculateAspects } from './calculator.js';
+import { calculateAspects, detectNormalAspects } from './calculator.js';
 import { aspectsTemplates } from './templates.js';
 import { trackEvent } from '../../core/storage.js';
 import { parseFindings } from '../../core/parser.js';
@@ -25,6 +25,8 @@ function init() {
 
   const affected = new Set();
   let side = null;
+  // Explicit "no early ischemic changes" -- required for a 10/10 score.
+  let normalConfirmed = false;
   let studyAdditionalFindings = '';
 
   additionalFindingsEl.addEventListener('input', () => {
@@ -71,9 +73,24 @@ function init() {
           </button>
         `).join('')}
       </div>
+      <button class="benign-choice aspects-normal-btn ${normalConfirmed && affected.size === 0 ? 'benign-choice--active' : ''}"
+        data-normal="1" title="Confirms a normal study: ASPECTS 10/10. Without this or a marked region the score stays blank.">
+        No early ischemic changes (ASPECTS 10)
+      </button>
     `;
-    regionCard.querySelectorAll('.benign-choice').forEach((btn) => {
+    regionCard.querySelector('[data-normal]').addEventListener('click', (e) => {
+      normalConfirmed = !(normalConfirmed && affected.size === 0);
+      if (normalConfirmed) {
+        affected.clear();
+        regionCard.querySelectorAll('[data-region]').forEach((b) => b.classList.remove('benign-choice--active'));
+      }
+      e.currentTarget.classList.toggle('benign-choice--active', normalConfirmed);
+      update();
+    });
+    regionCard.querySelectorAll('[data-region]').forEach((btn) => {
       btn.addEventListener('click', () => {
+        normalConfirmed = false;
+        regionCard.querySelector('[data-normal]').classList.remove('benign-choice--active');
         const rid = btn.dataset.region;
         if (affected.has(rid)) {
           affected.delete(rid);
@@ -91,14 +108,14 @@ function init() {
   }
 
   function update() {
-    const result = calculateAspects(affected, side);
+    const result = calculateAspects(affected, side, normalConfirmed);
     badgeScore.textContent = result.scoreLabel;
     badgeScore.dataset.level = result.level;
     updateReport();
   }
 
   function updateReport() {
-    const data = calculateAspects(affected, side);
+    const data = calculateAspects(affected, side, normalConfirmed);
 
     reportEl.renderFn = (config, _data) => {
       if (config.editorContent) {
@@ -128,6 +145,9 @@ function init() {
     const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, aspectsDefinition);
     if (parsed.side) side = parsed.side;
     if (parsed.affected) for (const r of parsed.affected) affected.add(r);
+    // A pasted "ASPECTS 10" / "no early ischemic changes" with no regions
+    // counts as the explicit normal confirmation.
+    normalConfirmed = affected.size === 0 && detectNormalAspects(text);
     additionalFindingsEl.value = remainder || '';
     studyAdditionalFindings = additionalFindingsEl.value;
     buildUI();

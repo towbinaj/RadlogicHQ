@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getTiradsLevel, getManagement, calculateTirads } from './calculator.js';
+import { getTiradsLevel, getManagement, calculateTirads, getMissingFeatures } from './calculator.js';
 
 // --- getTiradsLevel ---
 
@@ -119,5 +119,81 @@ describe('calculateTirads', () => {
     const result = calculateTirads(10, 2.0);
     expect(result.tiradsName).toBe('TR5');
     expect(result.fnaRecommended).toBe(true);
+  });
+});
+
+// --- Incomplete nodules (no category until required features are chosen) ---
+//
+// ACR TI-RADS assigns a level only after one choice from each of composition,
+// echogenicity, shape and margin. Echogenic foci may be "none" and are not
+// required. Spongiform nodules are the exception: per the ACR chart, no
+// further points are added for other categories, so spongiform alone is
+// sufficient. Before this fix an untouched form reported "TR1 - Benign. No FNA".
+
+describe('getMissingFeatures', () => {
+  it('lists all four required features for an empty form', () => {
+    expect(getMissingFeatures({})).toEqual(['composition', 'echogenicity', 'shape', 'margin']);
+  });
+
+  it('lists only the features still unselected', () => {
+    expect(getMissingFeatures({ composition: 'solid', shape: 'wider-than-tall' }))
+      .toEqual(['echogenicity', 'margin']);
+  });
+
+  it('returns [] when all four required features are selected', () => {
+    expect(getMissingFeatures({
+      composition: 'solid', echogenicity: 'hypoechoic', shape: 'wider-than-tall', margin: 'smooth',
+    })).toEqual([]);
+  });
+
+  it('does not require echogenic foci', () => {
+    expect(getMissingFeatures({
+      composition: 'mixed', echogenicity: 'anechoic', shape: 'wider-than-tall', margin: 'smooth',
+      'echogenic-foci': undefined,
+    })).toEqual([]);
+  });
+
+  it('treats spongiform composition as complete on its own', () => {
+    expect(getMissingFeatures({ composition: 'spongiform' })).toEqual([]);
+  });
+
+  it('treats empty-string / null selections as missing', () => {
+    expect(getMissingFeatures({ composition: '', echogenicity: null, shape: 'wider-than-tall', margin: 'smooth' }))
+      .toEqual(['composition', 'echogenicity']);
+  });
+});
+
+describe('calculateTirads with incomplete features', () => {
+  it('does not assign TR1 to an empty form', () => {
+    const result = calculateTirads(0, null, ['composition', 'echogenicity', 'shape', 'margin']);
+    expect(result.tiradsName).not.toBe('TR1');
+    expect(result.incomplete).toBe(true);
+    expect(result.tiradsLevel).toBe(0);
+  });
+
+  it('labels the result Incomplete and names what is missing', () => {
+    const result = calculateTirads(2, 1.2, ['shape', 'margin']);
+    expect(result.tiradsName).toBe('Incomplete');
+    expect(result.tiradsFullLabel).toBe('Incomplete');
+    expect(result.recommendation).toBe('Select shape, margin to assign a TI-RADS level');
+  });
+
+  it('never recommends FNA or follow-up while incomplete', () => {
+    const result = calculateTirads(9, 3.0, ['margin']);
+    expect(result.fnaRecommended).toBe(false);
+    expect(result.followUpRecommended).toBe(false);
+  });
+
+  it('still reports the size fields while incomplete', () => {
+    const result = calculateTirads(0, 1.1, ['composition']);
+    expect(result.noduleSize).toBe(1.1);
+    expect(result.noduleSizeProvided).toBe(true);
+  });
+
+  it('behaves exactly as before when missing is [] or omitted', () => {
+    expect(calculateTirads(0, null, [])).toEqual(calculateTirads(0, null));
+    const r = calculateTirads(0, null);
+    expect(r.tiradsName).toBe('TR1');
+    expect(r.incomplete).toBe(false);
   });
 });

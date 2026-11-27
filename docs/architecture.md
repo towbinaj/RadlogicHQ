@@ -66,7 +66,7 @@ RadioLogicHQ/
 │   │   ├── report-output.js           # <report-output> — pill editor, copy, save, history, share (+ escapeHtml helper)
 │   │   ├── auth-ui.js                 # <auth-ui> — sign in/up modal
 │   │   └── feedback-widget.js         # <feedback-widget> — floating bug-report button, self-inserts on import
-│   ├── tools/                         # 42 tool directories
+│   ├── tools/                         # 48 tool directories
 │   │   ├── tirads/                    # TI-RADS (point-based)
 │   │   ├── lirads/                    # LI-RADS (decision-tree)
 │   │   ├── aast-liver/                # AAST Liver (shared calculator for all AAST organs)

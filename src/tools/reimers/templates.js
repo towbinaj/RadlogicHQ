@@ -31,7 +31,8 @@ const RADAI_HEADERS = {
   impression: '[IMPRESSION]',
 };
 
-const IMPRESSION_TEXT = 'Apparent coxa valga alignment of the proximal femurs with migration percentages as above.';
+// Built by calculateReimers() so it follows the coxa valga selection.
+const IMPRESSION_TEXT = '{{impressionText}}';
 
 export const reimersTemplates = {
   ps360: { label: 'PowerScribe 360', ...buildTemplateSet(FINDINGS_BLOCKS, STANDARD_HEADERS, IMPRESSION_TEXT) },

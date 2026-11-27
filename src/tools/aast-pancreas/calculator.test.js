@@ -2,124 +2,106 @@ import { describe, it, expect } from 'vitest';
 import { calculateAast } from '../aast-liver/calculator.js';
 import { aastPancreasDefinition } from './definition.js';
 
-// Retroactive coverage for the AAST-family backlog.
-// See docs/test.md section 9. aast-pancreas uses the shared
-// calculateAast from aast-liver, exercised here against the
-// pancreas definition with its duct-injury grading nuance.
+// AAST Pancreatic Organ Injury Scale, 2024 revision.
+// Notrica DM et al. J Trauma Acute Care Surg 2025;98(3):442-447, Table 1.
+// aast-pancreas uses the shared calculateAast from aast-liver.
 
 function side(findingIds, multipleInjuries = false) {
-  return {
-    selectedFindings: new Set(findingIds),
-    multipleInjuries,
-  };
+  return { selectedFindings: new Set(findingIds), multipleInjuries };
 }
 
-describe('calculateAast + aastPancreasDefinition — grades', () => {
+const grade = (ids, m) => calculateAast(side(ids, m), aastPancreasDefinition);
+
+describe('AAST pancreas 2024 — every Table 1 row maps to its grade and subgrade', () => {
   it.each([
-    // Parenchymal injury
-    ['contusion-minor',       1],  // Minor contusion, no duct
-    ['lac-superficial',       1],  // Superficial laceration, no duct
-    ['contusion-major',       2],  // Major contusion, no duct
-    ['lac-major',             2],  // Major laceration, no duct
-    // Ductal injury
-    ['distal-transection',    3],  // Distal transection with duct (left of SMV)
-    ['proximal-transection',  4],  // Proximal transection with duct (right of SMV)
-    // Massive disruption
-    ['massive-head',          5],  // Massive head disruption
-  ])('finding %s → grade %d', (findingId, expected) => {
-    const r = calculateAast(side([findingId]), aastPancreasDefinition);
-    expect(r.grade).toBe(expected);
+    // Grade I: edema or contusion without laceration/hematoma
+    ['edema',              'Grade I-A'],
+    ['contusion',          'Grade I-B'],
+    // Grade II: laceration/hematoma <50% depth, or >=50% with intact duct
+    ['lac-nbt',            'Grade II-A'],  // neck, body, or tail
+    ['lac-head',           'Grade II-B'],  // head or uncinate
+    // Grade III: duct injury or >=50% depth, neck/body/tail
+    ['deep-nbt-n',         'Grade III-N'], // no definitive ductal evaluation
+    ['duct-nbt-partial',   'Grade III-A'], // confirmed, ductal alignment
+    ['duct-nbt-complete',  'Grade III-B'], // confirmed, transected/distracted
+    // Grade IV: same, head or uncinate
+    ['deep-head-n',        'Grade IV-N'],
+    ['duct-head-partial',  'Grade IV-A'],
+    ['duct-head-complete', 'Grade IV-B'],
+    // Grade V: destroyed, nonviable pancreatic head
+    ['destr-intact',       'Grade V-A'],   // intact main duct in head
+    ['destr-mpd',          'Grade V-B'],   // main duct injury
+    ['destr-cbd',          'Grade V-C'],   // intrapancreatic CBD injury
+    ['destr-avulsion',     'Grade V-D'],   // avulsion off duodenum / sphincter
+  ])('%s -> %s', (id, label) => {
+    const r = grade([id]);
+    expect(r.gradeLabel).toBe(label);
     expect(r.organ).toBe('Pancreas');
     expect(r.hasFindings).toBe(true);
   });
-});
 
-describe('calculateAast + aastPancreasDefinition — duct injury is the hinge', () => {
-  it('major laceration without duct = Grade II', () => {
-    const r = calculateAast(side(['lac-major']), aastPancreasDefinition);
-    expect(r.grade).toBe(2);
-  });
-
-  it('distal transection with duct = Grade III', () => {
-    const r = calculateAast(side(['distal-transection']), aastPancreasDefinition);
-    expect(r.grade).toBe(3);
-  });
-
-  it('proximal (head-side) duct injury = Grade IV — worse than distal', () => {
-    const r = calculateAast(
-      side(['proximal-transection']),
-      aastPancreasDefinition,
-    );
-    expect(r.grade).toBe(4);
-  });
-
-  it('massive head disruption = Grade V (top)', () => {
-    const r = calculateAast(side(['massive-head']), aastPancreasDefinition);
-    expect(r.grade).toBe(5);
+  it('covers all 14 Table 1 subgrades and nothing else', () => {
+    const all = aastPancreasDefinition.categories.flatMap((c) => c.findings);
+    expect(all).toHaveLength(14);
   });
 });
 
-describe('calculateAast + aastPancreasDefinition — max-grade rule', () => {
-  it('multiple findings → highest grade wins', () => {
-    const r = calculateAast(
-      side(['contusion-minor', 'proximal-transection']),
-      aastPancreasDefinition,
-    );
-    expect(r.grade).toBe(4);
-    expect(r.selectedCount).toBe(2);
+describe('AAST pancreas 2024 — key changes from 1990', () => {
+  it('head laceration without duct injury is Grade II (was IV in 1990)', () => {
+    expect(grade(['lac-head']).grade).toBe(2);
+  });
+
+  it('location decides III vs IV for deep/ductal injuries', () => {
+    expect(grade(['duct-nbt-complete']).grade).toBe(3);
+    expect(grade(['duct-head-complete']).grade).toBe(4);
+  });
+
+  it('multiple low-grade injuries do not advance the grade', () => {
+    expect(aastPancreasDefinition.advanceMultipleInjuries).toBe(false);
+    expect(grade(['edema', 'lac-nbt'], true).gradeLabel).toBe('Grade II-A');
+  });
+
+  it('reports the 2024 scale version', () => {
+    expect(grade([]).scaleVersion).toBe('2024');
   });
 });
 
-describe('calculateAast + aastPancreasDefinition — multiple-injury upgrade', () => {
-  it('Grade I + multipleInjuries → upgraded to III', () => {
-    const r = calculateAast(
-      side(['contusion-minor'], true),
-      aastPancreasDefinition,
-    );
-    expect(r.grade).toBe(3);
-    expect(r.findingsText).toContain('Multiple low-grade injuries present');
+describe('AAST pancreas 2024 — combinations', () => {
+  it('highest grade wins across locations', () => {
+    expect(grade(['lac-head', 'duct-nbt-partial']).gradeLabel).toBe('Grade III-A');
+    expect(grade(['deep-nbt-n', 'deep-head-n']).gradeLabel).toBe('Grade IV-N');
   });
 
-  it('Grade II + multipleInjuries → upgraded to III', () => {
-    const r = calculateAast(
-      side(['contusion-major'], true),
-      aastPancreasDefinition,
-    );
-    expect(r.grade).toBe(3);
+  it('confirmed ductal findings outrank -N within the same grade', () => {
+    expect(grade(['deep-nbt-n', 'duct-nbt-complete']).gradeLabel).toBe('Grade III-B');
   });
 
-  it('Grade III + multipleInjuries stays at III', () => {
-    const r = calculateAast(
-      side(['distal-transection'], true),
-      aastPancreasDefinition,
-    );
-    expect(r.grade).toBe(3);
+  it('Grade V subgrades: later letter wins when several apply', () => {
+    expect(grade(['destr-mpd', 'destr-cbd']).gradeLabel).toBe('Grade V-C');
   });
 
-  it('Grade V stays at V regardless of multipleInjuries', () => {
-    const r = calculateAast(
-      side(['massive-head'], true),
-      aastPancreasDefinition,
-    );
-    expect(r.grade).toBe(5);
-  });
-});
-
-describe('calculateAast + aastPancreasDefinition — findings text', () => {
-  it('groups by category label', () => {
-    const r = calculateAast(
-      side(['contusion-minor', 'distal-transection']),
-      aastPancreasDefinition,
-    );
-    expect(r.findingsText).toContain('Parenchymal Injury:');
-    expect(r.findingsText).toContain('Ductal Injury:');
-  });
-});
-
-describe('calculateAast + aastPancreasDefinition — edge cases', () => {
-  it('empty Set → no findings', () => {
-    const r = calculateAast(side([]), aastPancreasDefinition);
+  it('empty selection -> no grade', () => {
+    const r = grade([]);
     expect(r.grade).toBeNull();
     expect(r.gradeLabel).toBe('--');
+    expect(r.findingsText).toBe('No injuries identified.');
+  });
+
+  it('findings text lists the selected finding under its category', () => {
+    const r = grade(['duct-head-partial']);
+    expect(r.findingsText).toMatch(/head or uncinate/i);
+    expect(r.findingsText).toMatch(/alignment/i);
+  });
+});
+
+describe('AAST pancreas 2024 — HL7 safety of labels', () => {
+  it('no HL7 delimiters or non-ASCII in category or finding labels', () => {
+    for (const c of aastPancreasDefinition.categories) {
+      expect(c.label).not.toMatch(/[|~^&\\]|[^\x20-\x7E]/);
+      for (const f of c.findings) {
+        expect(f.label).not.toMatch(/[|~^&\\]|[^\x20-\x7E]/);
+        if (f.title) expect(f.title).not.toMatch(/[|~^&\\]|[^\x20-\x7E]/);
+      }
+    }
   });
 });

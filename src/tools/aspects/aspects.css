@@ -37,3 +37,10 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.aspects-normal-btn {
+  width: 100%;
+  margin-top: var(--space-sm);
+  justify-content: center;
+  text-align: center;
+}

@@ -1,6 +1,6 @@
 # RadioLogicHQ — Tool Catalog
 
-42 active radiology calculators. Each maps to a directory under `src/tools/{toolId}/`.
+48 active radiology calculators. Each maps to a directory under `src/tools/{toolId}/`.
 For architecture and adding new tools, see `architecture.md` and `newtool.md`.
 
 ## Tools by Category
@@ -11,7 +11,7 @@ For architecture and adding new tools, see `architecture.md` and `newtool.md`.
 - **PI-RADS** — prostate MRI risk stratification
 - **O-RADS** — ovarian-adnexal mass US risk
 - **Lung-RADS** — lung cancer screening CT
-- **BI-RADS** — breast imaging classification (mammo, US, MRI)
+- **BI-RADS** — v2025 assessment categories (mammo incl. DBT, US, MRI, CEM); category 0 split, optional clinical indication
 - **CAD-RADS** — coronary artery disease CTA (2.0 with modifiers)
 - **NI-RADS** — post-treatment head & neck surveillance
 
@@ -28,8 +28,9 @@ For architecture and adding new tools, see `architecture.md` and `newtool.md`.
 ### Trauma
 - **AAST Liver** — 2018 liver injury grading with vascular criteria
 - **AAST Spleen** — 2018 spleen injury grading with vascular criteria
-- **AAST Kidney** — 2018 kidney injury grading with vascular criteria
-- **AAST Pancreas** — 2018 pancreas injury grading with ductal criteria
+- **AAST Kidney** — 2025 kidney injury grading (2018 via toggle), bilateral
+- **AAST Pancreas** — 2024 pancreas injury grading with main-duct subgrades (I-A..V-D)
+- **AAST Multi-Trauma** — liver, spleen, kidney and pancreas on one page
 - **ASPECTS** — MCA territory stroke CT scoring
 - **SAH Grading** — Hunt-Hess + Modified Fisher scales
 
@@ -62,6 +63,13 @@ For architecture and adding new tools, see `architecture.md` and `newtool.md`.
 - **VUR (Nuclear)** — radionuclide cystography (mild/moderate/severe)
 - **GMH Grading** — germinal matrix hemorrhage (Papile I-IV)
 
+### Fetal Imaging
+- **Fetal Brain Biometry** — BPD, cerebellar diameter, cisterna magna with GA reference means
+- **Fetal Corpus Callosum** — CC length with GA norms (Harreld polynomial)
+- **Fetal Lung Volume** — observed/expected TFLV for CDH prognosis (Rypens formula)
+- **Fetal Posterior Fossa** — vermian height, TVA, brainstem with GA norms
+- **Fetal Ventricle Width** — lateral ventricle atrial width, ventriculomegaly categorization
+
 ## Tool Types
 
 All tools use the shared `<report-output>` component (pill editor, copy, save, history) and share auth, storage, parser, clipboard. They differ in how input is collected and how scores are computed:
@@ -77,6 +85,14 @@ All tools use the shared `<report-output>` component (pill editor, copy, save, h
 ### AAST organs
 AAST Liver, Spleen, Kidney, and Pancreas share `calculator.js` and `templates.js` from `src/tools/aast-liver/`. Each organ has only its own `definition.js` with organ-specific findings.
 
+Definition options understood by the shared calculator:
+- `subgrade` on a finding + `subgradeOrder` on the definition → labels like `Grade III-N` (pancreas 2024)
+- `escalations: [{ allOf, anyOf, grade }]` → combination rules (kidney 2025: active bleeding + MFK or complete infarction = Grade V)
+- `advanceMultipleInjuries: false` → disables the multiple Grade I/II → III rule and hides its checkbox
+- `scaleVersion` → named in reports (`AAST Pancreas injury (2024 OIS): ...`)
+
+Kidney has two definitions (`definition.js` = 2018, `definition-2025.js` = 2025) selected via `scales.js`; the choice is stored under `mode:aast-kidney` and shared with AAST Multi.
+
 ### Bone age
 Bone Age (Sontag) imports its calculator from `src/tools/bone-age/` (G&P).
 
@@ -84,4 +100,4 @@ Bone Age (Sontag) imports its calculator from `src/tools/bone-age/` (G&P).
 
 Each tool shows a validation badge next to its name — red warning triangle for unvalidated, green check for validated. Controlled by the `VALIDATED_TOOLS` set in `src/data/tools-registry.js`. See comments in that file for the criteria to flip a tool from unvalidated → validated.
 
-Currently: **all 42 tools are unvalidated** pending clinical review.
+Currently: **all 48 tools are unvalidated** pending clinical review.

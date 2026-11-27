@@ -1,7 +1,9 @@
 /**
  * O-RADS US v2022 — Ovarian-Adnexal Reporting and Data System (Ultrasound).
  * Decision-tree classification.
- * Reference: Andreotti RF et al. Radiology 2020;294(1):168-185.
+ * Reference: Strachowski LM et al. O-RADS US v2022: An Update from the ACR
+ *   O-RADS US Committee. Radiology 2023;308(3):e230685.
+ *   (Original system: Andreotti RF et al. Radiology 2020;294(1):168-185.)
  */
 export const oradsDefinition = {
   id: 'orads',

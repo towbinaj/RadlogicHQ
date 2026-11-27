@@ -5,14 +5,13 @@ import '../../components/report-output.js';
 import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
-import { aastKidneyDefinition } from './definition.js';
+import { getKidneyDefinition, KIDNEY_SCALES, KIDNEY_SCALE_STORAGE_KEY, DEFAULT_KIDNEY_SCALE } from './scales.js';
 import { calculateAast } from '../aast-liver/calculator.js';
 import { buildKidneyTemplates } from './templates.js';
-import { trackEvent } from '../../core/storage.js';
+import { trackEvent, getStored, setStored } from '../../core/storage.js';
 import { parseFindings, parseSegmentedFindings } from '../../core/parser.js';
 import '../../core/tool-name.js';
 
-const definition = aastKidneyDefinition;
 const templates = buildKidneyTemplates();
 
 // Build a side-specific state: { selectedFindings: Set, multipleInjuries: bool }
@@ -37,8 +36,10 @@ function makeFormState() {
  * grading to the shared calculateAast(), then merges the results into a single
  * view that the existing report templates can render.
  */
-function computeKidneyData(formState) {
+function computeKidneyData(formState, definition) {
   const { laterality } = formState;
+  // Name the scale in the report: grades differ between 2018 and 2025.
+  const scale = definition.scaleVersion ? ` (${definition.scaleVersion} OIS)` : '';
 
   if (laterality === 'bilateral') {
     const r = calculateAast(formState.right, definition);
@@ -52,8 +53,8 @@ function computeKidneyData(formState) {
 
     // Header line used in the report
     const gradeHeader = gradeParts.length
-      ? `AAST kidney injuries: ${gradeParts.join(', ')}`
-      : 'AAST kidney injury: --';
+      ? `AAST kidney injuries${scale}: ${gradeParts.join(', ')}`
+      : `AAST kidney injury${scale}: --`;
 
     // Findings text includes explicit side labels
     const findingsLines = [];
@@ -92,8 +93,8 @@ function computeKidneyData(formState) {
   const result = calculateAast(side, definition);
 
   const gradeHeader = result.gradeLabel !== '--'
-    ? `AAST ${sideLabel} kidney injury: ${result.gradeLabel}`
-    : `AAST ${sideLabel} kidney injury: --`;
+    ? `AAST ${sideLabel} kidney injury${scale}: ${result.gradeLabel}`
+    : `AAST ${sideLabel} kidney injury${scale}: --`;
 
   const findingsText = result.hasFindings
     ? `${sideLabel.charAt(0).toUpperCase() + sideLabel.slice(1)} kidney:\n${result.findingsText}`
@@ -115,9 +116,40 @@ function init() {
   const badgeGrade = document.getElementById('badge-grade');
   const additionalFindingsEl = document.getElementById('additional-findings');
 
+  // 2018 / 2025 scale toggle, persisted and shared with AAST Multi.
+  let scaleId = getStored(KIDNEY_SCALE_STORAGE_KEY, DEFAULT_KIDNEY_SCALE);
+  let definition = getKidneyDefinition(scaleId);
+  const modeTabsEl = document.getElementById('mode-tabs');
+
   reportEl.toolId = definition.id;
   reportEl.definition = definition;
   reportEl.setTemplates(templates);
+
+  function renderModeTabs() {
+    modeTabsEl.innerHTML = '';
+    for (const s of KIDNEY_SCALES) {
+      const tab = document.createElement('button');
+      tab.className = `obs-tab ${definition === s.definition ? 'active' : ''}`;
+      tab.textContent = s.label;
+      tab.title = s.id === '2025'
+        ? 'Keihani et al., J Trauma Acute Care Surg 2025'
+        : 'Kozar et al., J Trauma Acute Care Surg 2018';
+      tab.addEventListener('click', () => {
+        if (definition === s.definition) return;
+        scaleId = s.id;
+        definition = s.definition;
+        setStored(KIDNEY_SCALE_STORAGE_KEY, scaleId);
+        reportEl.definition = definition;
+        // Finding ids differ between scales: start both sides fresh.
+        formState.right = makeSideState();
+        formState.left = makeSideState();
+        renderModeTabs();
+        buildUI();
+      });
+      modeTabsEl.appendChild(tab);
+    }
+  }
+  renderModeTabs();
 
   const formState = makeFormState();
   let studyAdditionalFindings = '';
@@ -179,7 +211,7 @@ function init() {
         <div class="aast-category">
           ${cat.findings.map((f) => `
             <button class="benign-choice ${sideState.selectedFindings.has(f.id) ? 'benign-choice--active' : ''}"
-              data-finding="${f.id}" data-side="${side}" title="Grade ${f.grade}">${f.label}</button>
+              data-finding="${f.id}" data-side="${side}" title="Grade ${['', 'I', 'II', 'III', 'IV', 'V'][f.grade]}${f.title ? `. ${f.title}` : ''}">${f.label}</button>
           `).join('')}
         </div>
       `;
@@ -199,7 +231,9 @@ function init() {
       stepContainer.appendChild(card);
     }
 
-    // Multiple-injury checkbox for this side
+    // Multiple-injury checkbox for this side (2018 only: the 2025 update
+    // does not upgrade multiple injuries).
+    if (definition.advanceMultipleInjuries === false) return;
     const multiCard = document.createElement('div');
     multiCard.className = 'card';
     const checkboxId = `multi-injuries-${side}`;
@@ -217,14 +251,14 @@ function init() {
   }
 
   function update() {
-    const result = computeKidneyData(formState);
+    const result = computeKidneyData(formState, definition);
     badgeGrade.textContent = result.gradeLabel;
     badgeGrade.dataset.level = result.gradeLevel;
     updateReport();
   }
 
   function updateReport() {
-    const data = computeKidneyData(formState);
+    const data = computeKidneyData(formState, definition);
     reportEl.renderFn = (config, _data) => {
       if (config.editorContent) {
         let text = renderEditorContent(config.editorContent, config.pillStates, data);
@@ -269,7 +303,7 @@ function init() {
     const text = parseInput.value.trim();
     if (!text) return;
 
-    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, aastKidneyDefinition);
+    const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, definition);
 
     // Phase 1.1: parseSegmentedFindings with type 'laterality' returns only
     // 'right' and 'left' segments (bilateral sentences are already expanded

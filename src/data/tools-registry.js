@@ -429,7 +429,7 @@ export const toolsRegistry = [
   {
     id: 'aast-pancreas',
     name: 'AAST Pancreas',
-    description: 'AAST 2018 pancreas injury grading with ductal injury criteria.',
+    description: 'AAST 2024 pancreas injury grading with main duct subgrades (N, A, B).',
     icon: 'AP',
     path: '/src/tools/aast-pancreas/aast-pancreas.html',
     status: 'active',
@@ -501,7 +501,7 @@ export const toolsRegistry = [
   {
     id: 'birads',
     name: 'BI-RADS',
-    description: 'ACR BI-RADS breast imaging classification with management recommendations.',
+    description: 'ACR BI-RADS v2025 assessment categories with management recommendations.',
     icon: 'BI',
     path: '/src/tools/birads/birads.html',
     status: 'active',
@@ -549,7 +549,7 @@ export const toolsRegistry = [
   {
     id: 'aast-kidney',
     name: 'AAST Kidney',
-    description: 'AAST 2018 kidney injury grading with vascular injury criteria.',
+    description: 'AAST 2025 kidney injury grading (2018 scale via toggle), bilateral.',
     icon: 'AK',
     path: '/src/tools/aast-kidney/aast-kidney.html',
     status: 'active',
@@ -585,7 +585,7 @@ export const toolsRegistry = [
   {
     id: 'aast-multi',
     name: 'AAST Multi-Trauma',
-    description: 'Combined AAST 2018 multi-organ trauma grading — liver, spleen, kidney, and pancreas.',
+    description: 'Combined AAST multi-organ trauma grading — liver, spleen, kidney, and pancreas.',
     icon: 'MT',
     path: '/src/tools/aast-multi/aast-multi.html',
     status: 'active',

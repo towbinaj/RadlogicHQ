@@ -74,7 +74,7 @@ Report text is copied into PS360 / PowerScribe One / RadAI Omni and ultimately r
 
 - **`vite.config.js` auto-discovers HTML entries** from `src/tools/*/*.html` and `src/pages/*.html`. No manual updates needed when adding tools.
 - **Run `npm audit` after any dep upgrade.** Vite has had a history of dev-server CVEs (path traversal via `server.fs.deny` bypass, arbitrary file read via WebSocket). Production is unaffected because Cloudflare serves static `dist/` output, but dev machines matter.
-- **Run `npm run test:run` before committing.** 93 tests covering engine, parser, and several tool calculators.
+- **Run `npm run test:run` before committing.** 950+ tests covering engine, parser, report rendering, and every tool calculator.
 
 ## New Tool Requirements
 

@@ -1045,3 +1045,104 @@ describe('parseSegmentedFindings', () => {
     expect(r.segments[1].formState.composition).toBe('cystic');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Negation in multi-select parsing (docs/test.md section 10: parseFindings).
+// Before: keyword/pattern matching ignored negation, so "laceration, no urinary
+// extravasation" selected urinary extravasation (AAST kidney 2018 Grade IV).
+// ---------------------------------------------------------------------------
+import { aastKidneyDefinition } from '../tools/aast-kidney/definition.js';
+import { aastKidney2025Definition } from '../tools/aast-kidney/definition-2025.js';
+
+describe('parseFindings — negation in multi-select rules', () => {
+  const def = {
+    parseRules: {
+      findings: {
+        multi: true,
+        options: {
+          hematoma: ['hematoma'],
+          laceration: ['laceration'],
+          bleed: ['active extravasation'],
+          sized: { patterns: [{ re: /(\d+(?:\.\d+)?)\s*cm\s+tear/i, test: (m) => parseFloat(m[1]) >= 1 }] },
+        },
+      },
+    },
+  };
+  const found = (t) => parseFindings(t, def).formState.findings || [];
+
+  it('"no X" excludes X', () => {
+    expect(found('No hematoma.')).toEqual([]);
+  });
+
+  it('"without X" excludes X but keeps the positive finding before it', () => {
+    expect(found('Laceration without active extravasation.')).toEqual(['laceration']);
+  });
+
+  it('negated "or" list excludes every item', () => {
+    expect(found('No hematoma, laceration, or active extravasation.')).toEqual([]);
+  });
+
+  it('a comma ends the scope when the clause is not an "or" list', () => {
+    expect(found('No free fluid, small hematoma.')).toEqual(['hematoma']);
+  });
+
+  it('"but" ends the scope', () => {
+    expect(found('No hematoma but a laceration is present.')).toEqual(['laceration']);
+  });
+
+  it('sentence boundary ends the scope', () => {
+    expect(found('No free fluid. Laceration of the lower pole.')).toEqual(['laceration']);
+  });
+
+  it('decimal points are not sentence boundaries', () => {
+    expect(found('There is a 2.5 cm laceration. No hematoma.')).toEqual(['laceration']);
+  });
+
+  it('post-negation ("is not seen", "not identified") excludes the preceding finding', () => {
+    expect(found('Active extravasation is not seen.')).toEqual([]);
+    expect(found('Hematoma not identified.')).toEqual([]);
+  });
+
+  it('pseudo-negation ("no change in") does not exclude', () => {
+    expect(found('No change in the laceration.')).toEqual(['laceration']);
+  });
+
+  it('a later non-negated mention still selects the finding', () => {
+    expect(found('No hematoma on the left. Right hematoma is present.')).toEqual(['hematoma']);
+  });
+
+  it('pattern matches respect negation and fall through to a later occurrence', () => {
+    expect(found('No 2 cm tear.')).toEqual([]);
+    expect(found('No 2 cm tear on the left. 3 cm tear on the right.')).toEqual(['sized']);
+  });
+
+  it('positive control: plain findings still match', () => {
+    expect(found('Active extravasation and a hematoma are present.')).toEqual(['hematoma', 'bleed']);
+  });
+});
+
+describe('parseFindings — negation with the real AAST kidney rules', () => {
+  const f18 = (t) => parseFindings(t, aastKidneyDefinition).formState.selectedFindings || [];
+  const f25 = (t) => parseFindings(t, aastKidney2025Definition).formState.selectedFindings || [];
+
+  it('2018: "1.5 cm laceration, no urinary extravasation" is not Grade IV extravasation', () => {
+    const r = f18('1.5 cm laceration, no urinary extravasation.');
+    expect(r).toContain('lac-gt1');
+    expect(r).not.toContain('urine-extrav');
+  });
+
+  it('2018: tool labels no longer select the negated findings they mention', () => {
+    expect(f18('<1 cm depth, no urinary extravasation')).toEqual(['lac-lt1']);
+    expect(f18('>1 cm depth, no collecting system rupture or urinary extravasation')).toEqual(['lac-gt1']);
+  });
+
+  it('2025: "3 cm laceration without active bleeding" stays Grade III', () => {
+    const r = f25('3 cm laceration without active bleeding.');
+    expect(r).toContain('lac-ge25');
+    expect(r).not.toContain('active-bleeding');
+  });
+
+  it('2025: positive control "active bleeding is present"', () => {
+    expect(f25('Active bleeding is present.')).toContain('active-bleeding');
+  });
+});
