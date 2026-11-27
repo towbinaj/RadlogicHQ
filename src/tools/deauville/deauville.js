@@ -89,6 +89,28 @@ function init() {
     });
     stepContainer.appendChild(scoreCard);
 
+    // Block 2b: Uptake compared with baseline (Lugano 2014; needed for Deauville 4-5)
+    const blCard = document.createElement('div');
+    blCard.className = 'step-card card';
+    blCard.innerHTML = `
+      <div class="step-card__question" title="For Deauville 4-5 the Lugano response depends on uptake compared with the baseline PET">Uptake vs Baseline</div>
+      <div class="benign-choices">
+        ${def.baselineOptions.map((o) => `
+          <button class="benign-choice ${formState.baseline === o.id ? 'benign-choice--active' : ''}"
+            data-value="${o.id}" title="${o.tooltip}">${o.label}</button>
+        `).join('')}
+      </div>
+    `;
+    blCard.querySelectorAll('.benign-choice').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        formState.baseline = btn.dataset.value;
+        blCard.querySelectorAll('.benign-choice').forEach((b) =>
+          b.classList.toggle('benign-choice--active', b === btn));
+        update();
+      });
+    });
+    stepContainer.appendChild(blCard);
+
     // Block 3: New lesions
     const nlCard = document.createElement('div');
     nlCard.className = 'step-card card';
@@ -133,7 +155,8 @@ function init() {
     const impressionParts = [];
     if (data.timingProvided) impressionParts.push(`${data.timingLabel} PET/CT.`);
     if (data.score) impressionParts.push(`Deauville ${data.score}.`);
-    impressionParts.push(data.responseFullLabel + '.');
+    if (data.response !== '--') impressionParts.push(data.responseFullLabel + '.');
+    else if (data.score) impressionParts.push('Response requires comparison with baseline uptake.');
     if (data.hasNewLesion) impressionParts.push('New lesions identified.');
     const impressionSummary = impressionParts.join(' ');
 
