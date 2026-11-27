@@ -101,8 +101,8 @@ export const aastKidney2025Definition = {
   // Hand-written rules for dictation phrasing. Numeric patterns route sizes
   // to the 2.5 cm laceration and 3.5 cm HRD cutoffs; a size exactly at the
   // cutoff goes to the higher grade, as the table defines (>=).
-  // Known limitation shared with the 2018 rules: matching is substring-based
-  // with no negation handling ("no urinary extravasation" still matches).
+  // Negated mentions ("no urinary extravasation", "without active bleeding")
+  // are skipped by the shared parser (findNegationRanges in parser.js).
   parseRules: {
     selectedFindings: {
       multi: true,

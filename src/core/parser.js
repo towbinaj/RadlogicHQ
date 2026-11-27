@@ -501,6 +501,88 @@ function extractFindingsSection(text) {
 }
 
 // ============================================================
+// NEGATION (multi-select findings)
+// ============================================================
+//
+// NegEx-style scoping so "laceration, no urinary extravasation" does not
+// select urinary extravasation. Applied to multi-select rules only (finding
+// checklists such as AAST); single-choice rules are unchanged.
+//
+// - Pre-negators ("no", "without", "negative for", ...) negate the text after
+//   them until a clause boundary: sentence punctuation (a decimal point is
+//   not one), a contrast word ("but", "however", ...), a comma -- unless the
+//   clause is an "or"/"nor" list ("No hematoma, laceration, or bleeding") --
+//   or NEG_MAX_WORDS words.
+// - Post-negators ("not seen", "is absent", ...) negate the preceding words of
+//   the same clause, back to a comma or contrast word.
+// - Pseudo-negations ("no change", "no interval change") negate nothing.
+
+const NEG_MAX_WORDS = 8;
+const NEG_PRE_RE = /\b(?:no evidence of|no signs? of|negative for|absence of|free of|without|no|not)\b/gi;
+const NEG_PSEUDO_RE = /^(?:no (?:significant |interval |significant interval )?change|no (?:increase|decrease)|not only|no longer)\b/i;
+const NEG_POST_RE = /\b(?:(?:is|are|was|were)\s+)?(?:not\s+(?:seen|identified|visualized|demonstrated|present|appreciated)|absent|ruled out|excluded)\b/gi;
+const NEG_TERMINATOR_RE = /\b(?:but|however|although|though|except|aside from|apart from|whereas)\b/i;
+const CLAUSE_SPLIT_RE = /[;:!?\n]|\.(?!\d)/g;
+
+/** Character ranges [start, end) of `text` that fall under a negation. */
+export function findNegationRanges(text) {
+  const ranges = [];
+  if (!text) return ranges;
+
+  // Split into clauses, keeping offsets.
+  const clauses = [];
+  let last = 0;
+  for (const m of text.matchAll(CLAUSE_SPLIT_RE)) {
+    clauses.push([last, m.index]);
+    last = m.index + m[0].length;
+  }
+  clauses.push([last, text.length]);
+
+  for (const [cs, ce] of clauses) {
+    const clause = text.slice(cs, ce);
+    const isOrList = /\b(?:or|nor)\b/i.test(clause);
+
+    for (const m of clause.matchAll(NEG_PRE_RE)) {
+      if (NEG_PSEUDO_RE.test(clause.slice(m.index))) continue;
+      // "not" directly in a post-negator ("not seen") is handled below.
+      if (/^not\s+(?:seen|identified|visualized|demonstrated|present|appreciated)\b/i.test(clause.slice(m.index))) continue;
+      const start = m.index + m[0].length;
+      let end = clause.length;
+      const rest = clause.slice(start);
+      const term = rest.match(NEG_TERMINATOR_RE);
+      if (term) end = Math.min(end, start + term.index);
+      if (!isOrList) {
+        const comma = rest.indexOf(',');
+        if (comma !== -1) end = Math.min(end, start + comma);
+      }
+      // Word cap
+      const words = [...rest.matchAll(/\S+/g)];
+      if (words.length > NEG_MAX_WORDS) {
+        const w = words[NEG_MAX_WORDS - 1];
+        end = Math.min(end, start + w.index + w[0].length);
+      }
+      ranges.push([cs + start, cs + end]);
+    }
+
+    for (const m of clause.matchAll(NEG_POST_RE)) {
+      const before = clause.slice(0, m.index);
+      let start = 0;
+      const lastComma = before.lastIndexOf(',');
+      if (lastComma !== -1) start = lastComma + 1;
+      const termMatches = [...before.matchAll(new RegExp(NEG_TERMINATOR_RE.source, 'gi'))];
+      if (termMatches.length) {
+        const t = termMatches[termMatches.length - 1];
+        start = Math.max(start, t.index + t[0].length);
+      }
+      ranges.push([cs + start, cs + m.index]);
+    }
+  }
+  return ranges;
+}
+
+const isNegatedAt = (ranges, index) => ranges.some(([s, e]) => index >= s && index < e);
+
+// ============================================================
 // MAIN PARSER
 // ============================================================
 
@@ -525,6 +607,7 @@ export function parseFindings(text, definition) {
   }
 
   const normalized = extracted.toLowerCase();
+  const negationRanges = findNegationRanges(extracted);
   const formState = {};
   const matched = [];
   const unmatched = [];
@@ -556,37 +639,42 @@ export function parseFindings(text, definition) {
         let optMatched = false;
         let optSpan = '';
 
-        if (Array.isArray(spec)) {
-          // Legacy: array of keyword strings
-          const sorted = [...spec].sort((a, b) => b.length - a.length);
+        // A keyword or pattern counts only at an occurrence that is not
+        // under a negation (see findNegationRanges); later occurrences are
+        // checked when an earlier one is negated.
+        const keywordHit = (kws) => {
+          const sorted = [...kws].sort((a, b) => b.length - a.length);
           for (const kw of sorted) {
-            if (normalized.includes(kw.toLowerCase())) {
-              optMatched = true;
-              optSpan = kw;
-              break;
+            const needle = kw.toLowerCase();
+            for (let i = normalized.indexOf(needle); i !== -1; i = normalized.indexOf(needle, i + 1)) {
+              if (!isNegatedAt(negationRanges, i)) return kw;
             }
           }
+          return null;
+        };
+
+        if (Array.isArray(spec)) {
+          // Legacy: array of keyword strings
+          const kw = keywordHit(spec);
+          if (kw) { optMatched = true; optSpan = kw; }
         } else if (spec && typeof spec === 'object') {
           // New: {keywords, patterns}
           if (Array.isArray(spec.patterns)) {
-            for (const p of spec.patterns) {
-              const m = extracted.match(p.re);
-              if (m && (typeof p.test !== 'function' || p.test(m))) {
-                optMatched = true;
-                optSpan = m[0];
-                break;
+            outer: for (const p of spec.patterns) {
+              const flags = p.re.flags.includes('g') ? p.re.flags : p.re.flags + 'g';
+              for (const m of extracted.matchAll(new RegExp(p.re.source, flags))) {
+                if (isNegatedAt(negationRanges, m.index)) continue;
+                if (typeof p.test !== 'function' || p.test(m)) {
+                  optMatched = true;
+                  optSpan = m[0];
+                  break outer;
+                }
               }
             }
           }
           if (!optMatched && Array.isArray(spec.keywords)) {
-            const sorted = [...spec.keywords].sort((a, b) => b.length - a.length);
-            for (const kw of sorted) {
-              if (normalized.includes(kw.toLowerCase())) {
-                optMatched = true;
-                optSpan = kw;
-                break;
-              }
-            }
+            const kw = keywordHit(spec.keywords);
+            if (kw) { optMatched = true; optSpan = kw; }
           }
         }
 

@@ -100,6 +100,18 @@ When one keyword is a substring of another (`enhanced` inside `unenhanced`), use
 
 ---
 
+### Negation (multi-select rules)
+
+Multi-select rules (`multi: true`, e.g. AAST finding checklists) skip any keyword or pattern occurrence that falls under a negation, using `findNegationRanges()` (NegEx-style, exported for tests):
+
+- **Pre-negators** (`no`, `not`, `without`, `negative for`, `absence of`, `free of`, `no evidence of`, `no sign(s) of`) negate the text after them until the clause ends: sentence punctuation (a decimal point like `2.5` is not one), a contrast word (`but`, `however`, `although`, `except`, ...), a comma — unless the clause is an `or`/`nor` list (`No hematoma, laceration, or active extravasation`) — or 8 words.
+- **Post-negators** (`not seen`, `not identified`, `is absent`, `ruled out`, ...) negate the preceding words of the same clause, back to a comma or contrast word.
+- **Pseudo-negations** (`no change`, `no interval change`, `no increase`, `not only`, `no longer`) negate nothing.
+- If one occurrence is negated, later occurrences are still checked (`No hematoma on the left. Right hematoma present.` selects hematoma).
+- Keywords that themselves start with a negator (`no flow`) still match: the scope begins *after* the trigger.
+
+Single-choice and pattern-group rules are unchanged. Tests: "negation in multi-select rules" in `parser.test.js`.
+
 ## 4. SYNONYMS dictionary
 
 The `SYNONYMS` const at the top of `parser.js` is a ~123-entry map from **substring key** to **synonym array**:
