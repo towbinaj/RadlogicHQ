@@ -92,7 +92,7 @@ export const liradsDefinition = {
     favoringHCC: [
       { id: 'restrictedDiffusion', label: 'Restricted diffusion', tooltip: 'Signal intensity on DWI higher than liver, not attributable solely to T2 shine-through; ADC lower or similar to liver', cdeElementId: 'RDE89' },
       { id: 'mildT2Hyperintensity', label: 'Mild-moderate T2 hyperintensity', tooltip: 'Signal intensity on T2W images mildly or moderately higher than liver', cdeElementId: 'RDE87' },
-      { id: 'intralesionalFat', label: 'Intralesional fat', tooltip: 'Fat within the observation in greater concentration than surrounding liver. Identified by signal loss on opposed-phase or fat-only images.', cdeElementId: 'RDE91' },
+      { id: 'intralesionalFat', label: 'Fat in mass, more than adjacent liver', tooltip: 'Fat within the observation in greater concentration than surrounding liver (signal loss on opposed-phase or fat-only images). Favors HCC in particular.', cdeElementId: 'RDE91' },
       { id: 'mosaicArchitecture', label: 'Mosaic architecture', tooltip: 'Observation appearing to consist of randomly distributed internal nodules or compartments with differing appearances', cdeElementId: 'RDE90' },
       { id: 'noduleInNodule', label: 'Nodule-in-nodule', tooltip: 'Smaller nodule within a larger nodule, with different imaging characteristics than the parent nodule' },
       { id: 'fatSparing', label: 'Fat sparing in solid mass', tooltip: 'Less fat in a solid mass than in surrounding fatty liver' },
@@ -100,12 +100,10 @@ export const liradsDefinition = {
       { id: 'coronaEnhancement', label: 'Corona enhancement', tooltip: 'Perilesional enhancement in late arterial or early portal venous phase, thought to represent venous drainage from arterialized tumor' },
     ],
     favoringBenign: [
-      { id: 'homogeneousSignal', label: 'Homogeneous signal', tooltip: 'Uniform signal intensity throughout observation on all sequences' },
       { id: 'markedT2Hyperintensity', label: 'Marked T2 hyperintensity', tooltip: 'Signal intensity on T2W images approaching that of bile ducts or CSF' },
       { id: 'undistortedVessels', label: 'Undistorted vessels', tooltip: 'Vessels traversing observation without displacement, distortion, or encasement' },
       { id: 'parallelsBloodPool', label: 'Parallels blood pool', tooltip: 'Enhancement pattern mirroring blood pool (aorta/veins) across all phases' },
       { id: 'ironInMass', label: 'Iron in mass > liver', tooltip: 'More iron in the mass than in surrounding liver parenchyma' },
-      { id: 'fatInMass', label: 'Fat in mass > liver', tooltip: 'More fat in the mass than in surrounding liver parenchyma (distinct from intralesional fat which favors HCC)' },
       { id: 'hbpIsointensity', label: 'HBP isointensity', tooltip: 'Hepatobiliary phase signal intensity identical or nearly identical to surrounding liver', cdeElementId: 'RDE86' },
     ],
   },
@@ -312,9 +310,6 @@ export const liradsDefinition = {
     },
     'anc_benign_undistortedVessels': {
       options: { yes: ['undistorted vessels', 'vessels traverse', 'traversing vessels'] },
-    },
-    'anc_benign_homogeneousSignal': {
-      options: { yes: ['homogeneous signal', 'uniformly homogeneous'] },
     },
   },
 };
