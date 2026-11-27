@@ -56,3 +56,30 @@ describe('calculateBosniak', () => {
     expect(result.categoryShort).toBe('IV');
   });
 });
+
+// --- Audit fix: Bosniak v2019 septa counts and calcification (Silverman 2019) ---
+describe('calculateBosniak — v2019 septa counts', () => {
+  it('few (1-3) thin smooth septa is class II', () => {
+    const r = calculateBosniak({ wall: 'thinSmooth', septa: 'thinSmooth' });
+    expect(r.categoryShort).toBe('II');
+    expect(r.reason).toMatch(/1-3/);
+  });
+
+  it('many (>=4) thin smooth septa is class IIF', () => {
+    const r = calculateBosniak({ wall: 'thinSmooth', septa: 'thinSmoothMany' });
+    expect(r.categoryShort).toBe('IIF');
+    expect(r.reason).toMatch(/>=4/);
+  });
+
+  it('septa option labels say 1-3 and >=4', async () => {
+    const { bosniakDefinition } = await import('./definition.js');
+    const labels = bosniakDefinition.septa.options.map((o) => o.label).join(' ');
+    expect(labels).toMatch(/1-3/);
+    expect(labels).toMatch(/>=4/);
+  });
+
+  it('thin smooth wall, no septa, with calcification is class II (not I)', () => {
+    const r = calculateBosniak({ wall: 'thinSmooth', septa: 'none', calcification: 'thick' });
+    expect(r.categoryShort).toBe('II');
+  });
+});

@@ -8,8 +8,8 @@
  * Classification hierarchy (highest class wins):
  *   IV  — Enhancing soft tissue component
  *   III — Thickened/irregular wall or septa with measurable enhancement
- *   IIF — Minimally thickened smooth wall/septa, OR ≥3 thin smooth septa
- *   II  — 1-2 thin smooth septa (may enhance), OR perceived enhancement, OR any calcification
+ *   IIF — Minimally thickened smooth wall/septa, OR many (>=4) thin smooth septa
+ *   II  — few (1-3) thin smooth septa (may enhance), OR perceived enhancement, OR any calcification
  *   I   — Simple cyst: thin smooth wall, no septa, no enhancement
  */
 
@@ -47,20 +47,22 @@ export function calculateBosniak(formState) {
     return buildResult('III', formState, features.join(', '));
   }
 
-  // --- IIF: Minimally thickened smooth wall or septa, OR ≥3 thin smooth septa ---
+  // --- IIF: Minimally thickened smooth wall or septa, OR many (>=4) thin smooth septa ---
   if (wall === 'minThickSmooth' || septa === 'minThickSmooth' || septa === 'thinSmoothMany') {
     const features = [];
     if (wall === 'minThickSmooth') features.push('minimally thickened smooth wall');
     if (septa === 'minThickSmooth') features.push('minimally thickened smooth septa');
-    if (septa === 'thinSmoothMany') features.push('≥3 thin smooth septa');
+    if (septa === 'thinSmoothMany') features.push('>=4 thin smooth septa');
     return buildResult('IIF', formState, features.join(', '));
   }
 
-  // --- II: 1-2 thin smooth septa, perceived enhancement, calcification ---
-  if (septa === 'thinSmooth' || enhancement === 'perceived') {
+  // --- II: few (1-3) thin smooth septa, perceived enhancement, calcification ---
+  const calcified = formState.calcification === 'thin' || formState.calcification === 'thick';
+  if (septa === 'thinSmooth' || enhancement === 'perceived' || calcified) {
     const features = [];
-    if (septa === 'thinSmooth') features.push('1-2 thin smooth septa');
+    if (septa === 'thinSmooth') features.push('1-3 thin smooth septa');
     if (enhancement === 'perceived') features.push('perceived enhancement');
+    if (calcified) features.push('calcification');
     return buildResult('II', formState, features.join(', '));
   }
 
@@ -83,8 +85,8 @@ function buildResult(category, formState, reason) {
 
   const septalLabels = {
     none: 'No septa',
-    thinSmooth: '1-2 thin smooth septa',
-    thinSmoothMany: '≥3 thin smooth septa',
+    thinSmooth: '1-3 thin smooth septa',
+    thinSmoothMany: '>=4 thin smooth septa',
     minThickSmooth: 'Minimally thickened smooth septa',
     thickIrregular: 'Thickened/irregular septa',
   };
