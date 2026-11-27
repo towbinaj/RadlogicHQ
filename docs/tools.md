@@ -28,8 +28,8 @@ For architecture and adding new tools, see `architecture.md` and `newtool.md`.
 ### Trauma
 - **AAST Liver** — 2018 liver injury grading with vascular criteria
 - **AAST Spleen** — 2018 spleen injury grading with vascular criteria
-- **AAST Kidney** — 2018 kidney injury grading with vascular criteria
-- **AAST Pancreas** — pancreas injury grading with ductal criteria (Moore 1990 scale; 2024 revision pending)
+- **AAST Kidney** — 2025 kidney injury grading (2018 via toggle), bilateral
+- **AAST Pancreas** — 2024 pancreas injury grading with main-duct subgrades (I-A..V-D)
 - **AAST Multi-Trauma** — liver, spleen, kidney and pancreas on one page
 - **ASPECTS** — MCA territory stroke CT scoring
 - **SAH Grading** — Hunt-Hess + Modified Fisher scales
@@ -84,6 +84,14 @@ All tools use the shared `<report-output>` component (pill editor, copy, save, h
 
 ### AAST organs
 AAST Liver, Spleen, Kidney, and Pancreas share `calculator.js` and `templates.js` from `src/tools/aast-liver/`. Each organ has only its own `definition.js` with organ-specific findings.
+
+Definition options understood by the shared calculator:
+- `subgrade` on a finding + `subgradeOrder` on the definition → labels like `Grade III-N` (pancreas 2024)
+- `escalations: [{ allOf, anyOf, grade }]` → combination rules (kidney 2025: active bleeding + MFK or complete infarction = Grade V)
+- `advanceMultipleInjuries: false` → disables the multiple Grade I/II → III rule and hides its checkbox
+- `scaleVersion` → named in reports (`AAST Pancreas injury (2024 OIS): ...`)
+
+Kidney has two definitions (`definition.js` = 2018, `definition-2025.js` = 2025) selected via `scales.js`; the choice is stored under `mode:aast-kidney` and shared with AAST Multi.
 
 ### Bone age
 Bone Age (Sontag) imports its calculator from `src/tools/bone-age/` (G&P).
