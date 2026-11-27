@@ -2,7 +2,7 @@
  * Fetal posterior fossa calculator.
  */
 
-import { expectedVermianHeight, fetalPFDefinition } from './definition.js';
+import { cigniniRow, fetalPFDefinition } from './definition.js';
 
 export function calculateFetalPF(formState) {
   const { ga, vermianHeight, vermianAP, tva, brainstemAP } = formState;
@@ -11,15 +11,19 @@ export function calculateFetalPF(formState) {
 
   // Vermian height comparison
   const hasVh = vermianHeight != null && vermianHeight > 0;
-  const expectedVh = hasGa ? expectedVermianHeight(ga) : null;
-  let vhDiff = null;
+  // Cignini 2016 centiles (20-35 weeks). Outside that range the value is
+  // reported without interpretation rather than extrapolated.
+  const ref = hasGa ? cigniniRow(ga) : null;
+  const expectedVh = ref ? ref.mean : null;
   let vhInterpretation = '';
-  if (hasVh && expectedVh != null) {
-    vhDiff = Math.round((vermianHeight - expectedVh) * 10) / 10;
-    if (Math.abs(vhDiff) <= 3) vhInterpretation = 'Within normal range';
-    else if (vhDiff > 3) vhInterpretation = 'Above expected';
-    else vhInterpretation = 'Below expected — consider vermian hypoplasia';
+  let vhLevel = 0;
+  if (hasVh && ref) {
+    if (vermianHeight < ref.p1) { vhInterpretation = 'Below 1st centile - consider vermian hypoplasia'; vhLevel = 3; }
+    else if (vermianHeight < ref.p5) { vhInterpretation = 'Below 5th centile'; vhLevel = 2; }
+    else if (vermianHeight > ref.p95) { vhInterpretation = 'Above 95th centile'; vhLevel = 2; }
+    else vhInterpretation = 'Within normal range (5th-95th centile)';
   }
+  const vhNote = hasVh && !ref ? 'No reference: Cignini 2016 covers 20-35 weeks' : '';
 
   // TVA categorization (GA-independent)
   const hasTva = tva != null && tva >= 0;
@@ -40,10 +44,11 @@ export function calculateFetalPF(formState) {
     vhLabel: hasVh ? `${vermianHeight} mm` : '--', vhProvided: hasVh,
     vhExpected: expectedVh != null ? `${expectedVh} mm` : '', vhExpectedProvided: expectedVh != null,
     vhInterpretation, vhInterpretationProvided: !!vhInterpretation,
+    vhNote, vhNoteProvided: !!vhNote,
     vapLabel: hasVap ? `${vermianAP} mm` : '--', vapProvided: hasVap,
     tvaLabel: hasTva ? `${tva}\u00b0` : '--', tvaProvided: hasTva,
     tvaCategory, tvaCategoryDesc, tvaCategoryProvided: !!tvaCategory,
     bsLabel: hasBs ? `${brainstemAP} mm` : '--', bsProvided: hasBs,
-    level: Math.max(tvaLevel, vhInterpretation.includes('hypoplasia') ? 3 : 0),
+    level: Math.max(tvaLevel, vhLevel),
   };
 }

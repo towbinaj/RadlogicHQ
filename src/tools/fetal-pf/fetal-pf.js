@@ -86,7 +86,7 @@ function init() {
 
     const vhRef = document.getElementById('vh-ref');
     const tvaRef = document.getElementById('tva-ref');
-    if (vhRef) vhRef.textContent = r.vhExpectedProvided ? `Expected: ${r.vhExpected} (${r.vhInterpretation || '\u2014'})` : '';
+    if (vhRef) vhRef.textContent = r.vhExpectedProvided ? `Cignini mean: ${r.vhExpected} (${r.vhInterpretation || '-'})` : (r.vhNote || '');
     if (tvaRef) tvaRef.textContent = r.tvaCategoryProvided ? r.tvaCategoryDesc : 'Normal <18\u00b0';
 
     updateReport();

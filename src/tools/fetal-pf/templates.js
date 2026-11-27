@@ -1,6 +1,7 @@
 const FINDINGS_BLOCKS = [
   { id: 'ga', label: 'GA', template: 'Gestational age: {{gaLabel}}', enabled: true, condition: 'gaProvided' },
-  { id: 'vh', label: 'Vermian Height', template: 'Vermian height: {{vhLabel}} (expected {{vhExpected}}, {{vhInterpretation}})', enabled: true, condition: 'vhInterpretationProvided' },
+  { id: 'vh', label: 'Vermian Height', template: 'Vermian height: {{vhLabel}} (Cignini 2016 mean {{vhExpected}}; {{vhInterpretation}})', enabled: true, condition: 'vhInterpretationProvided' },
+  { id: 'vhNoRef', label: 'Vermian Height (no reference)', template: 'Vermian height: {{vhLabel}} ({{vhNote}})', enabled: true, condition: 'vhNoteProvided' },
   { id: 'vap', label: 'Vermian AP', template: 'Vermian AP diameter: {{vapLabel}}', enabled: true, condition: 'vapProvided' },
   { id: 'tva', label: 'TVA', template: 'Tegmento-vermian angle: {{tvaLabel}} ({{tvaCategoryDesc}})', enabled: true, condition: 'tvaCategoryProvided' },
   { id: 'bs', label: 'Brainstem', template: 'Brainstem AP diameter: {{bsLabel}}', enabled: true, condition: 'bsProvided' },
