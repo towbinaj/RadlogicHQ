@@ -4,44 +4,37 @@ import { calculateAgatston } from './calculator.js';
 // Retroactive coverage for the measurement tool backlog.
 // See docs/test.md section 9.
 
-describe('calculateAgatston — risk category lookup by score', () => {
+// CAC-DRS 2018 (Hecht HS et al., J Cardiovasc Comput Tomogr 2018;12:185-191)
+describe('calculateAgatston — CAC-DRS categories', () => {
   it.each([
-    [0,    'No calcium',        'Very low',          1],
-    [1,    'Minimal calcium',   'Low',               1],
-    [10,   'Minimal calcium',   'Low',               1],
-    [11,   'Mild calcium',      'Mild',              2],
-    [50,   'Mild calcium',      'Mild',              2],
-    [99,   'Mild calcium',      'Mild',              2],
-    [100,  'Moderate calcium',  'Moderate',          3],
-    [299,  'Moderate calcium',  'Moderate',          3],
-    [300,  'Severe calcium',    'Moderately high',   5],
-    [999,  'Severe calcium',    'Moderately high',   5],
-    [1000, 'Extensive calcium', 'Very high',         5],
-    [5000, 'Extensive calcium', 'Very high',         5],
-  ])('score %d → %s / %s (level %d)', (score, label, risk, level) => {
+    [0,    'CAC-DRS 0', 'Very low',                         1],
+    [0.5,  'CAC-DRS 1', 'Mildly increased',                 2],
+    [1,    'CAC-DRS 1', 'Mildly increased',                 2],
+    [99,   'CAC-DRS 1', 'Mildly increased',                 2],
+    [99.5, 'CAC-DRS 2', 'Moderately increased',             3],
+    [100,  'CAC-DRS 2', 'Moderately increased',             3],
+    [299,  'CAC-DRS 2', 'Moderately increased',             3],
+    [299.4,'CAC-DRS 3', 'Moderately to severely increased', 5],
+    [300,  'CAC-DRS 3', 'Moderately to severely increased', 5],
+    [5000, 'CAC-DRS 3', 'Moderately to severely increased', 5],
+  ])('score %s -> %s / %s (level %d)', (score, label, risk, level) => {
     const r = calculateAgatston({ score });
     expect(r.categoryLabel).toBe(label);
     expect(r.risk).toBe(risk);
     expect(r.level).toBe(level);
-    expect(r.scoreProvided).toBe(true);
-  });
-});
-
-describe('calculateAgatston — boundary edges', () => {
-  it('score 0 is the "no calcium" special case', () => {
-    const r = calculateAgatston({ score: 0 });
-    expect(r.categoryLabel).toBe('No calcium');
-    expect(r.recommendation).toMatch(/Reassurance/);
   });
 
-  it('score 1000 (lower edge of Extensive) has high-intensity statin rec', () => {
-    const r = calculateAgatston({ score: 1000 });
-    expect(r.recommendation).toMatch(/High-intensity statin/);
+  it('recommendations follow CAC-DRS', () => {
+    expect(calculateAgatston({ score: 0 }).recommendation).toMatch(/statin generally not recommended/i);
+    expect(calculateAgatston({ score: 50 }).recommendation).toMatch(/moderate-intensity statin/i);
+    expect(calculateAgatston({ score: 150 }).recommendation).toMatch(/moderate- to high-intensity statin/i);
+    expect(calculateAgatston({ score: 350 }).recommendation).toMatch(/high-intensity statin/i);
+    expect(calculateAgatston({ score: 350 }).recommendation).toMatch(/bleeding risk/i);
   });
 
-  it('populates recommendation text for each category', () => {
-    expect(calculateAgatston({ score: 50 }).recommendation).toMatch(/statin/i);
-    expect(calculateAgatston({ score: 150 }).recommendation).toMatch(/Moderate-to-high/);
+  it('labels are ASCII', async () => {
+    const { agatstonDefinition } = await import('./definition.js');
+    for (const c of agatstonDefinition.riskCategories) for (const v of [c.label, c.risk, c.recommendation]) expect(v).not.toMatch(/[^\x20-\x7E]/);
   });
 });
 
@@ -66,12 +59,24 @@ describe('calculateAgatston — edge cases', () => {
   });
 });
 
-// --- Audit fix: decimal scores between integer category ranges ---
-describe('calculateAgatston — decimal scores', () => {
-  it.each([[0.5, 'Minimal calcium'], [10.5, 'Mild calcium'], [99.5, 'Moderate calcium'], [299.4, 'Severe calcium'], [999.9, 'Extensive calcium']])(
-    '%s gets a category (%s)', (score, label) => {
-      const r = calculateAgatston({ score });
-      expect(r.categoryLabel).toBe(label);
-      expect(r.level).toBeGreaterThan(0);
-    });
+import { parseFindings } from '../../core/parser.js';
+import { agatstonDefinition as def } from './definition.js';
+describe('Agatston parse', () => {
+  const score = (t) => parseFindings(t, def).formState.score;
+  it.each([
+    ['CAC score 1,250.', 1250],
+    ['Coronary artery calcium score of 150.', 150],
+    ['Calcium score 12.7.', 12.7],
+    ['LAD calcium 40, total score 120.', 120],
+    ['Agatston score: 0', 0],
+  ])('"%s" -> %s', (t, v) => expect(score(t)).toBe(v));
+});
+
+describe('calculateAgatston — impression', () => {
+  it('scored', () => {
+    expect(calculateAgatston({ score: 350 }).impressionText).toBe('Agatston score 350 (CAC-DRS 3). Moderately to severely increased cardiovascular risk.');
+  });
+  it('empty form has no placeholders', () => {
+    expect(calculateAgatston({}).impressionText).toBe('Not yet scored.');
+  });
 });

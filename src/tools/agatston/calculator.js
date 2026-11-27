@@ -16,8 +16,7 @@ export function calculateAgatston(formState) {
     : score === 0 ? cats[0]
     : cats.find((c) => c.min > 0 && score <= c.max) || cats[cats.length - 1];
 
-  const idx = cat ? cats.indexOf(cat) : -1;
-  const level = idx < 0 ? 0 : [1, 1, 2, 3, 5, 5][idx];
+  const level = cat ? cat.level : 0;
 
   return {
     score: hasScore ? score : null,
@@ -29,5 +28,8 @@ export function calculateAgatston(formState) {
     recommendation: cat?.recommendation || '',
     recommendationProvided: !!cat?.recommendation,
     level,
+    impressionText: cat
+      ? `Agatston score ${score} (${cat.label}). ${cat.risk} cardiovascular risk.`
+      : 'Not yet scored.',
   };
 }
