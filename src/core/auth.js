@@ -16,7 +16,7 @@ import {
   reauthenticateWithCredential,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from './firebase.js';
+import { auth, db, firebaseAvailable } from './firebase.js';
 import { setCurrentUser, notifyAuthListeners } from './auth-state.js';
 import { migrateLocalStorageToCloud, clearUserDataCache } from './user-data.js';
 
@@ -27,20 +27,27 @@ const googleProvider = new GoogleAuthProvider();
 
 // --- Auth state listener ---
 
-onAuthStateChanged(auth, async (user) => {
-  setCurrentUser(user);
-  if (user) {
-    await ensureProfile(user);
-    await migrateLocalStorageToCloud(user.uid);
-  } else {
-    clearUserDataCache();
-  }
-  notifyAuthListeners();
-});
+// If Firebase failed to initialize, stay signed out. onAuthChange() already
+// delivers the initial null user to listeners, so nothing else is needed.
+if (firebaseAvailable) {
+  onAuthStateChanged(auth, async (user) => {
+    setCurrentUser(user);
+    if (user) {
+      await ensureProfile(user);
+      await migrateLocalStorageToCloud(user.uid);
+    } else {
+      clearUserDataCache();
+    }
+    notifyAuthListeners();
+  });
+}
+
+const UNAVAILABLE = 'Sign-in is temporarily unavailable. All calculators still work without an account.';
 
 // --- Sign in/up/out ---
 
 export async function signInWithEmail(email, password) {
+  if (!firebaseAvailable) return { user: null, error: UNAVAILABLE };
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
     return { user: result.user, error: null };
@@ -50,6 +57,7 @@ export async function signInWithEmail(email, password) {
 }
 
 export async function signUpWithEmail(email, password) {
+  if (!firebaseAvailable) return { user: null, error: UNAVAILABLE };
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password);
     return { user: result.user, error: null };
@@ -59,6 +67,7 @@ export async function signUpWithEmail(email, password) {
 }
 
 export async function signInWithGoogle() {
+  if (!firebaseAvailable) return { user: null, error: UNAVAILABLE };
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return { user: result.user, error: null };
@@ -68,6 +77,7 @@ export async function signInWithGoogle() {
 }
 
 export async function resetPassword(email) {
+  if (!firebaseAvailable) return { error: UNAVAILABLE };
   try {
     await sendPasswordResetEmail(auth, email);
     return { error: null };
@@ -84,7 +94,7 @@ export async function resetPassword(email) {
  * Google sign-in) don't have a password to change here.
  */
 export async function updateUserPassword(currentPassword, newPassword) {
-  const user = auth.currentUser;
+  const user = auth?.currentUser;
   if (!user) return { error: 'Not signed in.' };
   if (!user.email) return { error: 'This account has no password to change.' };
   const hasPasswordProvider = user.providerData.some(
@@ -107,6 +117,7 @@ export async function updateUserPassword(currentPassword, newPassword) {
 }
 
 export async function signOut() {
+  if (!firebaseAvailable) return { error: null };
   try {
     await firebaseSignOut(auth);
     return { error: null };
@@ -116,7 +127,7 @@ export async function signOut() {
 }
 
 export async function deleteAccount() {
-  const user = auth.currentUser;
+  const user = auth?.currentUser;
   if (!user) throw new Error('Not signed in');
   await deleteUser(user);
 }

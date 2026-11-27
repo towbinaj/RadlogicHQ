@@ -154,6 +154,7 @@ export async function shareTemplate(toolId, templateId) {
  * Load a shared template by share code.
  */
 export async function loadSharedTemplate(shareCode) {
+  if (!db) return null;
   const q = query(collection(db, 'user_templates'), where('shareCode', '==', shareCode));
   const snap = await getDocs(q);
   if (snap.empty) return null;
@@ -221,6 +222,7 @@ export async function deleteSavedReport(reportId) {
  * No user ID, no timestamp, no IP.
  */
 export async function incrementCounter(counterId) {
+  if (!db) return;
   try {
     const ref = doc(db, 'analytics_aggregate', counterId);
     await setDoc(ref, { count: increment(1) }, { merge: true });
