@@ -216,10 +216,10 @@ Guideline-currency audit against published versions. Done on this pass:
 - [x] O-RADS citation updated to US v2022 paper (Strachowski, Radiology 2023)
 
 Pending — need radiologist sign-off on grade tables before shipping:
-- [x] **AAST Pancreas 2024** (Notrica et al., J Trauma Acute Care Surg 2025;98(3):442-447) — implemented from Table 1 with subgrades (I-A..V-D); replaces 1990 scale. Awaiting radiologist sign-off.
-- [x] **AAST Kidney 2025** (Keihani et al., J Trauma Acute Care Surg 2025;98(3):448-451) — implemented from Table 1 imaging criteria with a 2018/2025 toggle (default 2025, shared with AAST Multi). Awaiting radiologist sign-off.
+- [x] **AAST Pancreas 2024** (Notrica et al., J Trauma Acute Care Surg 2025;98(3):442-447) — implemented from Table 1 with subgrades (I-A..V-D); replaces 1990 scale. Signed off 2026-11-27: most severe subgrade wins; no multiple-injury advancement.
+- [x] **AAST Kidney 2025** (Keihani et al., J Trauma Acute Care Surg 2025;98(3):448-451) — implemented from Table 1 imaging criteria with a 2018/2025 toggle (default 2025, shared with AAST Multi). Signed off 2026-11-27: default 2025; size-less perinephric hematoma parses as HRD <3.5 cm.
 - [x] **Parser negation** — multi-select parsing now skips negated mentions ("no urinary extravasation", "without active bleeding", "not seen"); see `docs/parser.md` section 3.
-- [x] **BI-RADS v2025** (ACR BI-RADS v2025 Manual; Minichetti et al., AJR 2026) — category 0 split (additional imaging vs prior examinations), category 6 per multidisciplinary team, CEM modality, optional clinical indication, ASCII report text. Lexicon/density changes do not apply (tool is category-level). Exact ACR wording for the two category 0 labels unverified against the manual itself. Awaiting radiologist sign-off.
+- [x] **BI-RADS v2025** (ACR BI-RADS v2025 Manual; Minichetti et al., AJR 2026) — category 0 split (additional imaging vs prior examinations), category 6 per multidisciplinary team, CEM modality, optional clinical indication, ASCII report text. Lexicon/density changes do not apply (tool is category-level). Signed off 2026-11-27: paraphrased category 0 and 6 wording accepted.
 - [ ] **NI-RADS MRI** (Bunch et al., JACR 2025) — add MRI pathway or label tool CT/PET-CT only
 - [x] **ASPECTS** — blank by default; 10/10 only after marking regions or confirming "No early ischemic changes" (button or pasted text)
 - [ ] Watch: O-RADS MRI update (expected 2026), Lugano revision (ICML 2025 workshop)

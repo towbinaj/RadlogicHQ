@@ -16,7 +16,13 @@
  * - Neck/body/tail = overlying or left of the portal vein/SMV. Head/uncinate =
  *   any portion of the injury right of or posterior to the SMV.
  * - Depth is measured anteroposterior or craniocaudal.
- * - The paper describes no advancement for multiple low-grade injuries.
+ * - The paper describes no advancement for multiple low-grade injuries
+ *   (clinical sign-off 2026-11-27: no advancement).
+ * - Several subgrades at the top grade (paper silent): the most severe wins
+ *   (clinical sign-off 2026-11-27). subgradeOrder lists subgrades from least
+ *   to most severe: I: contusion (B) over edema (A); II: head/uncinate (B)
+ *   over neck/body/tail (A); III/IV: complete (B) over partial (A) over not
+ *   evaluated (N); V: avulsion (D) > CBD (C) > duct (B) > intact duct (A).
  *
  * Labels are ASCII only (">=" not the unicode sign) and avoid HL7 delimiters.
  */
@@ -31,6 +37,7 @@ export const aastPancreasDefinition = {
   name: 'AAST Pancreas',
   organ: 'Pancreas',
   scaleVersion: '2024',
+  // Least to most severe within a grade (see header): most severe wins.
   subgradeOrder: ['N', 'A', 'B', 'C', 'D'],
   advanceMultipleInjuries: false,
 
