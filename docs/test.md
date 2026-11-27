@@ -11,7 +11,7 @@ Tests live in two places:
 - **Core tests** in `src/core/*.test.js` — engine, parser, clipboard, pill-editor
 - **Per-tool calculator tests** in `src/tools/<toolId>/calculator.test.js` — co-located with the `calculator.js` they test
 
-Current state: **165 tests across 8 files** (`npm run test:run`). All tests use [Vitest](https://vitest.dev).
+Current state: **950 tests (+8 todo) across 52 files** as of 2026-11-27; the Phase 2 baseline was 165 tests across 8 files (`npm run test:run`). All tests use [Vitest](https://vitest.dev).
 
 The test suite is the **only** safety net for parser regressions. There's no CI test gate yet, no pre-commit hook, and no end-to-end coverage — just the unit tests. That means:
 
@@ -439,7 +439,7 @@ Mocking `parseFindings` in a calculator test means you're testing the mock, not 
 
 ## 9. Coverage status + backlog
 
-### Current state (165 tests, 8 files)
+### Phase 2 baseline snapshot (165 tests, 8 files)
 
 | File | Tests | Coverage |
 |---|---|---|

@@ -1,6 +1,6 @@
 # RadioLogicHQ — Tool Catalog
 
-42 active radiology calculators. Each maps to a directory under `src/tools/{toolId}/`.
+48 active radiology calculators. Each maps to a directory under `src/tools/{toolId}/`.
 For architecture and adding new tools, see `architecture.md` and `newtool.md`.
 
 ## Tools by Category
@@ -29,7 +29,8 @@ For architecture and adding new tools, see `architecture.md` and `newtool.md`.
 - **AAST Liver** — 2018 liver injury grading with vascular criteria
 - **AAST Spleen** — 2018 spleen injury grading with vascular criteria
 - **AAST Kidney** — 2018 kidney injury grading with vascular criteria
-- **AAST Pancreas** — 2018 pancreas injury grading with ductal criteria
+- **AAST Pancreas** — pancreas injury grading with ductal criteria (Moore 1990 scale; 2024 revision pending)
+- **AAST Multi-Trauma** — liver, spleen, kidney and pancreas on one page
 - **ASPECTS** — MCA territory stroke CT scoring
 - **SAH Grading** — Hunt-Hess + Modified Fisher scales
 
@@ -62,6 +63,13 @@ For architecture and adding new tools, see `architecture.md` and `newtool.md`.
 - **VUR (Nuclear)** — radionuclide cystography (mild/moderate/severe)
 - **GMH Grading** — germinal matrix hemorrhage (Papile I-IV)
 
+### Fetal Imaging
+- **Fetal Brain Biometry** — BPD, cerebellar diameter, cisterna magna with GA reference means
+- **Fetal Corpus Callosum** — CC length with GA norms (Harreld polynomial)
+- **Fetal Lung Volume** — observed/expected TFLV for CDH prognosis (Rypens formula)
+- **Fetal Posterior Fossa** — vermian height, TVA, brainstem with GA norms
+- **Fetal Ventricle Width** — lateral ventricle atrial width, ventriculomegaly categorization
+
 ## Tool Types
 
 All tools use the shared `<report-output>` component (pill editor, copy, save, history) and share auth, storage, parser, clipboard. They differ in how input is collected and how scores are computed:
@@ -84,4 +92,4 @@ Bone Age (Sontag) imports its calculator from `src/tools/bone-age/` (G&P).
 
 Each tool shows a validation badge next to its name — red warning triangle for unvalidated, green check for validated. Controlled by the `VALIDATED_TOOLS` set in `src/data/tools-registry.js`. See comments in that file for the criteria to flip a tool from unvalidated → validated.
 
-Currently: **all 42 tools are unvalidated** pending clinical review.
+Currently: **all 48 tools are unvalidated** pending clinical review.

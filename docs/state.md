@@ -1,10 +1,10 @@
 # RadioLogicHQ v1.2 — Project State
 
-*Last updated: 2026-04-15*
+*Last updated: 2026-11-27*
 
 ## Current Version
 
-**v1.2** — Live at radiologichq.com. 42 active tools. Firebase auth + Firestore. Cloudflare Pages auto-deploy.
+**v1.2** — Live at radiologichq.com. 48 active tools. Firebase auth + Firestore. Cloudflare Pages auto-deploy.
 
 ## What's Shipped
 
@@ -73,14 +73,14 @@
 
 ### Testing
 - Vitest unit tests co-located with source (`*.test.js`)
-- Tests for: engine.js, parser.js, tirads, nascet, bosniak, reimers, aast-liver calculators (93 tests)
+- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (950 tests + 8 todo, 52 files)
 - `npm run test:run` for CI, `npm run test` for watch mode
 
 ### Build
 - Vite config auto-discovers HTML entries from `src/tools/*/` and `src/pages/` (no manual updates)
 
 ### Analytics
-- All 47 tools track page opens via `trackEvent('tool:{toolId}:opens')` in `init()`
+- All 48 tools track page opens via `trackEvent('tool:{toolId}:opens')` in `init()`
 - Report copy tracking via `trackEvent('tool:{toolId}:reports')`
 - Template usage tracking via `trackEvent('template:{templateId}:uses')`
 
@@ -93,7 +93,7 @@
 - `npm run check-synonyms {toolId}` reports synonym coverage and hand-written rule counts per tool
 - **Phase 2 segmentation rollout complete** — 18 tools opt in to `parseSegmentation` via the laterality (8 tools: aast-kidney, vur, vur-nm, reimers, hydronephrosis, hip-dysplasia, kellgren-lawrence, fetal-ventricle) or itemIndex (10 tools: tirads, lirads, lungrads, fleischner, bosniak, pirads, orads, recist, mrecist, rapno) segmenters. Bilateral state refactor pattern established for paired-organ tools (per-side formState keys + `buildXCard` helper + calculator bilateral branch + `{{#if}}`/`{{#unless}}` template conditionals). Laterality segmenter extended with MSK joint anchors (knee/shoulder/elbow/wrist/ankle/hand/foot/joint/ventricle) and optional modifier-word regex (`right lateral ventricle`, `right upper lobe lung`). Full reference in `docs/parser.md`.
 
-### Tools (42 active)
+### Tools (48 active)
 
 **RADS Systems (8)**
 - TI-RADS, LI-RADS, PI-RADS, O-RADS, Lung-RADS, BI-RADS, CAD-RADS, NI-RADS
@@ -101,8 +101,8 @@
 **Oncologic (8)**
 - RECIST 1.1, mRECIST, RAPNO (4 variants), Deauville, Lugano, MIBG Score, IDRF, PRETEXT
 
-**Trauma / Emergency (6)**
-- AAST Liver, AAST Spleen, AAST Kidney, AAST Pancreas, ASPECTS, SAH Grading
+**Trauma / Emergency (7)**
+- AAST Liver, AAST Spleen, AAST Kidney, AAST Pancreas, AAST Multi-Trauma, ASPECTS, SAH Grading
 
 **Body Imaging (5)**
 - Adrenal Washout, Bosniak v2019, Fleischner 2017, Balthazar/CTSI, NASCET
@@ -115,6 +115,9 @@
 
 **Pediatric GU / Neuro (4)**
 - Hydronephrosis (UTD/SFU), VUR (VCUG), VUR (Nuclear), GMH Grading
+
+**Fetal Imaging (5)**
+- Fetal Brain Biometry, Fetal Corpus Callosum, Fetal Lung Volume, Fetal Posterior Fossa, Fetal Ventricle Width
 
 ### Shared Code Patterns
 - AAST tools (4 organs) share `calculator.js` + `templates.js` from `aast-liver/`
@@ -133,7 +136,8 @@
 
 ### Pages
 - Landing page (`/`) — tool directory with search, filters, favorites, hide
-- 42 tool pages (see Tools list above)
+- 48 tool pages (see Tools list above)
+- 404 page (`/404.html`) — suggests the tool matching the bad URL + live tool search
 - Profile (`/src/pages/profile.html`) — account, preferences, hidden tools, data management
 - Privacy Policy (`/src/pages/privacy.html`)
 
@@ -163,8 +167,9 @@
 ## Feature Backlog
 
 ### Framework Enhancements
-- [ ] Custom domain (radiologichq.com)
-- [ ] Favicon + PWA manifest
+- [x] Custom domain (radiologichq.com)
+- [x] Favicon
+- [ ] PWA manifest
 - [ ] Dark/light mode toggle
 - [ ] Print stylesheet for report output
 - [ ] `<image-browser>` component for atlas-style tools
@@ -181,7 +186,7 @@
 - [ ] Keyboard accessibility (arrow keys, Enter to select)
 - [ ] ARIA labels on all interactive elements
 - [x] SEO meta tags and Open Graph (canonical + og:* + twitter:*, commit 99d1104)
-- [ ] 404 page
+- [x] 404 page
 
 ## Post-Launch Checklist (radiologichq.com)
 
@@ -201,28 +206,25 @@ Immediate follow-ups now that the custom domain is live:
   Then update the feedback-widget error message to reference the domain
   email instead of the Gmail one.
 
+## Clinical Content Review (2026-11-27)
+
+Guideline-currency audit against published versions. Done on this pass:
+- [x] TI-RADS: no level / FNA advice until composition, echogenicity, shape and margin are chosen (spongiform alone is sufficient)
+- [x] Reimers: impression no longer asserts coxa valga by default
+- [x] AAST Pancreas citation corrected to Moore 1990 (Kozar 2018 never covered pancreas)
+- [x] O-RADS citation updated to US v2022 paper (Strachowski, Radiology 2023)
+
+Pending — need radiologist sign-off on grade tables before shipping:
+- [ ] **AAST Pancreas 2024** (Notrica et al., J Trauma Acute Care Surg 2025;98(3):442-447) — duct-integrity-based grading
+- [ ] **AAST Kidney 2025** (Keihani et al., J Trauma Acute Care Surg 2025;98(3):448-451) — ship with a 2018/2025 version toggle
+- [ ] **BI-RADS v2025** (ACR, Dec 2025) — category 0 split, category 6 wording, density and lexicon changes
+- [ ] **NI-RADS MRI** (Bunch et al., JACR 2025) — add MRI pathway or label tool CT/PET-CT only
+- [ ] **ASPECTS** — untouched form reports "10/10. No early ischemic changes"; decide whether the default should be blank
+- [ ] Watch: O-RADS MRI update (expected 2026), Lugano revision (ICML 2025 workshop)
+
+Current as of the audit (no newer version found): TI-RADS 2017, LI-RADS v2018 diagnostic, PI-RADS v2.1, Lung-RADS v2022, CAD-RADS 2.0, Bosniak v2019, Fleischner 2017, RECIST 1.1, mRECIST, AAST liver/spleen 2018, UTD 2014, IDRF 2009, adrenal washout thresholds.
+
 ## Repo Housekeeping
 
-Stale feature branches on origin that are fully merged into `main`.
-Cosmetic clutter, not functional problems — clean up whenever convenient.
-
-- [ ] **Delete `claude/ti-rads-coverage-batch-1-TdEkz`** — the branch
-  that landed the retroactive test-coverage backlog (batches 1-6, 769 new
-  calculator tests: baseline 165 → 934 passing + 8 todo), the
-  `fix(rapno)` CR bug fix, and the `refactor(bone-age)` Sontag split.
-  Fully merged via `561ea6b Merge branch ...`. Local delete succeeded;
-  `git push origin --delete` from the Claude Code session returned
-  HTTP 403 (likely branch protection or session proxy permission — the
-  GitHub MCP toolset does not expose branch deletion either). Easiest
-  cleanup: delete via the GitHub UI at
-  `https://github.com/towbinaj/RadlogicHQ/branches`, or retry
-  `git push origin --delete claude/ti-rads-coverage-batch-1-TdEkz`
-  from a local terminal where credentials may differ.
-- [ ] **Delete `claude/ti-rads-test-coverage-batch-1-xxEV9`** — a parallel
-  branch from a different session pinned at `909be77 chore(hooks):
-  enforce test:run + build before every git commit`, which is commit
-  #47 in current main's history. Investigated 2026-04-15: zero unique
-  commits (pure ancestor of main, fully contained in the merge). Local
-  delete succeeded; remote delete hit the same HTTP 403 as the other
-  branch. Clean up via the GitHub UI or a local terminal alongside
-  `claude/ti-rads-coverage-batch-1-TdEkz`.
+- [x] Stale `claude/ti-rads-*` branches — confirmed gone from origin (2026-11-27).
+- `@grpc/grpc-js` is pinned via `overrides` in `package.json` to clear Firestore's Node-only transport advisories (firebase 12 and 13 both pin ~1.9). Revisit when Firebase bumps it.

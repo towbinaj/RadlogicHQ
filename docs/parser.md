@@ -347,7 +347,7 @@ Parser tests live in `src/core/parser.test.js` — **79 tests** covering `parseF
 **Test-first for parser.js edits.** This is the hard rule — see `docs/test.md` section 10. Any edit to a regex, SYNONYMS entry, or segmenter in `parser.js` lands a failing test in `parser.test.js` **before** the fix. `docs/test.md` sections 5a–5d cover the canonical parser-test patterns (dictation-driven sanity, segmenter unit tests, SYNONYMS regression tests, test-first workflow).
 
 ```sh
-npm run test:run                      # full suite (165 tests)
+npm run test:run                      # full suite (950+ tests)
 npx vitest parser                     # just parser tests
 npx vitest parser -t "<name>"         # just one test case
 npm run check-synonyms <toolId>       # synonym audit for one tool
