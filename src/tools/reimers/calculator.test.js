@@ -55,3 +55,24 @@ describe('calculateReimers', () => {
     expect(result.rightPct).toBe(23.3);
   });
 });
+
+// --- Impression follows the coxa valga selection ---
+// Bug: the impression was a static string asserting "Apparent coxa valga
+// alignment" even when coxa valga was marked absent or not assessed.
+describe('calculateReimers impressionText', () => {
+  it('asserts coxa valga only when present', () => {
+    expect(calculateReimers({ coxaValga: 'present' }).impressionText)
+      .toBe('Apparent coxa valga alignment of the proximal femurs with migration percentages as above.');
+  });
+
+  it('states it is absent when absent', () => {
+    expect(calculateReimers({ coxaValga: 'absent' }).impressionText)
+      .toBe('No apparent coxa valga alignment of the proximal femurs. Migration percentages as above.');
+  });
+
+  it('does not mention coxa valga when not assessed', () => {
+    const text = calculateReimers({}).impressionText;
+    expect(text).toBe('Migration percentages as above.');
+    expect(text.toLowerCase()).not.toContain('coxa valga');
+  });
+});

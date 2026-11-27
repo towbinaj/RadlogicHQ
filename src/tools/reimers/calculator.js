@@ -28,6 +28,13 @@ export function calculateReimers(formState) {
       ? 'There is no apparent coxa valga alignment of the proximal femurs.'
       : '';
 
+  // Impression must follow the coxa valga answer -- never assert it by default.
+  const impressionText = coxaValga === 'present'
+    ? 'Apparent coxa valga alignment of the proximal femurs with migration percentages as above.'
+    : coxaValga === 'absent'
+      ? 'No apparent coxa valga alignment of the proximal femurs. Migration percentages as above.'
+      : 'Migration percentages as above.';
+
   return {
     rightM1: rightM1 ?? null,
     rightM2: rightM2 ?? null,
@@ -40,5 +47,6 @@ export function calculateReimers(formState) {
     coxaValga: coxaValga || '',
     coxaValgaProvided: !!coxaValga,
     coxaValgaLabel,
+    impressionText,
   };
 }
