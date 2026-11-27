@@ -74,11 +74,11 @@ describe('calculateLungrads — part-solid nodule', () => {
     expect(r.category).toBe('4B');
   });
 
-  it('part-solid with missing solidSize defaults to 0 (→ cat 3)', () => {
+  it('part-solid >=6 mm with missing solidSize is incomplete (not silently 0 mm)', () => {
     const r = calculateLungrads({
       noduleType: 'partSolid', size: 10,
     });
-    expect(r.category).toBe('3');
+    expect(r.category).toBe('--');
   });
 });
 
@@ -105,11 +105,11 @@ describe('calculateLungrads — growth adjustments', () => {
     expect(r.category).toBe('2');
   });
 
-  it('growing upgrades 2 → 3', () => {
+  it('growing solid <8 mm → 4A (v2022), not one-step upgrade to 3', () => {
     const r = calculateLungrads({
       noduleType: 'solid', size: 5, priorComparison: 'growing',
     });
-    expect(r.category).toBe('3');
+    expect(r.category).toBe('4A');
   });
 
   it('growing upgrades 3 → 4A', () => {
@@ -174,5 +174,44 @@ describe('calculateLungrads — metadata', () => {
     const r = calculateLungrads({ noduleType: 'solid', size: 20 });
     expect(r.management).toMatch(/tissue sampling/i);
     expect(r.categoryLevel).toBe(5);
+  });
+});
+
+// --- Audit fix: ACR Lung-RADS v2022 new / growing rules ---
+describe('calculateLungrads — v2022 new and growing nodules', () => {
+  const c = (fs) => calculateLungrads(fs).category;
+
+  it.each([
+    // solid, new
+    [{ noduleType: 'solid', size: 3, priorComparison: 'new' }, '2'],
+    [{ noduleType: 'solid', size: 5, priorComparison: 'new' }, '3'],
+    [{ noduleType: 'solid', size: 7, priorComparison: 'new' }, '4A'],
+    [{ noduleType: 'solid', size: 8, priorComparison: 'new' }, '4B'],
+    [{ noduleType: 'solid', size: 20, priorComparison: 'new' }, '4B'],
+    // solid, growing
+    [{ noduleType: 'solid', size: 7.9, priorComparison: 'growing' }, '4A'],
+    [{ noduleType: 'solid', size: 8, priorComparison: 'growing' }, '4B'],
+    // part-solid, new / growing
+    [{ noduleType: 'partSolid', size: 5, priorComparison: 'new' }, '3'],
+    [{ noduleType: 'partSolid', size: 5, priorComparison: 'growing' }, '3'],
+    [{ noduleType: 'partSolid', size: 10, solidSize: 3, priorComparison: 'new' }, '4A'],
+    [{ noduleType: 'partSolid', size: 10, solidSize: 4, priorComparison: 'new' }, '4B'],
+    [{ noduleType: 'partSolid', size: 10, solidSize: 5, priorComparison: 'growing' }, '4B'],
+    // ground glass, growing <30 mm stays 2
+    [{ noduleType: 'groundGlass', size: 20, priorComparison: 'growing' }, '2'],
+    [{ noduleType: 'groundGlass', size: 30, priorComparison: 'new' }, '3'],
+  ])('%j -> %s', (fs, cat) => {
+    expect(c(fs)).toBe(cat);
+  });
+
+  it('baseline categories unchanged', () => {
+    expect(c({ noduleType: 'solid', size: 20 })).toBe('4B');
+    expect(c({ noduleType: 'solid', size: 10 })).toBe('4A');
+    expect(c({ noduleType: 'partSolid', size: 10, solidSize: 7 })).toBe('4A');
+  });
+
+  it('part-solid >=6 mm without a solid component size is incomplete', () => {
+    const r = calculateLungrads({ noduleType: 'partSolid', size: 10 });
+    expect(r.category).toBe('--');
   });
 });
