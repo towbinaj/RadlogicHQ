@@ -19,7 +19,7 @@ describe('calculateRapno — HGG/LGG thresholds (PR=-50, MinR=-25, PD=+25)', () 
     // for a disappeared lesion need to hit the CR branch, not have the
     // target treated as "not measured". Baseline guard stays > 0 since
     // a 0-size baseline is nonsensical.
-    const r = calculateRapno([target(10, 10, 0, 0)], {}, HGG);
+    const r = calculateRapno([target(10, 10, 0, 0)], { nonTarget: 'none' }, HGG);
     expect(r.currentSum).toBe(0);
     expect(r.currentSumProvided).toBe(true);
     expect(r.overallResponse).toBe('CR');
@@ -28,7 +28,7 @@ describe('calculateRapno — HGG/LGG thresholds (PR=-50, MinR=-25, PD=+25)', () 
   it('one dimension zero, other non-zero → still CR for that target', () => {
     // A single 0 dimension with a positive partner also means the
     // lesion is no longer a measurable product. Product = 0.
-    const r = calculateRapno([target(10, 10, 5, 0)], {}, HGG);
+    const r = calculateRapno([target(10, 10, 5, 0)], { nonTarget: 'none' }, HGG);
     expect(r.currentSum).toBe(0);
     expect(r.overallResponse).toBe('CR');
   });
@@ -240,5 +240,49 @@ describe('calculateRapno — incomplete', () => {
     expect(r.baselineSumProvided).toBe(true);
     expect(r.currentSumProvided).toBe(false);
     expect(r.overallResponse).toBe('--');
+  });
+});
+
+// --- Audit fixes: clinical status, steroids, non-target not evaluated ---
+// RAPNO follows RANO: clinical deterioration = PD; increased corticosteroids
+// preclude CR/PR/MR (best SD); CR needs non-target disease absent or none.
+describe('calculateRapno — clinical status and steroids', () => {
+  const cr = [target(10, 10, 0, 0)];
+  const pr = [target(20, 20, 10, 10)];
+
+  it('clinically worsened -> PD even with radiographic CR', () => {
+    expect(calculateRapno(cr, { nonTarget: 'none', clinicalStatus: 'worsened' }, HGG).overallResponse).toBe('PD');
+  });
+
+  it('increased steroids cap CR at SD', () => {
+    expect(calculateRapno(cr, { nonTarget: 'none', steroids: 'increased' }, HGG).overallResponse).toBe('SD');
+  });
+
+  it('increased steroids cap PR at SD', () => {
+    expect(calculateRapno(pr, { nonTarget: 'none', steroids: 'increased' }, HGG).overallResponse).toBe('SD');
+  });
+
+  it('stable steroids and stable clinical status leave CR', () => {
+    expect(calculateRapno(cr, { nonTarget: 'none', steroids: 'stable-decreased', clinicalStatus: 'stable' }, HGG).overallResponse).toBe('CR');
+  });
+
+  it('target CR with non-target not evaluated -> PR', () => {
+    expect(calculateRapno(cr, {}, HGG).overallResponse).toBe('PR');
+  });
+});
+
+describe('RAPNO parse writes the steroid key the calculator reads', () => {
+  it('parseRules use "steroids", not "steroidDose"', async () => {
+    const { rapnoDefinition } = await import('./definition.js');
+    expect(rapnoDefinition.parseRules.steroids).toBeDefined();
+    expect(rapnoDefinition.parseRules.steroidDose).toBeUndefined();
+  });
+});
+
+describe('calculateRapno — steroids cap minor response too', () => {
+  it('HGG minor response (-25 to -50%) with increased steroids -> SD', () => {
+    // 20x20=400 -> 17x17=289 is -27.75% (minor response)
+    const r = calculateRapno([target(20, 20, 17, 17)], { nonTarget: 'none', steroids: 'increased' }, HGG);
+    expect(r.overallResponse).toBe('SD');
   });
 });

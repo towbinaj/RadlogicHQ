@@ -102,12 +102,21 @@ export function calculateRapno(targets, formState, variant) {
     overallResponse = 'PD';
   } else if (targetResponse === 'PD') {
     overallResponse = 'PD';
-  } else if (targetResponse === 'CR' && (nonTarget === 'absent' || !nonTarget)) {
+  } else if (targetResponse === 'CR' && (nonTarget === 'absent' || nonTarget === 'none')) {
     overallResponse = 'CR';
-  } else if (targetResponse === 'CR' && nonTarget === 'present') {
+  } else if (targetResponse === 'CR') {
+    // Non-target present or not evaluated -> PR.
     overallResponse = 'PR';
   } else if (targetResponse) {
     overallResponse = targetResponse;
+  }
+
+  // RANO-family rules that RAPNO adopts: clinical deterioration is
+  // progression; increased corticosteroids preclude a response (best SD).
+  if (overallResponse && clinicalStatus === 'worsened') {
+    overallResponse = 'PD';
+  } else if (steroids === 'increased' && ['CR', 'PR', 'MinR'].includes(overallResponse)) {
+    overallResponse = 'SD';
   }
 
   const overallInfo = overallResponse ? RESPONSE_INFO[overallResponse] : null;
@@ -124,7 +133,7 @@ export function calculateRapno(targets, formState, variant) {
     });
 
   const nonTargetLabels = {
-    absent: 'Absent (CR)', present: 'Present (non-CR/non-PD)', progression: 'Unequivocal progression',
+    none: 'No non-target lesions', absent: 'Absent (CR)', present: 'Present (non-CR/non-PD)', progression: 'Unequivocal progression',
   };
   const clinicalLabels = {
     stable: 'Stable', improved: 'Improved', worsened: 'Worsened',
