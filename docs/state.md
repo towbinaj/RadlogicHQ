@@ -73,7 +73,7 @@
 
 ### Testing
 - Vitest unit tests co-located with source (`*.test.js`)
-- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1325 tests + 8 todo, 52 files)
+- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1345 tests + 8 todo, 52 files)
 - `npm run test:run` for CI, `npm run test` for watch mode
 
 ### Build
@@ -288,6 +288,25 @@ Major findings fixed (2026-11-28, tests first):
   DWI 3 needs DCE (new 'not performed'), TZ T2 2-3 need DWI; LI-RADS needs
   APHE/washout/capsule; ASPECTS band wording; BI-RADS screening + 3-6 note;
   MIBG cutoffs labelled post-induction.
+
+Modality review (2026-11-28): every tool checked for CT / MRI / US
+differences. Modality is now the first question where criteria differ:
+- Bosniak v2019: CT vs MRI (+ exam: renal mass protocol / single-phase /
+  unenhanced; MRI with/without contrast). CT HU class II types, MRI signal
+  types (T1 bright II, heterogeneous T1 IIF), calcification CT-only,
+  unenhanced max II, enhancement present/absent (>=20 HU / >=15%).
+- LI-RADS: CT / MRI extracellular / MRI hepatobiliary agent; ancillary
+  features filtered (DWI, T2, iron MRI-only; TP/HBP features hepatobiliary
+  agent only); missing v2018 features added.
+- Carotid (NASCET page): CTA/MRA/DSA diameter method vs duplex US (SRU 2003
+  velocity criteria).
+- ASPECTS: CT vs MRI DWI (DWI-ASPECTS wording).
+Single-modality tools (no selector needed): PI-RADS (MRI), O-RADS US, TI-RADS
+(US), Lung-RADS/Fleischner/Agatston/CAD-RADS/AAST/Balthazar/SAH/adrenal
+washout (CT), Deauville (PET), MIBG (NM), RAPNO (MRI), radiograph tools.
+Multi-modality with identical criteria: RECIST/mRECIST, PRETEXT, IDRF,
+pectus, NI-RADS, fetal ventricle; BI-RADS records modality (categories are
+shared).
 
 Still pending (need a source decision or larger UI work): O-RADS menopausal
 status and solid-component rules; Lung-RADS category 0/1, airway nodules,

@@ -518,7 +518,7 @@ export const toolsRegistry = [
     path: '/src/tools/aspects/aspects.html',
     status: 'active',
     bodyParts: ['Brain'],
-    modalities: ['CT'],
+    modalities: ['CT', 'MR'],
     specialties: ['Neuroradiology', 'Emergency Radiology'],
     cdeSetId: null,
   },
