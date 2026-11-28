@@ -13,7 +13,27 @@
 
 const NOT_ASSESSED = 'Not yet assessed: mark affected regions or confirm no early ischemic changes';
 
-export function calculateAspects(affected, side, normalConfirmed = false) {
+// Same 10 regions on CT and MRI DWI. Wording follows the modality; the
+// Barber 2000 outcome cutoff (<=7) is a CT result and is not quoted for DWI.
+const BANDS = {
+  ct: {
+    none: 'No early ischemic changes',
+    limited: 'Limited early ischemic change',
+    moderate: 'Moderate early ischemic change (ASPECTS 7 or less)',
+    extensive: 'Extensive early ischemic change (large core, ASPECTS 5 or less)',
+  },
+  dwi: {
+    none: 'No acute diffusion restriction',
+    limited: 'Limited extent of diffusion restriction',
+    moderate: 'Moderate extent of diffusion restriction',
+    extensive: 'Extensive diffusion restriction (DWI-ASPECTS 5 or less)',
+  },
+};
+
+export function calculateAspects(affected, side, normalConfirmed = false, modality = 'ct') {
+  const bands = BANDS[modality] || BANDS.ct;
+  const aspectsName = modality === 'dwi' ? 'DWI-ASPECTS' : 'ASPECTS';
+  const affectedHeading = modality === 'dwi' ? 'Regions with acute diffusion restriction' : 'Regions with early ischemic changes';
   const affectedCount = affected.size;
   const sideLabel = side === 'left' ? 'Left' : side === 'right' ? 'Right' : '';
 
@@ -29,6 +49,8 @@ export function calculateAspects(affected, side, normalConfirmed = false) {
       affectedText: 'None',
       affectedProvided: false,
       assessed: false,
+      aspectsName,
+      affectedHeading,
     };
   }
 
@@ -37,16 +59,16 @@ export function calculateAspects(affected, side, normalConfirmed = false) {
   let interpretation = '';
   let level = 0;
   if (affectedCount === 0) {
-    interpretation = 'No early ischemic changes';
+    interpretation = bands.none;
     level = 1;
   } else if (score >= 8) {
-    interpretation = 'Limited early ischemic change';
+    interpretation = bands.limited;
     level = 2;
   } else if (score >= 6) {
-    interpretation = 'Moderate early ischemic change (ASPECTS 7 or less)';
+    interpretation = bands.moderate;
     level = 3;
   } else {
-    interpretation = 'Extensive early ischemic change (large core, ASPECTS 5 or less)';
+    interpretation = bands.extensive;
     level = 5;
   }
 
@@ -70,6 +92,8 @@ export function calculateAspects(affected, side, normalConfirmed = false) {
     affectedText,
     affectedProvided: affectedCount > 0,
     assessed: true,
+    aspectsName,
+    affectedHeading,
   };
 }
 
@@ -80,5 +104,6 @@ export function calculateAspects(affected, side, normalConfirmed = false) {
  */
 export function detectNormalAspects(text = '') {
   return /\bASPECTS\b\D{0,20}\b10\b/i.test(text)
-    || /\bno (?:acute |early )?ischemic changes?\b/i.test(text);
+    || /\bno (?:acute |early )?ischemic changes?\b/i.test(text)
+    || /\bno (?:acute )?(?:diffusion restriction|restricted diffusion)\b/i.test(text);
 }

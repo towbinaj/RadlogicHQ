@@ -1,101 +1,122 @@
 import { describe, it, expect } from 'vitest';
 import { calculateBosniak } from './calculator.js';
 
-describe('calculateBosniak', () => {
-  it('softTissue present → Bosniak IV', () => {
-    const result = calculateBosniak({ softTissue: 'present', wall: 'thinSmooth' });
-    expect(result.categoryShort).toBe('IV');
-    expect(result.category).toBe('Bosniak IV');
-  });
+// Bosniak v2019 (Silverman 2019). CT table as reproduced in Cancers 2024
+// (doi 10.3390/cancers16101926, Table 2); MRI table in JMRI 2021
+// (doi 10.1002/jmri.27364, Table 1). Enhancement is unequivocal visual
+// enhancement or >=20 HU (CT) / >=15% SI increase (MRI).
 
-  it('wall thickIrregular → Bosniak III', () => {
-    const result = calculateBosniak({ wall: 'thickIrregular', softTissue: 'absent', enhancement: 'measurable' });
-    expect(result.categoryShort).toBe('III');
-  });
+const CT = { modality: 'ct', exam: 'protocol', content: 'simple', wall: 'thinSmooth', septa: 'none', calcification: 'none', softTissue: 'absent' };
+const MR = { modality: 'mri', exam: 'enhanced', content: 'simple', wall: 'thinSmooth', septa: 'none', softTissue: 'absent' };
+const cls = (fs) => calculateBosniak(fs).categoryShort;
 
-  it('septa thickIrregular → Bosniak III', () => {
-    const result = calculateBosniak({ septa: 'thickIrregular', wall: 'thinSmooth', softTissue: 'absent', enhancement: 'measurable' });
-    expect(result.categoryShort).toBe('III');
-  });
-
-  it('wall minThickSmooth → Bosniak IIF', () => {
-    const result = calculateBosniak({ wall: 'minThickSmooth', softTissue: 'absent', enhancement: 'measurable' });
-    expect(result.categoryShort).toBe('IIF');
-  });
-
-  it('septa thinSmoothMany → Bosniak IIF', () => {
-    const result = calculateBosniak({ septa: 'thinSmoothMany', wall: 'thinSmooth', softTissue: 'absent', enhancement: 'perceived' });
-    expect(result.categoryShort).toBe('IIF');
-  });
-
-  it('septa thinSmooth → Bosniak II', () => {
-    const result = calculateBosniak({ septa: 'thinSmooth', wall: 'thinSmooth', softTissue: 'absent' });
-    expect(result.categoryShort).toBe('II');
-  });
-
-  it('wall thinSmooth, no septa → Bosniak I', () => {
-    const result = calculateBosniak({ wall: 'thinSmooth', softTissue: 'absent' });
-    expect(result.categoryShort).toBe('I');
-    expect(result.category).toBe('Bosniak I');
-  });
-
-  it('no wall, no softTissue → incomplete (null category)', () => {
-    const result = calculateBosniak({});
-    expect(result.categoryShort).toBe('--');
-    expect(result.categoryLabel).toBe('Incomplete');
-  });
-
-  it('IV has correct label and level', () => {
-    const result = calculateBosniak({ softTissue: 'present', wall: 'thinSmooth' });
-    expect(result.categoryLabel).toBe('Likely Malignant');
-    expect(result.categoryLevel).toBe(5);
-  });
-
-  it('hierarchy: softTissue present overrides wall thickIrregular', () => {
-    const result = calculateBosniak({ softTissue: 'present', wall: 'thickIrregular' });
-    expect(result.categoryShort).toBe('IV');
+describe('Bosniak v2019 — modality is required first', () => {
+  it('no modality or exam -> incomplete', () => {
+    expect(cls({ wall: 'thinSmooth' })).toBe('--');
+    expect(cls({ modality: 'ct', wall: 'thinSmooth' })).toBe('--');
+    expect(calculateBosniak({}).categoryLabel).toBe('Incomplete');
   });
 });
 
-// --- Audit fix: Bosniak v2019 septa counts and calcification (Silverman 2019) ---
-describe('calculateBosniak — v2019 septa counts', () => {
-  it('few (1-3) thin smooth septa is class II', () => {
-    const r = calculateBosniak({ wall: 'thinSmooth', septa: 'thinSmooth' });
+describe('Bosniak v2019 — CT', () => {
+  it('class I: thin smooth wall, -9 to 20 HU on an enhanced exam, no septa/calcification (wall may enhance)', () => {
+    expect(cls(CT)).toBe('I');
+    expect(cls({ ...CT, exam: 'enhanced', enhancement: 'present' })).toBe('I');
+    expect(calculateBosniak(CT).category).toBe('Bosniak I');
+  });
+  it('class II attenuation types', () => {
+    expect(cls({ ...CT, exam: 'unenhanced' })).toBe('II'); // -9 to 20 HU at non-contrast CT
+    expect(cls({ ...CT, exam: 'unenhanced', content: 'hyper70' })).toBe('II');
+    expect(cls({ ...CT, content: 'nonenh20' })).toBe('II');
+    expect(cls({ ...CT, exam: 'enhanced', content: 'pv2130' })).toBe('II');
+    expect(cls({ ...CT, content: 'tooSmall' })).toBe('II');
+  });
+  it('content option must fit the exam (21-30 HU needs portal venous phase)', () => {
+    expect(cls({ ...CT, exam: 'unenhanced', content: 'pv2130' })).toBe('--');
+  });
+  it('few thin septa or any calcification -> II', () => {
+    expect(cls({ ...CT, septa: 'thinSmooth' })).toBe('II');
+    expect(cls({ ...CT, calcification: 'thick' })).toBe('II');
+    expect(calculateBosniak({ ...CT, calcification: 'thick' }).note).toMatch(/MRI/);
+  });
+  it('heterogeneous at CT with no higher feature -> MRI before classifying', () => {
+    const r = calculateBosniak({ ...CT, content: 'hetero' });
+    expect(r.categoryShort).toBe('--');
+    expect(r.reason).toMatch(/MRI/);
+  });
+  it('IIF / III / IV need enhancement', () => {
+    expect(cls({ ...CT, wall: 'minThickSmooth', enhancement: 'present' })).toBe('IIF');
+    expect(cls({ ...CT, septa: 'thinSmoothMany', enhancement: 'present' })).toBe('IIF');
+    expect(cls({ ...CT, wall: 'thickIrregular', enhancement: 'present' })).toBe('III');
+    expect(cls({ ...CT, softTissue: 'present', enhancement: 'present' })).toBe('IV');
+    expect(cls({ ...CT, wall: 'thickIrregular', enhancement: 'none' })).toBe('II');
+    expect(cls({ ...CT, softTissue: 'present', enhancement: 'none' })).toBe('II');
+    expect(cls({ ...CT, wall: 'thickIrregular' })).toBe('--');
+  });
+  it('legacy perceived/measurable values count as enhancement', () => {
+    expect(cls({ ...CT, wall: 'thickIrregular', enhancement: 'measurable' })).toBe('III');
+    expect(cls({ ...CT, wall: 'minThickSmooth', enhancement: 'perceived' })).toBe('IIF');
+  });
+  it('unenhanced CT: highest class II', () => {
+    const r = calculateBosniak({ ...CT, exam: 'unenhanced', wall: 'thickIrregular' });
     expect(r.categoryShort).toBe('II');
-    expect(r.reason).toMatch(/1-3/);
+    expect(r.note).toMatch(/unenhanced/i);
   });
-
-  it('many (>=4) thin smooth septa is class IIF', () => {
-    const r = calculateBosniak({ wall: 'thinSmooth', septa: 'thinSmoothMany', enhancement: 'perceived' });
-    expect(r.categoryShort).toBe('IIF');
-    expect(r.reason).toMatch(/>=4/);
+  it('highest class wins (IV over III)', () => {
+    expect(cls({ ...CT, wall: 'thickIrregular', softTissue: 'present', enhancement: 'present' })).toBe('IV');
   });
+});
 
-  it('septa option labels say 1-3 and >=4', async () => {
+describe('Bosniak v2019 — MRI', () => {
+  it('class I needs contrast; simple fluid on unenhanced MRI is II', () => {
+    expect(cls(MR)).toBe('I');
+    expect(cls({ ...MR, exam: 'unenhanced' })).toBe('II');
+  });
+  it('calcification is not an MRI criterion', () => {
+    expect(cls({ ...MR, calcification: 'thick' })).toBe('I');
+  });
+  it('homogeneous markedly T1 hyperintense -> II; heterogeneous T1 hyperintense -> IIF', () => {
+    expect(cls({ ...MR, content: 't1bright' })).toBe('II');
+    expect(cls({ ...MR, content: 't1hetero' })).toBe('IIF');
+    expect(cls({ ...MR, exam: 'unenhanced', content: 't1hetero' })).toBe('II'); // unenhanced MRI max II
+  });
+  it('enhancing features grade as on CT', () => {
+    expect(cls({ ...MR, wall: 'thickIrregular', enhancement: 'present' })).toBe('III');
+    expect(cls({ ...MR, softTissue: 'present', enhancement: 'present' })).toBe('IV');
+    expect(cls({ ...MR, septa: 'minThickSmooth', enhancement: 'none' })).toBe('II');
+  });
+  it('CT-only content values are ignored on MRI', () => {
+    expect(cls({ ...MR, content: 'hyper70' })).toBe('--');
+  });
+});
+
+describe('Bosniak — definition', () => {
+  it('septa labels say 1-3 and >=4; enhancement has no perceived/measurable split', async () => {
     const { bosniakDefinition } = await import('./definition.js');
     const labels = bosniakDefinition.septa.options.map((o) => o.label).join(' ');
     expect(labels).toMatch(/1-3/);
     expect(labels).toMatch(/>=4/);
+    expect(bosniakDefinition.enhancement.options.map((o) => o.id)).toEqual(['none', 'present']);
   });
-
-  it('thin smooth wall, no septa, with calcification is class II (not I)', () => {
-    const r = calculateBosniak({ wall: 'thinSmooth', septa: 'none', calcification: 'thick' });
-    expect(r.categoryShort).toBe('II');
+  it('IV label and level', () => {
+    const r = calculateBosniak({ ...CT, softTissue: 'present', enhancement: 'present' });
+    expect(r.categoryLabel).toBe('Likely Malignant');
+    expect(r.categoryLevel).toBe(5);
   });
 });
 
-describe('Bosniak v2019: IIF/III features must enhance (audit 2026-11-28)', () => {
-  it('thick wall with measurable or perceived enhancement -> III', () => {
-    expect(calculateBosniak({ wall: 'thickIrregular', enhancement: 'measurable' }).categoryShort).toBe('III');
-    expect(calculateBosniak({ wall: 'thickIrregular', enhancement: 'perceived' }).categoryShort).toBe('III');
+import { parseSegmentedFindings } from '../../core/parser.js';
+import { bosniakDefinition } from './definition.js';
+
+describe('Bosniak parse: modality, exam, enhancement (2026-11-28)', () => {
+  const p = (t) => { const r = parseSegmentedFindings(t, bosniakDefinition); return r.segments[0]?.formState || r.ungrouped.formState; };
+  it('reads modality and exam', () => {
+    expect(p('Renal mass protocol CT: 2 cm cyst with thin wall.')).toMatchObject({ modality: 'ct', exam: 'protocol' });
+    expect(p('MRI without contrast: 2 cm cyst.')).toMatchObject({ modality: 'mri', exam: 'unenhanced' });
   });
-  it('thick wall or septa with no enhancement is not IIF/III', () => {
-    const r = calculateBosniak({ wall: 'thickIrregular', enhancement: 'none' });
-    expect(['IIF', 'III', 'IV']).not.toContain(r.categoryShort);
-    expect(calculateBosniak({ wall: 'thinSmooth', septa: 'minThickSmooth', enhancement: 'none' }).categoryShort).toBe('II');
-  });
-  it('IIF/III feature with enhancement not yet answered -> incomplete', () => {
-    expect(calculateBosniak({ wall: 'thickIrregular' }).categoryShort).toBe('--');
-    expect(calculateBosniak({ wall: 'minThickSmooth' }).categoryShort).toBe('--');
+  it('reads enhancement presence and absence', () => {
+    expect(p('Thick wall that enhances.').enhancement).toBe('present');
+    expect(p('Thick non-enhancing wall.').enhancement).toBe('none');
+    expect(p('Thick wall, no enhancement.').enhancement).toBe('none');
   });
 });

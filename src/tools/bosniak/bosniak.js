@@ -6,15 +6,25 @@ import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent, splitEditorContent } from '../../core/pill-editor.js';
 import { bosniakDefinition } from './definition.js';
-import { calculateBosniak } from './calculator.js';
+import { calculateBosniak, CONTENT_BY_EXAM } from './calculator.js';
 import { bosniakTemplates } from './templates.js';
 import { parseSegmentedFindings } from '../../core/parser.js';
-import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
+import { getSizeUnit, getStored, setStored, trackEvent } from '../../core/storage.js';
 import '../../core/tool-name.js';
 
 let cysts = [createCystState(1)];
 let activeCystIndex = 0;
 let sizeUnit = getSizeUnit('bosniak');
+// Study-level modality and exam (asked first; shared by all cysts).
+const study = {
+  modality: getStored('mode:bosniak', null),
+  exam: getStored('exam:bosniak', null),
+};
+
+/** Copy the study-level modality/exam into every cyst's form state. */
+function syncStudy() {
+  for (const c of cysts) { c.formState.modality = study.modality; c.formState.exam = study.exam; }
+}
 
 function createCystState(num) {
   return { id: num, label: `Cyst ${num}`, formState: {} };
@@ -85,8 +95,50 @@ function init() {
 
   // --- Build UI ---
   function buildUI() {
+    syncStudy();
     const fs = cysts[activeCystIndex].formState;
     stepContainer.innerHTML = '';
+    const def = bosniakDefinition;
+
+    // Block 0: Modality and exam (first question; applies to every cyst).
+    const examOpts = study.modality ? def.exam.optionsByModality[study.modality] : [];
+    const studyCard = document.createElement('div');
+    studyCard.className = 'step-card card';
+    studyCard.innerHTML = `
+      <div class="step-card__question" title="Bosniak v2019 criteria differ between CT and MRI">Modality</div>
+      <div class="benign-choices" data-group="modality">
+        ${def.modality.options.map((o) => `
+          <button class="benign-choice ${study.modality === o.id ? 'benign-choice--active' : ''}" data-value="${o.id}">${o.label}</button>
+        `).join('')}
+      </div>
+      ${study.modality ? `
+      <div class="step-card__question" style="margin-top:var(--space-sm);">Exam</div>
+      <div class="benign-choices" data-group="exam">
+        ${examOpts.map((o) => `
+          <button class="benign-choice ${study.exam === o.id ? 'benign-choice--active' : ''}" data-value="${o.id}" title="${esc(o.tooltip || '')}">${o.label}</button>
+        `).join('')}
+      </div>` : ''}
+    `;
+    studyCard.querySelectorAll('[data-group="modality"] .benign-choice').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (study.modality !== btn.dataset.value) {
+          study.modality = btn.dataset.value;
+          // Exam options differ by modality; keep 'enhanced'/'unenhanced' if valid.
+          if (!def.exam.optionsByModality[study.modality].some((o) => o.id === study.exam)) study.exam = null;
+          setStored('mode:bosniak', study.modality);
+          setStored('exam:bosniak', study.exam);
+        }
+        buildUI();
+      });
+    });
+    studyCard.querySelectorAll('[data-group="exam"] .benign-choice').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        study.exam = btn.dataset.value;
+        setStored('exam:bosniak', study.exam);
+        buildUI();
+      });
+    });
+    stepContainer.appendChild(studyCard);
 
     // Block 1: Primary inputs (Kidney + Size)
     const primaryCard = document.createElement('div');
@@ -145,29 +197,6 @@ function init() {
     });
     stepContainer.appendChild(primaryCard);
 
-    // Block 2: Modality
-    const def = bosniakDefinition;
-    const modCard = document.createElement('div');
-    modCard.className = 'step-card card';
-    modCard.innerHTML = `
-      <div class="step-card__question">Modality</div>
-      <div class="benign-choices">
-        ${def.modality.options.map((o) => `
-          <button class="benign-choice ${fs.modality === o.id ? 'benign-choice--active' : ''}"
-            data-value="${o.id}">${o.label}</button>
-        `).join('')}
-      </div>
-    `;
-    modCard.querySelectorAll('.benign-choice').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        fs.modality = btn.dataset.value;
-        modCard.querySelectorAll('.benign-choice').forEach((b) =>
-          b.classList.toggle('benign-choice--active', b === btn));
-        update();
-      });
-    });
-    stepContainer.appendChild(modCard);
-
     // Block 3: Wall
     const wallCard = buildChoiceCard('wall', def.wall, fs);
     stepContainer.appendChild(wallCard);
@@ -176,13 +205,34 @@ function init() {
     const septaCard = buildChoiceCard('septa', def.septa, fs);
     stepContainer.appendChild(septaCard);
 
-    // Block 5: Enhancement
-    const enhCard = buildChoiceCard('enhancement', def.enhancement, fs);
-    stepContainer.appendChild(enhCard);
+    // Block 5: Attenuation (CT) or signal (MRI), filtered to the exam.
+    if (study.modality && study.exam) {
+      const valid = CONTENT_BY_EXAM[study.modality][study.exam];
+      const contentDef = {
+        label: def.content.labelByModality[study.modality],
+        tooltip: study.modality === 'ct' ? 'Homogeneous attenuation types (classes I and II)' : 'Homogeneous signal types (classes I, II) and heterogeneous T1 hyperintensity (IIF)',
+        options: def.content.options.filter((o) => o.modality === study.modality && valid.includes(o.id)),
+      };
+      stepContainer.appendChild(buildChoiceCard('content', contentDef, fs));
+    }
 
-    // Block 6: Calcification
-    const calcCard = buildChoiceCard('calcification', def.calcification, fs);
-    stepContainer.appendChild(calcCard);
+    // Block 6: Enhancement (not assessable on an unenhanced exam)
+    if (study.exam && study.exam !== 'unenhanced') {
+      const enhDef = {
+        ...def.enhancement,
+        options: def.enhancement.options.map((o) => (o.id === 'present'
+          ? { ...o, tooltip: study.modality === 'mri'
+            ? 'Unequivocal enhancement (e.g. on subtraction images) or >=15% signal intensity increase'
+            : 'Unequivocal visual enhancement or >=20 HU increase' }
+          : o)),
+      };
+      stepContainer.appendChild(buildChoiceCard('enhancement', enhDef, fs));
+    }
+
+    // Block 7: Calcification (CT only; MRI is insensitive to calcium)
+    if (study.modality === 'ct') {
+      stepContainer.appendChild(buildChoiceCard('calcification', def.calcification, fs));
+    }
 
     // Block 7: Enhancing Soft Tissue
     const stCard = buildChoiceCard('softTissue', def.softTissue, fs);
@@ -309,6 +359,7 @@ function init() {
     // "1. ... 2. ...") pastes split into per-cyst segments, each
     // becoming its own tab. Single-cyst pastes fall through to the
     // ungrouped bucket and apply to the active tab.
+    const def0 = bosniakDefinition;
     const { segments, ungrouped, unmatchedSentences } = parseSegmentedFindings(text, bosniakDefinition);
 
     let matchedFieldCount = 0;
@@ -326,6 +377,15 @@ function init() {
       for (const key of Object.keys(fs)) delete fs[key];
       Object.assign(fs, ungrouped.formState);
       matchedFieldCount = ungrouped.matched.length;
+    }
+
+    // Modality and exam are study-level: take them from wherever they were dictated.
+    const parsedStates = [ungrouped.formState || {}, ...segments.map((sg) => sg.formState)];
+    const pm = parsedStates.find((f) => f.modality)?.modality;
+    const pe = parsedStates.find((f) => f.exam)?.exam;
+    if (pm) { study.modality = pm; setStored('mode:bosniak', pm); }
+    if (pe && def0.exam.optionsByModality[study.modality || 'ct'].some((o) => o.id === pe)) {
+      study.exam = pe; setStored('exam:bosniak', pe);
     }
 
     const additional = unmatchedSentences

@@ -3,8 +3,8 @@
  */
 
 const FINDINGS_BLOCKS = [
-  { id: 'score', label: 'ASPECTS Score', template: '{{sideLabel}} ASPECTS: {{score}}/10', enabled: true },
-  { id: 'affected', label: 'Affected Regions', template: 'Regions with early ischemic changes: {{affectedText}}', enabled: true, condition: 'affectedProvided' },
+  { id: 'score', label: 'ASPECTS Score', template: '{{sideLabel}} {{aspectsName}}: {{score}}/10', enabled: true },
+  { id: 'affected', label: 'Affected Regions', template: '{{affectedHeading}}: {{affectedText}}', enabled: true, condition: 'affectedProvided' },
   { id: 'interpretation', label: 'Interpretation', template: '{{interpretation}}', enabled: true },
 ];
 
@@ -19,7 +19,7 @@ function buildTemplateSet(blocks, headers, impression) {
 
 const STANDARD_HEADERS = { findings: 'FINDINGS:', additionalFindings: 'Other findings:', impression: 'IMPRESSION:' };
 const RADAI_HEADERS = { findings: '[STRUCTURED REPORT]', additionalFindings: '[OTHER FINDINGS]', impression: '[IMPRESSION]' };
-const IMPRESSION = '{{sideLabel}} ASPECTS {{score}}/10. {{interpretation}}.';
+const IMPRESSION = '{{sideLabel}} {{aspectsName}} {{score}}/10. {{interpretation}}.';
 
 export const aspectsTemplates = {
   ps360: { label: 'PowerScribe 360', ...buildTemplateSet(FINDINGS_BLOCKS, STANDARD_HEADERS, IMPRESSION) },

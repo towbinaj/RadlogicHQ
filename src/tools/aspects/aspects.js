@@ -8,7 +8,7 @@ import { renderEditorContent } from '../../core/pill-editor.js';
 import { aspectsDefinition } from './definition.js';
 import { calculateAspects, detectNormalAspects } from './calculator.js';
 import { aspectsTemplates } from './templates.js';
-import { trackEvent } from '../../core/storage.js';
+import { trackEvent, getStored, setStored } from '../../core/storage.js';
 import { parseFindings } from '../../core/parser.js';
 import '../../core/tool-name.js';
 
@@ -25,6 +25,8 @@ function init() {
 
   const affected = new Set();
   let side = null;
+  // Modality: NCCT (default) or MRI DWI. Same regions; wording differs.
+  let modality = getStored('mode:aspects', 'ct');
   // Explicit "no early ischemic changes" -- required for a 10/10 score.
   let normalConfirmed = false;
   let studyAdditionalFindings = '';
@@ -37,10 +39,17 @@ function init() {
   function buildUI() {
     stepContainer.innerHTML = '';
 
-    // Side selector
+    // Side selector (with modality as the first question)
     const sideCard = document.createElement('div');
     sideCard.className = 'card';
     sideCard.innerHTML = `
+      <div class="input-group" style="margin-bottom:var(--space-sm);">
+        <label title="ASPECTS regions are scored the same way on non-contrast CT and on MRI DWI; report wording follows the modality">Modality</label>
+        <div class="toggle-group" data-group="modality">
+          <button class="toggle-group__btn ${modality === 'ct' ? 'toggle-group__btn--active' : ''}" data-modality="ct">CT</button>
+          <button class="toggle-group__btn ${modality === 'dwi' ? 'toggle-group__btn--active' : ''}" data-modality="dwi">MRI DWI</button>
+        </div>
+      </div>
       <div class="input-group">
         <label>Side</label>
         <div class="toggle-group">
@@ -49,10 +58,17 @@ function init() {
         </div>
       </div>
     `;
-    sideCard.querySelectorAll('.toggle-group__btn').forEach((btn) => {
+    sideCard.querySelectorAll('[data-modality]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        modality = btn.dataset.modality;
+        setStored('mode:aspects', modality);
+        buildUI();
+      });
+    });
+    sideCard.querySelectorAll('[data-value]').forEach((btn) => {
       btn.addEventListener('click', () => {
         side = btn.dataset.value;
-        sideCard.querySelectorAll('.toggle-group__btn').forEach((b) =>
+        sideCard.querySelectorAll('[data-value]').forEach((b) =>
           b.classList.toggle('toggle-group__btn--active', b === btn));
         update();
       });
@@ -63,7 +79,7 @@ function init() {
     const regionCard = document.createElement('div');
     regionCard.className = 'step-card card';
     regionCard.innerHTML = `
-      <div class="step-card__question">Regions with early ischemic changes</div>
+      <div class="step-card__question">${modality === 'dwi' ? 'Regions with acute diffusion restriction' : 'Regions with early ischemic changes'}</div>
       <div class="aspects-grid">
         ${aspectsDefinition.regions.map((r) => `
           <button class="benign-choice aspects-region-btn ${affected.has(r.id) ? 'benign-choice--active' : ''}"
@@ -74,8 +90,8 @@ function init() {
         `).join('')}
       </div>
       <button class="benign-choice aspects-normal-btn ${normalConfirmed && affected.size === 0 ? 'benign-choice--active' : ''}"
-        data-normal="1" title="Confirms a normal study: ASPECTS 10/10. Without this or a marked region the score stays blank.">
-        No early ischemic changes (ASPECTS 10)
+        data-normal="1" title="Confirms a normal study: 10/10. Without this or a marked region the score stays blank.">
+        ${modality === 'dwi' ? 'No acute diffusion restriction (DWI-ASPECTS 10)' : 'No early ischemic changes (ASPECTS 10)'}
       </button>
     `;
     regionCard.querySelector('[data-normal]').addEventListener('click', (e) => {
@@ -108,14 +124,14 @@ function init() {
   }
 
   function update() {
-    const result = calculateAspects(affected, side, normalConfirmed);
+    const result = calculateAspects(affected, side, normalConfirmed, modality);
     badgeScore.textContent = result.scoreLabel;
     badgeScore.dataset.level = result.level;
     updateReport();
   }
 
   function updateReport() {
-    const data = calculateAspects(affected, side, normalConfirmed);
+    const data = calculateAspects(affected, side, normalConfirmed, modality);
 
     reportEl.renderFn = (config, _data) => {
       if (config.editorContent) {

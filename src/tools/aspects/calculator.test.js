@@ -147,3 +147,20 @@ describe('detectNormalAspects (paste)', () => {
     '',
   ])('"%s" -> not normal', (t) => expect(detectNormalAspects(t)).toBe(false));
 });
+
+describe('ASPECTS modality: CT vs MRI DWI (2026-11-28)', () => {
+  it('CT keeps CT wording and Barber cutoff reference', () => {
+    const r = calculateAspects(setOf('M1', 'M2', 'M3'), 'left', false, 'ct');
+    expect(r.aspectsName).toBe('ASPECTS');
+    expect(r.interpretation).toMatch(/early ischemic change/);
+  });
+  it('DWI uses DWI-ASPECTS and diffusion wording, no CT outcome cutoff', () => {
+    const r = calculateAspects(setOf('M1', 'M2', 'M3'), 'left', false, 'dwi');
+    expect(r.aspectsName).toBe('DWI-ASPECTS');
+    expect(r.interpretation).toBe('Moderate extent of diffusion restriction');
+    expect(calculateAspects(new Set(), 'left', true, 'dwi').interpretation).toBe('No acute diffusion restriction');
+  });
+  it('defaults to CT', () => {
+    expect(calculateAspects(setOf('M1'), 'left').aspectsName).toBe('ASPECTS');
+  });
+});

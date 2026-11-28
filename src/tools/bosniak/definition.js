@@ -39,13 +39,49 @@ export const bosniakDefinition = {
     },
   ],
 
-  // Imaging modality — affects some criteria
+  // Imaging modality - asked first. Class I/II criteria differ (CT HU vs MRI
+  // signal), calcification is a CT criterion only, and an unenhanced study
+  // can be assigned at most class II.
   modality: {
     id: 'modality',
     label: 'Modality',
     options: [
       { id: 'ct', label: 'CT' },
       { id: 'mri', label: 'MRI' },
+    ],
+  },
+
+  exam: {
+    id: 'exam',
+    label: 'Exam',
+    optionsByModality: {
+      ct: [
+        { id: 'protocol', label: 'Renal mass protocol', tooltip: 'Unenhanced and contrast-enhanced phases' },
+        { id: 'enhanced', label: 'Single-phase enhanced', tooltip: 'Portal venous phase only' },
+        { id: 'unenhanced', label: 'Unenhanced only', tooltip: 'Enhancement cannot be assessed: highest class II' },
+      ],
+      mri: [
+        { id: 'enhanced', label: 'With contrast', tooltip: 'Pre- and post-contrast T1W (subtraction recommended)' },
+        { id: 'unenhanced', label: 'Without contrast', tooltip: 'Enhancement cannot be assessed: highest class II' },
+      ],
+    },
+  },
+
+  // Homogeneous content: CT attenuation or MRI signal (class I/II types).
+  content: {
+    id: 'content',
+    labelByModality: { ct: 'Attenuation', mri: 'Signal' },
+    options: [
+      { id: 'simple', modality: 'ct', label: 'Homogeneous -9 to 20 HU', tooltip: 'Simple fluid attenuation (class I on an enhanced exam; class II on unenhanced CT)' },
+      { id: 'hyper70', modality: 'ct', label: 'Homogeneous >=70 HU (unenhanced)', tooltip: 'Class II: hyperattenuating at unenhanced CT' },
+      { id: 'nonenh20', modality: 'ct', label: 'Homogeneous >20 HU, non-enhancing', tooltip: 'Class II: non-enhancing at renal mass protocol CT' },
+      { id: 'pv2130', modality: 'ct', label: 'Homogeneous 21-30 HU (portal venous)', tooltip: 'Class II: 21-30 HU at portal venous phase CT' },
+      { id: 'tooSmall', modality: 'ct', label: 'Too small to characterize', tooltip: 'Class II: homogeneous low-attenuation mass too small to characterize' },
+      { id: 'hetero', modality: 'ct', label: 'Heterogeneous', tooltip: 'Without higher-class features, MRI is recommended before assigning a class' },
+      { id: 'simple', modality: 'mri', label: 'Homogeneous fluid (CSF-like)', tooltip: 'Simple fluid signal (class I with contrast; class II on unenhanced MRI)' },
+      { id: 't1bright', modality: 'mri', label: 'Homogeneous markedly T1 hyperintense', tooltip: 'Class II: about 2.5x renal parenchyma at unenhanced fat-saturated T1W' },
+      { id: 't1hetero', modality: 'mri', label: 'Heterogeneously T1 hyperintense', tooltip: 'Class IIF: heterogeneously hyperintense at unenhanced fat-saturated T1W' },
+      { id: 'tooSmall', modality: 'mri', label: 'Too small to characterize', tooltip: 'Class II: homogeneous fluid signal mass too small to characterize' },
     ],
   },
 
@@ -59,8 +95,8 @@ export const bosniakDefinition = {
       { id: 'none', label: 'No Septa', tooltip: 'No internal septation' },
       { id: 'thinSmooth', label: 'Thin and Smooth, few (1-3)', tooltip: 'Few (1-3) thin (<=2 mm) smooth septa (class II)' },
       { id: 'thinSmoothMany', label: 'Thin and Smooth, many (>=4)', tooltip: 'Many (>=4) thin (<=2 mm) smooth septa (class IIF)' },
-      { id: 'minThickSmooth', label: 'Minimally Thickened Smooth', tooltip: 'Smooth minimally thickened (3 mm) enhancing septa' },
-      { id: 'thickIrregular', label: 'Thickened or Irregular', tooltip: 'Thickened (≥4 mm) or irregular enhancing septum(s) with measurable enhancement' },
+      { id: 'minThickSmooth', label: 'Minimally Thickened Smooth', tooltip: 'Smooth minimally thickened (3 mm) septa; class IIF if enhancing' },
+      { id: 'thickIrregular', label: 'Thickened or Irregular', tooltip: 'Thick (>=4 mm) or irregular (<=3 mm obtuse protrusions) septa; class III if enhancing' },
     ],
   },
 
@@ -69,9 +105,9 @@ export const bosniakDefinition = {
     id: 'wall',
     label: 'Wall',
     options: [
-      { id: 'thinSmooth', label: 'Thin and Smooth', tooltip: 'Thin (≤2 mm) smooth wall' },
-      { id: 'minThickSmooth', label: 'Minimally Thickened Smooth', tooltip: 'Smooth minimally thickened (3 mm) enhancing wall' },
-      { id: 'thickIrregular', label: 'Thickened or Irregular', tooltip: 'Thickened (≥4 mm) or irregular enhancing wall with measurable enhancement' },
+      { id: 'thinSmooth', label: 'Thin and Smooth', tooltip: 'Thin (<=2 mm) smooth wall' },
+      { id: 'minThickSmooth', label: 'Minimally Thickened Smooth', tooltip: 'Smooth minimally thickened (3 mm) wall; class IIF if enhancing' },
+      { id: 'thickIrregular', label: 'Thickened or Irregular', tooltip: 'Thick (>=4 mm) or irregular (<=3 mm obtuse protrusions) wall; class III if enhancing' },
     ],
   },
 
@@ -79,7 +115,7 @@ export const bosniakDefinition = {
   calcification: {
     id: 'calcification',
     label: 'Calcification',
-    tooltip: 'Any calcification excludes class I (a simple cyst has none); otherwise calcification does not raise the class in v2019',
+    tooltip: 'CT only (MRI is insensitive to calcium). Calcification of any type is a class II feature and excludes class I.',
     options: [
       { id: 'none', label: 'None' },
       { id: 'thin', label: 'Thin / Fine' },
@@ -87,25 +123,26 @@ export const bosniakDefinition = {
     ],
   },
 
-  // Enhancement
+  // Enhancement (v2019): unequivocal visual enhancement, or a quantitative
+  // increase of >=20 HU (CT) / >=15% signal intensity (MRI). The wall may
+  // enhance in class I and II. Not asked on an unenhanced exam.
   enhancement: {
     id: 'enhancement',
-    label: 'Enhancement',
+    label: 'Wall / Septal / Nodular Enhancement',
     options: [
-      { id: 'none', label: 'No Enhancement', tooltip: 'No perceived or measurable enhancement of septa or wall' },
-      { id: 'perceived', label: 'Perceived (not measurable)', tooltip: 'Perceived enhancement of septa/wall that is not measurable (CT) or equivocal (MRI)' },
-      { id: 'measurable', label: 'Measurable Enhancement', tooltip: 'Measurable enhancement (≥20 HU on CT, or unequivocal on MRI)' },
+      { id: 'none', label: 'No Enhancement', tooltip: 'No unequivocal enhancement of wall, septa or nodule' },
+      { id: 'present', label: 'Enhancement Present', tooltip: 'Unequivocal visual enhancement, or >=20 HU increase (CT) / >=15% signal increase (MRI)' },
     ],
   },
 
   // Soft tissue component — the key feature for Bosniak IV
   softTissue: {
     id: 'softTissue',
-    label: 'Enhancing Soft Tissue',
-    tooltip: 'Enhancing nodular or solid component that is not a septum or wall (convex protrusion ≥4 mm, obtuse margins with wall/septum)',
+    label: 'Nodule',
+    tooltip: 'Nodule: convex protrusion >=4 mm with obtuse margins, or any size with acute margins. Must enhance for class IV.',
     options: [
       { id: 'absent', label: 'Absent' },
-      { id: 'present', label: 'Present', tooltip: 'Enhancing convex protrusion (≥4 mm) with obtuse margins arising from wall or septum, or any enhancing mural nodule' },
+      { id: 'present', label: 'Present', tooltip: 'Convex protrusion >=4 mm with obtuse margins, or any size with acute margins' },
     ],
   },
 
@@ -147,6 +184,25 @@ export const bosniakDefinition = {
         'thinSmooth': ['thin wall', 'smooth thin wall', 'thin smooth wall'],
         'minThickSmooth': ['minimally thickened wall', 'minimally thick wall'],
         'thickIrregular': ['thick wall', 'irregular wall', 'thickened wall'],
+      },
+    },
+    'modality': {
+      options: {
+        'ct': ['ct', 'computed tomography'],
+        'mri': ['mri', 'magnetic resonance'],
+      },
+    },
+    'exam': {
+      options: {
+        'protocol': ['renal mass protocol', 'multiphase', 'multiphasic'],
+        'enhanced': ['portal venous', 'with contrast', 'contrast-enhanced', 'contrast enhanced'],
+        'unenhanced': ['without contrast', 'unenhanced', 'non-contrast', 'noncontrast'],
+      },
+    },
+    'enhancement': {
+      options: {
+        'none': ['no enhancement', 'non-enhancing', 'nonenhancing', 'does not enhance', 'without enhancement'],
+        'present': ['enhancing', 'enhancement', 'enhances'],
       },
     },
     'softTissue': {
