@@ -113,10 +113,21 @@ export const oradsDefinition = {
         return m[0].includes('cm') ? val * 10 : val;
       },
     },
+    // Side of the lesion: the first sentence naming a side that is not
+    // a normal/unremarkable statement ("Left ovary 4 cm endometrioma.
+    // Right ovary normal." -> left).
     'location': {
-      options: {
-        'right': ['right ovary', 'right adnexa', 'right'],
-        'left': ['left ovary', 'left adnexa', 'left'],
+      pattern: /\b(right|left)\b/,
+      transform: (m) => {
+        const sentences = m.input.split(/\.(?!\d)|[;\n]/);
+        let fallback = null;
+        for (const s of sentences) {
+          const side = s.match(/\b(right|left)\b/);
+          if (!side) continue;
+          fallback = fallback || side[1];
+          if (!/\b(?:normal|unremarkable|not (?:seen|visualized)|no (?:lesion|mass|cyst))\b/.test(s)) return side[1];
+        }
+        return fallback;
       },
     },
   },

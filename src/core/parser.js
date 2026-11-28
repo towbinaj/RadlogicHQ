@@ -534,9 +534,9 @@ function extractFindingsSection(text) {
 // - Pseudo-negations ("no change", "no interval change") negate nothing.
 
 const NEG_MAX_WORDS = 8;
-const NEG_PRE_RE = /\b(?:no evidence of|no signs? of|negative for|absence of|free of|without|no|not)\b/gi;
+const NEG_PRE_RE = /\b(?:no evidence of|no signs? of|negative for|absence of|free of|without|denies|denied|never|no|not)\b/gi;
 const NEG_PSEUDO_RE = /^(?:no (?:significant |interval |significant interval )?change|no (?:increase|decrease)|not only|no longer)\b/i;
-const NEG_POST_RE = /\b(?:(?:is|are|was|were)\s+)?(?:not\s+(?:seen|identified|visualized|demonstrated|present|appreciated)|absent|ruled out|excluded)\b/gi;
+const NEG_POST_RE = /\b(?:(?:is|are|was|were)\s+)?(?:not\s+(?:seen|identified|visualized|demonstrated|present|appreciated)|absent|spared|preserved|ruled out|excluded)\b/gi;
 const NEG_TERMINATOR_RE = /\b(?:but|however|although|though|except|aside from|apart from|whereas)\b/i;
 const CLAUSE_SPLIT_RE = /[;:!?\n]|\.(?!\d)/g;
 
@@ -610,6 +610,9 @@ function keywordIndexes(haystack, needle) {
   const short = needle.replace(/\s+/g, '').length <= SHORT_KEYWORD_MAX;
   for (let i = haystack.indexOf(needle); i !== -1; i = haystack.indexOf(needle, i + 1)) {
     if (short && (isWordChar(haystack[i - 1]) || isWordChar(haystack[i + needle.length]))) continue;
+    // A "non" prefix negates the word: "nonsolid", "non-smoker" are not
+    // "solid" / "smoker" (unless the keyword itself starts with "non").
+    if (!needle.startsWith('non') && /(?:^|[^a-z0-9])non-?\s?$/i.test(haystack.slice(Math.max(0, i - 5), i))) continue;
     out.push(i);
   }
   return out;
@@ -726,17 +729,21 @@ export function parseFindings(text, definition) {
       let bestMatch = null;
       let bestKeyword = '';
       let bestLength = 0;
+      let bestIndex = Infinity;
 
-      // Longest keyword wins, counting only occurrences that are not under
-      // a negation ("not dislocated", "no retroperitoneal gas").
+      // Longest keyword wins (most specific), counting only occurrences
+      // that are not under a negation ("not dislocated", "no retroperitoneal
+      // gas"). Between keywords of equal length the earliest mention wins.
       for (const [optionId, keywords] of Object.entries(rule.options)) {
         for (const kw of keywords) {
-          if (kw.length <= bestLength) continue;
-          const hit = keywordIndexes(normalized, kw.toLowerCase()).some((i) => !isNegatedAt(negationRanges, i));
-          if (hit) {
+          if (kw.length < bestLength) continue;
+          const at = keywordIndexes(normalized, kw.toLowerCase()).find((i) => !isNegatedAt(negationRanges, i));
+          if (at === undefined) continue;
+          if (kw.length > bestLength || at < bestIndex) {
             bestMatch = optionId;
             bestKeyword = kw;
             bestLength = kw.length;
+            bestIndex = at;
           }
         }
       }
@@ -870,7 +877,7 @@ const BILATERAL_RE = new RegExp(
   [
     // a) Prefix: "bilateral kidneys", "both kidneys"
     String.raw`\b(?:bilateral|both)\s+(?:kidneys|sides|adrenals|ovaries|breasts|lungs|hips|knees|shoulders|elbows|wrists|ankles|hands|feet|joints|ventricles|organs)\b`,
-    String.raw`\bbilaterally\b`,
+    String.raw`\bbilateral(?:ly)?\b`,
     // b) Conjunction: "right and left kidneys"
     String.raw`\b(?:right\s+and\s+left|left\s+and\s+right)\s+(?:kidneys|adrenals|ovaries|breasts|lungs|hips|knees|shoulders|elbows|wrists|ankles|hands|feet|joints|ventricles|sides|organs)\b`,
     // c) Postposed: "kidneys each", "kidneys both"
@@ -891,8 +898,8 @@ const BILATERAL_RE = new RegExp(
 // matching "right arm bone fracture with knee findings" as a knee
 // reference. The modifier word doesn't need to be in a vocabulary
 // because the anchor is still the trailing organ name.
-const RIGHT_RE = /\b(?:the\s+)?right\s+(?:\w+\s+)?(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side|organ)s?\b|\bon\s+the\s+right\b|\brt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side)\b|(?:^|\n)\s*(?:the\s+)?right\s*:/i;
-const LEFT_RE = /\b(?:the\s+)?left\s+(?:\w+\s+)?(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side|organ)s?\b|\bon\s+the\s+left\b|\blt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side)\b|(?:^|\n)\s*(?:the\s+)?left\s*:/i;
+const RIGHT_RE = /\b(?:the\s+)?right\s+(?:\w+\s+)?(?:kidney|renal|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side|organ)s?\b|\bon\s+the\s+right\b|\brt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side)\b|(?:^|\n)\s*(?:the\s+)?right\s*:|^\s*right\b(?!\s+(?:upper|middle|lower)\s+(?:lobe|quadrant))/i;
+const LEFT_RE = /\b(?:the\s+)?left\s+(?:\w+\s+)?(?:kidney|renal|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side|organ)s?\b|\bon\s+the\s+left\b|\blt\.?\s+(?:kidney|adrenal|ovary|breast|lung|hip|knee|shoulder|elbow|wrist|ankle|hand|foot|joint|ventricle|side)\b|(?:^|\n)\s*(?:the\s+)?left\s*:|^\s*left\b(?!\s+(?:upper|middle|lower)\s+(?:lobe|quadrant))/i;
 
 // Cross-reference tokens: flip the current side for this sentence only.
 const CONTRALATERAL_RE = /\bcontralateral\b|\bthe\s+(?:other|opposite)\s+(?:kidney|side|adrenal|organ)\b|\bon\s+the\s+other\s+side\b/i;
@@ -1054,7 +1061,8 @@ export function segmentByItemIndex(text, itemLabel = 'item') {
   const markers = [];
 
   // "Nodule 1", "nodule #1", "nodule 1:"
-  const rxExplicit = new RegExp(`\\b${label}\\s*#?\\s*(\\d+)\\s*:?`, 'gi');
+  // (?!\.?\d) keeps a size ("Nodule 1.5 cm") from reading as "Nodule 1".
+  const rxExplicit = new RegExp(`\\b${label}\\s*#?\\s*(\\d+)(?!\\.?\\d)\\s*:?`, 'gi');
   let m;
   while ((m = rxExplicit.exec(text)) !== null) {
     markers.push({ pos: m.index, endPos: m.index + m[0].length, index: parseInt(m[1], 10) });

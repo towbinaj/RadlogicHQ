@@ -200,7 +200,9 @@ export const liradsDefinition = {
     },
     'thresholdGrowth': {
       options: {
-        'yes': ['threshold growth', 'interval growth', 'increased in size', 'new lesion'],
+        // v2018 threshold growth is >=50% size increase in <=6 months; plain
+        // "new" or "increased in size" does not meet it.
+        'yes': ['threshold growth'],
         'no': ['stable', 'no growth', 'unchanged'],
       },
     },

@@ -73,3 +73,22 @@ export const hydronephrosisDefinition = {
     },
   },
 };
+
+/**
+ * Map a parsed grade into the active mode's grade list. The parse rules
+ * cover all three systems at once, so "no hydronephrosis" can come back as
+ * SFU '0' or 'normal'; a grade from another system (P2 in SFU mode) is
+ * dropped rather than shown as a blank line.
+ */
+export function gradeForMode(grade, mode) {
+  if (grade == null) return null;
+  const def = hydronephrosisDefinition;
+  const list = mode === 'utd-postnatal' ? def.utdPostnatal
+    : mode === 'utd-antenatal' ? def.utdAntenatal
+      : def.sfuGrades;
+  const ids = list.map((g) => g.id);
+  if (ids.includes(grade)) return grade;
+  if (grade === '0' && ids.includes('normal')) return 'normal';
+  if (grade === 'normal' && ids.includes('0')) return '0';
+  return null;
+}

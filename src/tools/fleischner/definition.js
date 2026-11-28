@@ -108,7 +108,7 @@ export const fleischnerDefinition = {
     'riskLevel': {
       options: {
         'high': ['high risk', 'smoker', 'smoking', 'emphysema', 'fibrosis', 'spiculated'],
-        'low': ['low risk', 'no risk factors', 'nonsmoker'],
+        'low': ['low risk', 'no risk factors', 'nonsmoker', 'non-smoker', 'never smoker', 'never-smoker', 'never smoked'],
       },
     },
   },

@@ -5,7 +5,7 @@ import '../../components/report-output.js';
 import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
-import { hydronephrosisDefinition } from './definition.js';
+import { hydronephrosisDefinition, gradeForMode } from './definition.js';
 import { calculateHydronephrosis } from './calculator.js';
 import { parseSegmentedFindings } from '../../core/parser.js';
 import { hydronephrosisTemplates } from './templates.js';
@@ -189,11 +189,11 @@ function init() {
     const sidesTouched = new Set();
     for (const seg of segments) {
       if (seg.key === 'right') {
-        if (seg.formState.grade) formState.rightGrade = seg.formState.grade;
+        if (seg.formState.grade) formState.rightGrade = gradeForMode(seg.formState.grade, mode);
         if (seg.formState.aprpd != null) formState.rightAprpd = seg.formState.aprpd;
         sidesTouched.add('right');
       } else if (seg.key === 'left') {
-        if (seg.formState.grade) formState.leftGrade = seg.formState.grade;
+        if (seg.formState.grade) formState.leftGrade = gradeForMode(seg.formState.grade, mode);
         if (seg.formState.aprpd != null) formState.leftAprpd = seg.formState.aprpd;
         sidesTouched.add('left');
       }
@@ -203,7 +203,7 @@ function init() {
     // the flat fields. Side auto-detection from ungrouped's `side` key
     // sets the tool to right / left mode.
     if (segments.length === 0 && ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
-      if (ungrouped.formState.grade) formState.grade = ungrouped.formState.grade;
+      if (ungrouped.formState.grade) formState.grade = gradeForMode(ungrouped.formState.grade, mode);
       if (ungrouped.formState.aprpd != null) formState.aprpd = ungrouped.formState.aprpd;
       if (ungrouped.formState.side) formState.side = ungrouped.formState.side;
     }

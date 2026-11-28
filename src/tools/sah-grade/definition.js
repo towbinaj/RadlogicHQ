@@ -38,11 +38,11 @@ export const sahDefinition = {
     },
     modifiedFisher: {
       options: {
-        '0': ['modified fisher 0', 'fisher 0', 'fisher grade 0', 'no sah or ivh', 'no sah'],
-        '1': ['modified fisher 1', 'fisher 1', 'fisher grade 1', 'thin sah, no ivh', 'thin sah without ivh'],
-        '2': ['modified fisher 2', 'fisher 2', 'fisher grade 2', 'thin sah with ivh'],
-        '3': ['modified fisher 3', 'fisher 3', 'fisher grade 3', 'thick sah, no ivh', 'thick sah without ivh'],
-        '4': ['modified fisher 4', 'fisher 4', 'fisher grade 4', 'thick sah with ivh'],
+        '0': ['modified fisher 0', 'modified fisher grade 0', 'no sah or ivh', 'no sah'],
+        '1': ['modified fisher 1', 'modified fisher grade 1', 'thin sah, no ivh', 'thin sah without ivh'],
+        '2': ['modified fisher 2', 'modified fisher grade 2', 'thin sah with ivh'],
+        '3': ['modified fisher 3', 'modified fisher grade 3', 'thick sah, no ivh', 'thick sah without ivh'],
+        '4': ['modified fisher 4', 'modified fisher grade 4', 'thick sah with ivh'],
       },
     },
   },

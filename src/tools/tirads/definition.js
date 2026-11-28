@@ -220,10 +220,11 @@ export const tiradsDefinition = {
   parseSegmentation: { type: 'itemIndex', itemLabel: 'Nodule' },
 
   parseRules: {
+    // ACR TI-RADS sizes by maximum dimension: "1.5 x 1.2 x 1.0 cm" -> 1.5.
     'nodule-size': {
-      pattern: /(\d*\.?\d+)\s*cm/,
+      pattern: /(\d*\.?\d+)(?:\s*x\s*\d*\.?\d+)*\s*cm/,
       group: 1,
-      transform: (m) => parseFloat(m[1]),
+      transform: (m) => Math.max(...m[0].match(/\d*\.?\d+/g).map(parseFloat)),
     },
     'nodule-side': {
       options: {

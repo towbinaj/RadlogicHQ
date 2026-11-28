@@ -138,12 +138,14 @@ export const bosniakDefinition = {
       options: {
         'none': ['no septa', 'no septation'],
         'thinSmooth': ['thin smooth septa', 'thin septa', 'hairline septa'],
+        'minThickSmooth': ['minimally thickened septa', 'minimally thick septa'],
         'thickIrregular': ['thick septa', 'irregular septa', 'thickened septa'],
       },
     },
     'wall': {
       options: {
         'thinSmooth': ['thin wall', 'smooth thin wall', 'thin smooth wall'],
+        'minThickSmooth': ['minimally thickened wall', 'minimally thick wall'],
         'thickIrregular': ['thick wall', 'irregular wall', 'thickened wall'],
       },
     },

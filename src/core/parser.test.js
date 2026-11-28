@@ -1211,3 +1211,84 @@ describe('buildParseRules — generic option labels are qualified by the field l
     expect(r.formState.dwiScore).toBeUndefined();
   });
 });
+
+// Audit follow-up (2026-11-28): remaining dictation misreads.
+import { fleischnerDefinition } from '../tools/fleischner/definition.js';
+import { luganoDefinition } from '../tools/lugano/definition.js';
+import { aspectsDefinition } from '../tools/aspects/definition.js';
+import { sahDefinition } from '../tools/sah-grade/definition.js';
+import { lungradsDefinition as lungRadsDefinition } from '../tools/lungrads/definition.js';
+import { oradsDefinition } from '../tools/orads/definition.js';
+import { tiradsDefinition } from '../tools/tirads/definition.js';
+import { fetalVentricleDefinition } from '../tools/fetal-ventricle/definition.js';
+import { bosniakDefinition } from '../tools/bosniak/definition.js';
+import { liradsDefinition } from '../tools/lirads/definition.js';
+import { vurVcugDefinition as vurDefinition } from '../tools/vur/definition.js';
+
+describe('parseFindings — more negation triggers', () => {
+  it('"never smoker" and "non-smoker" are low risk, "no emphysema" is not high', () => {
+    expect(parseFindings('No emphysema. Never smoker. 5 mm solid nodule.', fleischnerDefinition).formState.riskLevel).toBe('low');
+    expect(parseFindings('Non-smoker. 5 mm solid nodule.', fleischnerDefinition).formState.riskLevel).toBe('low');
+    expect(parseFindings('Former smoker with emphysema.', fleischnerDefinition).formState.riskLevel).toBe('high');
+  });
+  it('"denies fever or night sweats" does not set B symptoms', () => {
+    const fs = parseFindings('Patient denies fever or night sweats.', luganoDefinition).formState;
+    expect(fs.suffixes || []).not.toContain('B');
+  });
+  it('a region "spared" is not affected', () => {
+    const fs = parseFindings('Hypodensity in the insular ribbon and lentiform nucleus. Caudate is spared.', aspectsDefinition).formState;
+    expect([...fs.affected].sort()).toEqual(['I', 'L']);
+  });
+});
+
+describe('parseFindings — "non" prefix blocks the bare keyword', () => {
+  it('"nonsolid" / "non-solid" nodule is not solid', () => {
+    expect(parseFindings('20 mm nonsolid nodule', lungRadsDefinition).formState.noduleType).toBe('groundGlass');
+    expect(parseFindings('Non-solid nodule.', lungRadsDefinition).formState.noduleType).toBe('groundGlass');
+  });
+});
+
+describe('parseFindings — tool keyword fixes', () => {
+  it('plain "Fisher grade 3" is not read as modified Fisher', () => {
+    expect(parseFindings('Fisher grade 3 subarachnoid hemorrhage.', sahDefinition).formState.modifiedFisher).toBeUndefined();
+    expect(parseFindings('Modified Fisher grade 3.', sahDefinition).formState.modifiedFisher).toBe('3');
+  });
+  it('equal-length keywords: the earliest mention wins', () => {
+    expect(parseFindings('Left ovary 4.1 cm endometrioma. Right ovary normal.', oradsDefinition).formState.location).toBe('left');
+  });
+  it('"minimally thickened wall" is minimally thickened, not thick', () => {
+    expect(parseFindings('Cyst with minimally thickened wall.', bosniakDefinition).formState.wall).toBe('minThickSmooth');
+  });
+  it('"new lesion" / "increased in size" alone is not threshold growth', () => {
+    expect(parseFindings('New lesion, increased in size.', liradsDefinition).formState.thresholdGrowth).toBeUndefined();
+    expect(parseFindings('Threshold growth.', liradsDefinition).formState.thresholdGrowth).toBe('yes');
+  });
+});
+
+describe('parseSegmentedFindings — size and segment fixes', () => {
+  it('"Nodule 1.5 x 1.2 x 1.0 cm" is one nodule sized by its largest dimension', () => {
+    const r = parseSegmentedFindings('Nodule 1.5 x 1.2 x 1.0 cm, solid, hypoechoic.', tiradsDefinition);
+    const fs = r.segments.length ? r.segments[0].formState : r.ungrouped.formState;
+    expect(fs['nodule-size']).toBe(1.5);
+  });
+  it('fetal ventricle width comes from the atrial width, not the BPD', () => {
+    const r = parseSegmentedFindings('BPD 55 mm. Atrial width 7 mm.', fetalVentricleDefinition);
+    expect(r.ungrouped.formState.width).toBe(7);
+  });
+  it('a sentence starting with "Right"/"Left" sets the side', () => {
+    const r = parseSegmentedFindings('Right grade IV reflux. Left grade II reflux.', vurDefinition);
+    const byKey = Object.fromEntries(r.segments.map((s) => [s.key, s.formState.grade]));
+    expect(byKey).toEqual({ right: 'IV', left: 'II' });
+  });
+});
+
+describe('segmentByLaterality — audit follow-up', () => {
+  it('"renal" counts as a side marker and "bilateral <organ> X" covers both sides', async () => {
+    const { aastKidney2025Definition } = await import('../tools/aast-kidney/definition-2025.js');
+    const a = parseSegmentedFindings('Left renal laceration 3 cm. The right kidney is normal.', aastKidney2025Definition);
+    const left = a.segments.find((s) => s.key === 'left');
+    expect(left.formState.selectedFindings).toEqual(['lac-ge25']);
+    const b = parseSegmentedFindings('Bilateral perinephric hematomas.', aastKidney2025Definition);
+    expect(b.segments.map((s) => s.key).sort()).toEqual(['left', 'right']);
+  });
+});

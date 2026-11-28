@@ -187,3 +187,19 @@ describe('calculateHydronephrosis — bilateral severity', () => {
     expect(r.management).toBe('Further evaluation recommended');
   });
 });
+
+import { gradeForMode } from './definition.js';
+
+describe('gradeForMode — parsed grade mapped into the active mode', () => {
+  it('"no hydronephrosis" (0) reads as Normal in UTD modes and 0 in SFU', () => {
+    expect(gradeForMode('0', 'utd-postnatal')).toBe('normal');
+    expect(gradeForMode('0', 'utd-antenatal')).toBe('normal');
+    expect(gradeForMode('normal', 'sfu')).toBe('0');
+  });
+  it('keeps grades that exist in the mode and drops other-system grades', () => {
+    expect(gradeForMode('P2', 'utd-postnatal')).toBe('P2');
+    expect(gradeForMode('P2', 'sfu')).toBeNull();
+    expect(gradeForMode('3', 'utd-postnatal')).toBeNull();
+    expect(gradeForMode(null, 'sfu')).toBeNull();
+  });
+});

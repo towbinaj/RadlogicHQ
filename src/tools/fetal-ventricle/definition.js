@@ -31,14 +31,22 @@ export const fetalVentricleDefinition = {
   parseSegmentation: { type: 'laterality' },
 
   parseRules: {
-    // Atrial width: any "<N> mm" measurement in a segment. Per-segment
-    // parsing means right/left widths are naturally separated by the
-    // laterality segmenter; if multiple mm values appear in one
-    // segment, the first match wins.
+    // Atrial width. Per-segment parsing separates right/left widths. A
+    // value labelled atrium/ventricle/width wins; otherwise the first mm
+    // value not labelled as another biometry (BPD, HC, TCD, cisterna magna).
     width: {
       pattern: /(\d*\.?\d+)\s*mm/,
       group: 1,
-      transform: (m) => parseFloat(m[1]),
+      transform: (m) => {
+        const text = m.input;
+        const labelled = text.match(/(?:atri\w*|ventric\w*|width)\D{0,30}?(\d*\.?\d+)\s*mm/);
+        if (labelled) return parseFloat(labelled[1]);
+        for (const hit of text.matchAll(/(\d*\.?\d+)\s*mm/g)) {
+          const before = text.slice(Math.max(0, hit.index - 20), hit.index);
+          if (!/\b(?:bpd|hc|ac|fl|tcd|biparietal|head|cerebell\w*|cisterna|magna)\b/.test(before)) return parseFloat(hit[1]);
+        }
+        return null;
+      },
     },
     // Gestational age: "GA 22 weeks", "22 weeks", "22w", "22 wks".
     ga: {

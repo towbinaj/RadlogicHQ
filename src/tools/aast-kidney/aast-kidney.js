@@ -291,9 +291,9 @@ function init() {
     // parseFindings returns selectedFindings as an array; our sideState
     // uses a Set. Normalize on the way in and replace the existing Set
     // (replace semantics match the old single-side parse behavior).
-    if (Array.isArray(parsedFormState.selectedFindings)) {
-      formState[side].selectedFindings = new Set(parsedFormState.selectedFindings);
-    }
+    // A side that is named with no findings ("The right kidney is normal.")
+    // is cleared, so findings from an earlier parse do not linger.
+    formState[side].selectedFindings = new Set(parsedFormState.selectedFindings || []);
     if ('multipleInjuries' in parsedFormState) {
       formState[side].multipleInjuries = !!parsedFormState.multipleInjuries;
     }
@@ -311,13 +311,9 @@ function init() {
     const sidesTouched = new Set();
 
     for (const seg of segments) {
-      if (seg.key === 'right') {
-        applyParsedToSide('right', seg.formState);
-        sidesTouched.add('right');
-      } else if (seg.key === 'left') {
-        applyParsedToSide('left', seg.formState);
-        sidesTouched.add('left');
-      }
+      if (seg.key !== 'right' && seg.key !== 'left') continue;
+      applyParsedToSide(seg.key, seg.formState);
+      if ((seg.formState.selectedFindings || []).length) sidesTouched.add(seg.key);
     }
 
     // No laterality markers anywhere → apply ungrouped to currently-active side

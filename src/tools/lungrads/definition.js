@@ -104,7 +104,7 @@ export const lungradsDefinition = {
         // longest-match picks partSolid for "part-solid nodule" dictations.
         'solid': ['solid nodule', 'solid'],
         'partSolid': ['part-solid nodule', 'part solid nodule', 'part-solid', 'part solid'],
-        'groundGlass': ['ground-glass nodule', 'ground glass nodule', 'ground glass', 'ground-glass', 'ggn', 'ggo'],
+        'groundGlass': ['ground-glass nodule', 'ground glass nodule', 'ground glass', 'ground-glass', 'nonsolid', 'non-solid', 'ggn', 'ggo'],
       },
     },
   },
