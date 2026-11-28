@@ -73,7 +73,7 @@
 
 ### Testing
 - Vitest unit tests co-located with source (`*.test.js`)
-- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1239 tests + 8 todo, 52 files)
+- Calculator tests for every tool, plus engine, parser, report rendering and clipboard (1325 tests + 8 todo, 52 files)
 - `npm run test:run` for CI, `npm run test` for watch mode
 
 ### Build
@@ -261,13 +261,42 @@ age/sex, normal = CA +/- 2 SD (table from the atlas supplied by the user;
 src/tools/bone-age/brush.js). Pectus Haller index -> normal <2.5, mild to
 moderate 2.5-3.25, severe >3.25 (no 'surgical threshold' wording).
 
-Pending (major, not yet fixed): placeholder/premature impressions on empty
-forms across many tools; O-RADS menopausal status / solid components; Lung-
-RADS stable/slow-growth, cat 0/1, airway, cysts, S modifier, exam category;
-CAD-RADS 2.0 modifiers; Bosniak enhancement requirement + MRI criteria;
-Fleischner rounding + negated risk factors; RECIST node short-axis rule;
-Lugano E/A-B rules; IDRF/PRETEXT/Curie parse key mismatches; kidney
-laterality parse; BI-RADS CEM button overlap; NI-RADS management.
+Major findings fixed (2026-11-28, tests first):
+- Parser: negation triggers denies/never (pre) and spared/preserved (post);
+  'non'/'non-' prefix blocks a keyword (nonsolid, non-smoker); equal-length
+  single-select ties go to the earliest mention; sentence-initial Right/Left,
+  'renal' and any 'bilateral' are laterality markers; 'Nodule 1.5 cm' is a
+  size. Tool rules: SAH plain Fisher, Fleischner never/non-smoker, Lung-RADS
+  nonsolid, Bosniak minimally thickened, LI-RADS threshold growth, TI-RADS
+  max dimension, fetal ventricle width, O-RADS side, hydronephrosis grade per
+  mode, kidney side clearing.
+- Wiring: IDRF parse + 'No IDRFs'; PRETEXT sections/annotations/C factor;
+  MIBG SIOPEN parse keys; Lugano A/B (Hodgkin only) and E (stage I/II only);
+  LI-RADS cm precision; hip angles/consistency note; kyphosis impression;
+  BI-RADS CEM button overlap; CAD-RADS parse key.
+- Empty/partial forms: stripPlaceholders() in core/report.js (applied by
+  <report-output> to screen, Copy, Save) drops sentences with '--'/'? mm'
+  placeholders; boilerplate impressions conditional; multi-item tools skip
+  uncategorized items. Impressions now name the finding: VUR, NM cystogram,
+  KL (grade 0-1 not 'osteoarthritis'), fetal ventricle per side, NI-RADS
+  with management, NASCET (invalid values flagged, occlusion).
+- Rules: Fleischner rounds to nearest mm; Bosniak IIF/III require
+  enhancement; CAD-RADS 2.0 modifiers/label order (HRP, I+/I-/I+/-, S, G, E;
+  order from the 2.0 framework, full text not re-checked); Lung-RADS GGN
+  stable/slow-growing -> 2 and slow-growing solid/part-solid -> 4B, exam
+  category; RECIST node short-axis CR and target-selection notes; PI-RADS
+  DWI 3 needs DCE (new 'not performed'), TZ T2 2-3 need DWI; LI-RADS needs
+  APHE/washout/capsule; ASPECTS band wording; BI-RADS screening + 3-6 note;
+  MIBG cutoffs labelled post-induction.
+
+Still pending (need a source decision or larger UI work): O-RADS menopausal
+status and solid-component rules; Lung-RADS category 0/1, airway nodules,
+atypical cysts, S modifier, step-down of stable 3/4A; Bosniak MRI criteria
+and attenuation-based class II; LI-RADS missing ancillary features; RAPNO
+LGG major response and nadir input; hydronephrosis APRPD-vs-grade check and
+antenatal GA; GMH per-side grading; fetal biometry reference ranges (Tilea
+26-40 wk, citation volume); Sontag count -> bone age; scoliosis/Reimers
+normal-default templates (design choice); Agatston MESA percentiles.
 
 ## Repo Housekeeping
 
