@@ -3,7 +3,7 @@ import { calculateLirads } from './calculator.js';
 
 // Major features default to 'no' (answered) so each test isolates its rule;
 // unanswered features leave the observation uncategorized.
-const calc = (fs) => calculateLirads({ aphe: 'no', washout: 'no', capsule: 'no', ...fs });
+const calc = (fs) => calculateLirads({ modality: 'mri-eca', aphe: 'no', washout: 'no', capsule: 'no', ...fs });
 
 // Retroactive coverage for Phase 2 multi-item parse rollout.
 // See docs/test.md section 9.
@@ -144,7 +144,7 @@ describe('calculateLirads — ancillary feature adjustment', () => {
   it('ancillary favoring HCC upgrades LR-3 to LR-4', () => {
     const r = calc({
       size: 8, aphe: 'yes',
-      anc_hcc_something: true,
+      anc_hcc_coronaEnhancement: true,
     });
     // Base: 8 mm + APHE + 0 features = LR-3 → upgraded to LR-4
     expect(r.category).toBe('LR-4');
@@ -154,7 +154,7 @@ describe('calculateLirads — ancillary feature adjustment', () => {
   it('ancillary favoring benign downgrades LR-3 to LR-2', () => {
     const r = calc({
       size: 8, aphe: 'yes',
-      anc_benign_something: true,
+      anc_benign_undistortedVessels: true,
     });
     expect(r.category).toBe('LR-2');
     expect(r.adjustmentNote).toMatch(/Downgraded/);
@@ -163,7 +163,7 @@ describe('calculateLirads — ancillary feature adjustment', () => {
   it('ancillary cannot upgrade to LR-5 (capped at LR-4)', () => {
     const r = calc({
       size: 15, aphe: 'yes', capsule: 'yes',  // base LR-4
-      anc_hcc_something: true,
+      anc_hcc_coronaEnhancement: true,
     });
     // Would be LR-5 via upgrade, but ancillary can't reach LR-5.
     expect(r.category).toBe('LR-4');
@@ -173,8 +173,8 @@ describe('calculateLirads — ancillary feature adjustment', () => {
   it('conflicting ancillary (both groups) → no adjustment', () => {
     const r = calc({
       size: 8, aphe: 'yes',  // base LR-3
-      anc_hcc_something: true,
-      anc_benign_something: true,
+      anc_hcc_coronaEnhancement: true,
+      anc_benign_undistortedVessels: true,
     });
     expect(r.category).toBe('LR-3');
     expect(r.adjustmentNote).toBe('');
@@ -228,7 +228,53 @@ describe('LI-RADS: no category until APHE, washout and capsule are answered (aud
     expect(calculateLirads({ size: 25, aphe: 'yes' }).category).toBe('--');
   });
   it('all three answered -> categorized (growth may be left unassessed)', () => {
-    expect(calculateLirads({ size: 25, aphe: 'yes', washout: 'yes', capsule: 'no' }).category).toBe('LR-5');
-    expect(calculateLirads({ size: 25, aphe: 'no', washout: 'no', capsule: 'no' }).category).toBe('LR-3');
+    expect(calculateLirads({ modality: 'ct', size: 25, aphe: 'yes', washout: 'yes', capsule: 'no' }).category).toBe('LR-5');
+    expect(calculateLirads({ modality: 'ct', size: 25, aphe: 'no', washout: 'no', capsule: 'no' }).category).toBe('LR-3');
+  });
+});
+
+describe('LI-RADS modality: CT / MRI extracellular / MRI hepatobiliary (2026-11-28)', () => {
+  const base = { aphe: 'no', washout: 'no', capsule: 'no', size: 15 }; // LR-3
+  it('modality is required before categorizing major features', () => {
+    expect(calculateLirads(base).category).toBe('--');
+    expect(calculateLirads({ ...base, modality: 'ct' }).category).toBe('LR-3');
+  });
+  it('MRI-only ancillary features do not count on CT', () => {
+    expect(calculateLirads({ ...base, modality: 'ct', anc_hcc_restrictedDiffusion: true }).category).toBe('LR-3');
+    expect(calculateLirads({ ...base, modality: 'mri-eca', anc_hcc_restrictedDiffusion: true }).category).toBe('LR-4');
+    expect(calculateLirads({ ...base, modality: 'ct', anc_benign_markedT2Hyperintensity: true }).category).toBe('LR-3');
+  });
+  it('hepatobiliary-phase features count only with a hepatobiliary agent', () => {
+    expect(calculateLirads({ ...base, modality: 'mri-eca', anc_hcc_hbpHypointensity: true }).category).toBe('LR-3');
+    expect(calculateLirads({ ...base, modality: 'mri-hba', anc_hcc_hbpHypointensity: true }).category).toBe('LR-4');
+    expect(calculateLirads({ ...base, modality: 'mri-hba', anc_benign_hbpIsointensity: true }).category).toBe('LR-2');
+    expect(calculateLirads({ ...base, modality: 'mri-eca', anc_benign_hbpIsointensity: true }).category).toBe('LR-3');
+  });
+  it('features valid on any modality count on CT', () => {
+    expect(calculateLirads({ ...base, modality: 'ct', anc_hcc_nonenhancingCapsule: true }).category).toBe('LR-4');
+    expect(calculateLirads({ ...base, modality: 'ct', anc_benign_sizeStability: true }).category).toBe('LR-2');
+  });
+  it('definition tags every ancillary feature with its modalities', async () => {
+    const { liradsDefinition } = await import('./definition.js');
+    const all = [...liradsDefinition.ancillaryFeatures.favoringHCC, ...liradsDefinition.ancillaryFeatures.favoringBenign];
+    for (const f of all) expect(Array.isArray(f.modalities) && f.modalities.length > 0).toBe(true);
+  });
+});
+
+import { parseSegmentedFindings } from '../../core/parser.js';
+import { liradsDefinition } from './definition.js';
+
+describe('LI-RADS parse: technique and new ancillary features (2026-11-28)', () => {
+  const p = (t) => { const r = parseSegmentedFindings(t, liradsDefinition); return r.segments[0]?.formState || r.ungrouped.formState; };
+  it('technique', () => {
+    expect(p('Multiphase CT liver. 15 mm observation.').modality).toBe('ct');
+    expect(p('MRI with gadoxetate. 15 mm observation.').modality).toBe('mri-hba');
+    expect(p('MRI with gadobutrol. 15 mm observation.').modality).toBe('mri-eca');
+  });
+  it('new ancillary features', () => {
+    const fs = p('Hepatobiliary phase hypointensity. Nonenhancing capsule. Stable in size for over 2 years.');
+    expect(fs.anc_hcc_hbpHypointensity).toBeTruthy();
+    expect(fs.anc_hcc_nonenhancingCapsule).toBeTruthy();
+    expect(fs.anc_benign_sizeStability).toBeTruthy();
   });
 });

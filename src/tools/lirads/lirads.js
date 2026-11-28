@@ -9,12 +9,17 @@ import { liradsDefinition } from './definition.js';
 import { calculateLirads } from './calculator.js';
 import { liradsTemplates } from './templates.js';
 import { parseSegmentedFindings } from '../../core/parser.js';
-import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
+import { getSizeUnit, getStored, setStored, trackEvent } from '../../core/storage.js';
 import '../../core/tool-name.js';
 
 let observations = [createObsState(1)];
 let activeObsIndex = 0;
 let sizeUnit = getSizeUnit('lirads');
+// Study-level technique (asked first; shared by all observations).
+let studyModality = getStored('mode:lirads', null);
+function syncStudy() {
+  for (const o of observations) o.formState.modality = studyModality;
+}
 
 function createObsState(num) {
   return { id: num, label: `Observation ${num}`, formState: {} };
@@ -86,8 +91,30 @@ function init() {
 
   // --- Build UI ---
   function buildUI() {
+    syncStudy();
     const fs = observations[activeObsIndex].formState;
     stepContainer.innerHTML = '';
+
+    // Block 0: Technique (first question). Ancillary features shown depend
+    // on it; washout with a hepatobiliary agent is read in portal venous only.
+    const techCard = document.createElement('div');
+    techCard.className = 'step-card card';
+    techCard.innerHTML = `
+      <div class="step-card__question" title="Major features are the same on CT and MRI; available ancillary features differ">Technique</div>
+      <div class="benign-choices">
+        ${liradsDefinition.modalityOptions.map((o) => `
+          <button class="benign-choice ${studyModality === o.id ? 'benign-choice--active' : ''}" data-modality="${o.id}" ${o.tooltip ? `title="${esc(o.tooltip)}"` : ''}>${o.label}</button>
+        `).join('')}
+      </div>
+    `;
+    techCard.querySelectorAll('[data-modality]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        studyModality = btn.dataset.modality;
+        setStored('mode:lirads', studyModality);
+        buildUI();
+      });
+    });
+    stepContainer.appendChild(techCard);
 
     // Block 1: Primary inputs (Segment + Size) — same as TI-RADS layout
     const primaryCard = document.createElement('div');
@@ -233,9 +260,9 @@ function init() {
         </div>
 
         <div class="ancillary-group">
-          <h4 class="ancillary-group__title">Favoring HCC (upgrade)</h4>
+          <h4 class="ancillary-group__title">Favoring malignancy / HCC (upgrade)</h4>
           <div class="ancillary-grid">
-            ${anc.favoringHCC.map((f) =>
+            ${anc.favoringHCC.filter((f) => !studyModality || f.modalities.includes(studyModality)).map((f) =>
               `<button class="ancillary-card ${fs['anc_hcc_' + f.id] ? 'selected' : ''}" data-key="anc_hcc_${f.id}" ${f.tooltip ? `title="${esc(f.tooltip)}"` : ''}>${f.label}</button>`
             ).join('')}
           </div>
@@ -244,7 +271,7 @@ function init() {
         <div class="ancillary-group">
           <h4 class="ancillary-group__title">Favoring Benign (downgrade)</h4>
           <div class="ancillary-grid">
-            ${anc.favoringBenign.map((f) =>
+            ${anc.favoringBenign.filter((f) => !studyModality || f.modalities.includes(studyModality)).map((f) =>
               `<button class="ancillary-card ${fs['anc_benign_' + f.id] ? 'selected' : ''}" data-key="anc_benign_${f.id}" ${f.tooltip ? `title="${esc(f.tooltip)}"` : ''}>${f.label}</button>`
             ).join('')}
           </div>
@@ -419,6 +446,10 @@ function init() {
       Object.assign(fs, ungrouped.formState);
       matchedFieldCount = ungrouped.matched.length;
     }
+
+    // Technique is study-level: take it from wherever it was dictated.
+    const pm = [ungrouped.formState || {}, ...segments.map((sg) => sg.formState)].find((f) => f.modality)?.modality;
+    if (pm) { studyModality = pm; setStored('mode:lirads', pm); }
 
     // Whole-sentence preservation: sentences with zero parser matches go to
     // Additional Findings. Drop bare index markers ("1.", "(2)") that leak

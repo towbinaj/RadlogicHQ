@@ -67,7 +67,7 @@ export const liradsDefinition = {
     {
       id: 'washout',
       label: 'Nonperipheral Washout',
-      tooltip: 'Visually decreased enhancement in portal venous or delayed phase relative to liver, not mainly in observation periphery',
+      tooltip: 'Visually decreased enhancement in portal venous or delayed phase relative to liver, not mainly in observation periphery. With a hepatobiliary agent: portal venous phase only.',
       inputType: 'yes-no',
       cdeElementId: 'RDE85',
     },
@@ -87,24 +87,48 @@ export const liradsDefinition = {
     },
   ],
 
-  // Ancillary features (optional upgrade/downgrade)
+  // Imaging technique - asked first. Major features and the LR table are
+  // the same on CT and MRI; ancillary features differ by what the technique
+  // can show (DWI, T2, iron need MRI; transitional/hepatobiliary phase
+  // features need a hepatobiliary agent such as gadoxetate). With a
+  // hepatobiliary agent, washout is assessed in the portal venous phase only.
+  modalityOptions: [
+    { id: 'ct', label: 'CT' },
+    { id: 'mri-eca', label: 'MRI (extracellular agent)' },
+    { id: 'mri-hba', label: 'MRI (hepatobiliary agent)', tooltip: 'Gadoxetate: washout in portal venous phase only; transitional/HBP hypointensity are ancillary features' },
+  ],
+
+  // Ancillary features (optional upgrade/downgrade), LI-RADS v2018.
+  // modalities: where the feature can be assessed. 'favoringHCC' holds the
+  // features favoring malignancy (in general and HCC in particular); both
+  // upgrade by one category (never to LR-5). Modality tags for MRI-only and
+  // HBP-only features follow the v2018 core; not re-checked against the ACR
+  // PDF in this update (2026-11-28).
   ancillaryFeatures: {
     favoringHCC: [
-      { id: 'restrictedDiffusion', label: 'Restricted diffusion', tooltip: 'Signal intensity on DWI higher than liver, not attributable solely to T2 shine-through; ADC lower or similar to liver', cdeElementId: 'RDE89' },
-      { id: 'mildT2Hyperintensity', label: 'Mild-moderate T2 hyperintensity', tooltip: 'Signal intensity on T2W images mildly or moderately higher than liver', cdeElementId: 'RDE87' },
-      { id: 'intralesionalFat', label: 'Fat in mass, more than adjacent liver', tooltip: 'Fat within the observation in greater concentration than surrounding liver (signal loss on opposed-phase or fat-only images). Favors HCC in particular.', cdeElementId: 'RDE91' },
-      { id: 'mosaicArchitecture', label: 'Mosaic architecture', tooltip: 'Observation appearing to consist of randomly distributed internal nodules or compartments with differing appearances', cdeElementId: 'RDE90' },
-      { id: 'noduleInNodule', label: 'Nodule-in-nodule', tooltip: 'Smaller nodule within a larger nodule, with different imaging characteristics than the parent nodule' },
-      { id: 'fatSparing', label: 'Fat sparing in solid mass', tooltip: 'Less fat in a solid mass than in surrounding fatty liver' },
-      { id: 'ironSparing', label: 'Iron sparing in solid mass', tooltip: 'Less iron in a solid mass than in surrounding iron-overloaded liver' },
-      { id: 'coronaEnhancement', label: 'Corona enhancement', tooltip: 'Perilesional enhancement in late arterial or early portal venous phase, thought to represent venous drainage from arterialized tumor' },
+      { id: 'restrictedDiffusion', modalities: ['mri-eca', 'mri-hba'], label: 'Restricted diffusion', tooltip: 'MRI: signal intensity on DWI higher than liver, not attributable solely to T2 shine-through; ADC lower or similar to liver', cdeElementId: 'RDE89' },
+      { id: 'mildT2Hyperintensity', modalities: ['mri-eca', 'mri-hba'], label: 'Mild-moderate T2 hyperintensity', tooltip: 'MRI: signal intensity on T2W images mildly or moderately higher than liver', cdeElementId: 'RDE87' },
+      { id: 'tpHypointensity', modalities: ['mri-hba'], label: 'Transitional phase hypointensity', tooltip: 'Hepatobiliary agent only: hypointense to liver in the transitional phase' },
+      { id: 'hbpHypointensity', modalities: ['mri-hba'], label: 'HBP hypointensity', tooltip: 'Hepatobiliary agent only: hypointense to liver in the hepatobiliary phase' },
+      { id: 'coronaEnhancement', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Corona enhancement', tooltip: 'Perilesional enhancement in late arterial or early portal venous phase, thought to represent venous drainage from arterialized tumor' },
+      { id: 'fatSparing', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Fat sparing in solid mass', tooltip: 'Less fat in a solid mass than in surrounding fatty liver (easiest on chemical-shift MRI)' },
+      { id: 'ironSparing', modalities: ['mri-eca', 'mri-hba'], label: 'Iron sparing in solid mass', tooltip: 'MRI: less iron in a solid mass than in surrounding iron-overloaded liver' },
+      { id: 'subthresholdGrowth', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Subthreshold growth', tooltip: 'Unequivocal size increase that does not meet threshold growth' },
+      { id: 'usVisibility', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'US visibility as discrete nodule', tooltip: 'Observation seen as a discrete nodule on prior ultrasound' },
+      { id: 'nonenhancingCapsule', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Nonenhancing capsule', tooltip: 'Favors HCC in particular: capsule seen as a nonenhancing rim' },
+      { id: 'noduleInNodule', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Nodule-in-nodule', tooltip: 'Favors HCC in particular: smaller nodule within a larger nodule, with different imaging characteristics' },
+      { id: 'mosaicArchitecture', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Mosaic architecture', tooltip: 'Favors HCC in particular: randomly distributed internal nodules or compartments with differing appearances', cdeElementId: 'RDE90' },
+      { id: 'bloodProducts', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Blood products in mass', tooltip: 'Favors HCC in particular: intralesional hemorrhage without biopsy, trauma or intervention (easiest on MRI)' },
+      { id: 'intralesionalFat', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Fat in mass, more than adjacent liver', tooltip: 'Favors HCC in particular: more fat than surrounding liver (signal loss on opposed-phase MRI; macroscopic fat on CT)', cdeElementId: 'RDE91' },
     ],
     favoringBenign: [
-      { id: 'markedT2Hyperintensity', label: 'Marked T2 hyperintensity', tooltip: 'Signal intensity on T2W images approaching that of bile ducts or CSF' },
-      { id: 'undistortedVessels', label: 'Undistorted vessels', tooltip: 'Vessels traversing observation without displacement, distortion, or encasement' },
-      { id: 'parallelsBloodPool', label: 'Parallels blood pool', tooltip: 'Enhancement pattern mirroring blood pool (aorta/veins) across all phases' },
-      { id: 'ironInMass', label: 'Iron in mass > liver', tooltip: 'More iron in the mass than in surrounding liver parenchyma' },
-      { id: 'hbpIsointensity', label: 'HBP isointensity', tooltip: 'Hepatobiliary phase signal intensity identical or nearly identical to surrounding liver', cdeElementId: 'RDE86' },
+      { id: 'parallelsBloodPool', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Parallels blood pool', tooltip: 'Enhancement pattern mirroring blood pool (aorta/veins) across all phases' },
+      { id: 'undistortedVessels', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Undistorted vessels', tooltip: 'Vessels traversing observation without displacement, distortion, or encasement' },
+      { id: 'ironInMass', modalities: ['mri-eca', 'mri-hba'], label: 'Iron in mass > liver', tooltip: 'MRI: more iron in the mass than in surrounding liver parenchyma' },
+      { id: 'markedT2Hyperintensity', modalities: ['mri-eca', 'mri-hba'], label: 'Marked T2 hyperintensity', tooltip: 'MRI: signal intensity on T2W images approaching that of bile ducts or CSF' },
+      { id: 'hbpIsointensity', modalities: ['mri-hba'], label: 'HBP isointensity', tooltip: 'Hepatobiliary agent only: hepatobiliary phase signal intensity identical or nearly identical to surrounding liver', cdeElementId: 'RDE86' },
+      { id: 'sizeStability', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Size stability >=2 years', tooltip: 'No meaningful size change for 2 years or more without treatment' },
+      { id: 'sizeReduction', modalities: ['ct', 'mri-eca', 'mri-hba'], label: 'Size reduction', tooltip: 'Unequivocal spontaneous decrease in size over time, not due to treatment' },
     ],
   },
 
@@ -269,6 +293,15 @@ export const liradsDefinition = {
       },
     },
 
+    // Technique (study-level on the page).
+    'modality': {
+      options: {
+        'mri-hba': ['gadoxetate', 'eovist', 'primovist', 'hepatobiliary agent', 'gd-eob-dtpa'],
+        'mri-eca': ['mri', 'magnetic resonance', 'extracellular agent', 'gadobutrol', 'gadoterate'],
+        'ct': ['ct', 'computed tomography'],
+      },
+    },
+
     // --- Ancillary features favoring HCC (upgrade) ---
     // Tool-specific formState keys: anc_hcc_<featureId>. Only the most
     // commonly dictated ones are covered; users can still click to toggle
@@ -300,7 +333,29 @@ export const liradsDefinition = {
       options: { yes: ['nodule-in-nodule', 'nodule in nodule'] },
     },
 
+    'anc_hcc_tpHypointensity': {
+      options: { yes: ['transitional phase hypointensity', 'hypointense in the transitional phase', 'hypointense on transitional phase'] },
+    },
+    'anc_hcc_hbpHypointensity': {
+      options: { yes: ['hbp hypointensity', 'hepatobiliary phase hypointensity', 'hypointense in the hepatobiliary phase', 'hypointense on hbp'] },
+    },
+    'anc_hcc_nonenhancingCapsule': {
+      options: { yes: ['nonenhancing capsule', 'non-enhancing capsule'] },
+    },
+    'anc_hcc_bloodProducts': {
+      options: { yes: ['blood products', 'intralesional hemorrhage'] },
+    },
+    'anc_hcc_subthresholdGrowth': {
+      options: { yes: ['subthreshold growth'] },
+    },
+
     // --- Ancillary features favoring benign (downgrade) ---
+    'anc_benign_sizeStability': {
+      options: { yes: ['stable for 2 years', 'stable for two years', 'stable in size for over 2 years', 'stable for over 2 years', 'size stability'] },
+    },
+    'anc_benign_sizeReduction': {
+      options: { yes: ['decreased in size', 'size reduction', 'smaller than prior'] },
+    },
     'anc_benign_markedT2Hyperintensity': {
       options: { yes: ['marked t2 hyperintensity', 'markedly t2 hyperintense', 'fluid signal on t2', 't2 bright'] },
     },

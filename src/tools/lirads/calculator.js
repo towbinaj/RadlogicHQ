@@ -1,3 +1,5 @@
+import { liradsDefinition } from './definition.js';
+
 /**
  * LI-RADS v2018 CT/MRI categorization logic.
  * Decision-tree algorithm — not point-based.
@@ -30,6 +32,8 @@ const TABLE_NO_APHE = [
   ['LR-3', 'LR-4', 'LR-4'],  // ≥20mm
 ];
 
+const MODALITIES = ['ct', 'mri-eca', 'mri-hba'];
+
 // Category ordering for ancillary adjustment
 const CATEGORY_ORDER = ['LR-1', 'LR-2', 'LR-3', 'LR-4', 'LR-5'];
 
@@ -54,6 +58,10 @@ export function calculateLirads(formState) {
   }
 
   // --- Major features categorization ---
+  // Technique first: ancillary features available depend on it.
+  if (!MODALITIES.includes(formState.modality)) {
+    return buildResult(null, formState, 'Select technique (CT, MRI extracellular, or MRI hepatobiliary agent)');
+  }
   const sizeMm = formState.size;
   if (sizeMm == null) {
     return buildResult(null, formState, 'Enter observation size to categorize');
@@ -98,7 +106,7 @@ export function calculateLirads(formState) {
 
   if (upgradeCount > 0 && downgradeCount === 0) {
     adjustment = 1;
-    adjustmentNote = `Upgraded by ancillary features favoring HCC`;
+    adjustmentNote = 'Upgraded by ancillary features favoring malignancy';
   } else if (downgradeCount > 0 && upgradeCount === 0) {
     adjustment = -1;
     adjustmentNote = `Downgraded by ancillary features favoring benign`;
@@ -112,7 +120,7 @@ export function calculateLirads(formState) {
 
       // Cannot upgrade to LR-5 via ancillary features
       if (adjustment > 0 && newCategory === 'LR-5') {
-        adjustmentNote = 'Ancillary features favor HCC but cannot upgrade to LR-5';
+        adjustmentNote = 'Ancillary features favor malignancy but cannot upgrade to LR-5';
       } else {
         category = newCategory;
       }
@@ -156,15 +164,17 @@ function buildResult(category, formState, reason, extra = {}) {
     sizeCm: sizeMm != null ? String(+(sizeMm / 10).toFixed(2)) : null,
     locationProvided: !!formState.location,
     location: formState.location || '',
+    techniqueLabel: liradsDefinition.modalityOptions.find((o) => o.id === formState.modality)?.label || '',
+    techniqueProvided: MODALITIES.includes(formState.modality),
   };
 }
 
 function countAncillary(formState, group) {
-  let count = 0;
-  // Ancillary feature keys are stored as formState[featureId] = true/false
+  // Ancillary feature keys are stored as formState[anc_<group>_<id>] = true.
+  // Only features the selected technique can show are counted (an MRI-only
+  // feature left selected after switching to CT does not count).
   const prefix = group === 'favoringHCC' ? 'anc_hcc_' : 'anc_benign_';
-  for (const [key, val] of Object.entries(formState)) {
-    if (key.startsWith(prefix) && val) count++;
-  }
-  return count;
+  return liradsDefinition.ancillaryFeatures[group]
+    .filter((f) => f.modalities.includes(formState.modality) && formState[prefix + f.id])
+    .length;
 }
