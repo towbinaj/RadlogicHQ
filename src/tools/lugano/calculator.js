@@ -3,7 +3,11 @@ import { luganoDefinition } from './definition.js';
 export function calculateLugano(formState) {
   const { stage, suffixes, lymphomaType } = formState;
   const stageInfo = luganoDefinition.stages.find((s) => s.id === stage);
-  const activeSuffixes = (suffixes || []).filter(Boolean);
+  // Lugano 2014: A/B symptoms are recorded for Hodgkin lymphoma only, and
+  // E (extranodal extension) is relevant only to limited-stage (I/II) disease.
+  const activeSuffixes = (suffixes || []).filter(Boolean)
+    .filter((s) => (s !== 'A' && s !== 'B') || lymphomaType === 'hodgkin')
+    .filter((s) => s !== 'E' || stage === 'I' || stage === 'II' || !stage);
 
   const level = !stage ? 0 : stage === 'I' ? 1 : stage === 'II' ? 2 : stage === 'III' ? 3 : 5;
   const riskGroup = !stage ? '' : (stage === 'I' || stage === 'II') ? 'Limited stage' : 'Advanced stage';

@@ -146,7 +146,7 @@ function buildResult(category, formState, reason, extra = {}) {
     adjustmentNote: extra.adjustmentNote || '',
     sizeMm,
     sizeProvided: sizeMm != null,
-    sizeCm: sizeMm != null ? (sizeMm / 10).toFixed(1) : null,
+    sizeCm: sizeMm != null ? String(+(sizeMm / 10).toFixed(2)) : null,
     locationProvided: !!formState.location,
     location: formState.location || '',
   };

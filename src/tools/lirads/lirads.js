@@ -23,7 +23,7 @@ function createObsState(num) {
 // Convert internal mm value to display value based on current unit
 function displaySize(sizeMm) {
   if (sizeMm == null || isNaN(sizeMm)) return '';
-  return sizeUnit === 'cm' ? (sizeMm / 10).toFixed(1) : sizeMm;
+  return sizeUnit === 'cm' ? String(+(sizeMm / 10).toFixed(2)) : sizeMm;
 }
 
 function esc(str) {
@@ -127,7 +127,7 @@ function init() {
     primaryCard.querySelector('#input-size').addEventListener('input', (e) => {
       const raw = e.target.value !== '' ? parseFloat(e.target.value) : null;
       // Always store internally in mm
-      fs.size = raw != null ? (sizeUnit === 'cm' ? Math.round(raw * 10) : raw) : null;
+      fs.size = raw != null ? (sizeUnit === 'cm' ? Math.round(raw * 100) / 10 : raw) : null;
       update();
     });
     primaryCard.querySelectorAll('.unit-toggle__btn').forEach((btn) => {

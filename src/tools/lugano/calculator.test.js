@@ -28,16 +28,17 @@ describe('calculateLugano — stage → level + risk group', () => {
 
 describe('calculateLugano — suffixes and full label', () => {
   it('stage I + A suffix', () => {
-    const r = calculateLugano({ stage: 'I', suffixes: ['A'] });
+    const r = calculateLugano({ stage: 'I', suffixes: ['A'], lymphomaType: 'hodgkin' });
     expect(r.fullLabel).toBe('Stage IA');
     expect(r.suffixesText).toBe('A');
     expect(r.suffixesProvided).toBe(true);
   });
 
   it('stage III with multiple suffixes joined', () => {
-    const r = calculateLugano({ stage: 'III', suffixes: ['B', 'X', 'E'] });
-    expect(r.fullLabel).toBe('Stage IIIBXE');
-    expect(r.suffixesText).toBe('B, X, E');
+    // E is dropped at stage III (limited-stage only).
+    const r = calculateLugano({ stage: 'III', suffixes: ['B', 'X', 'E'], lymphomaType: 'hodgkin' });
+    expect(r.fullLabel).toBe('Stage IIIBX');
+    expect(r.suffixesText).toBe('B, X');
   });
 
   it('empty suffixes array → no suffix', () => {
@@ -47,7 +48,7 @@ describe('calculateLugano — suffixes and full label', () => {
   });
 
   it('falsy values in suffixes array are filtered', () => {
-    const r = calculateLugano({ stage: 'II', suffixes: ['A', null, '', 'B'] });
+    const r = calculateLugano({ stage: 'II', suffixes: ['A', null, '', 'B'], lymphomaType: 'hodgkin' });
     expect(r.fullLabel).toBe('Stage IIAB');
     expect(r.suffixesText).toBe('A, B');
   });
@@ -69,5 +70,19 @@ describe('calculateLugano — lymphoma type', () => {
     const r = calculateLugano({ stage: 'II' });
     expect(r.typeLabel).toBe('');
     expect(r.typeProvided).toBe(false);
+  });
+});
+
+describe('Lugano suffix rules (audit 2026-11-28)', () => {
+  it('A/B are dropped for non-Hodgkin lymphoma', () => {
+    const r = calculateLugano({ stage: 'II', suffixes: ['B', 'X'], lymphomaType: 'nhl' });
+    expect(r.fullLabel).toBe('Stage IIX');
+  });
+  it('A/B kept for Hodgkin', () => {
+    expect(calculateLugano({ stage: 'II', suffixes: ['B'], lymphomaType: 'hodgkin' }).fullLabel).toBe('Stage IIB');
+  });
+  it('E is not applied to stage III/IV', () => {
+    expect(calculateLugano({ stage: 'IV', suffixes: ['E', 'S'], lymphomaType: 'hodgkin' }).fullLabel).toBe('Stage IVS');
+    expect(calculateLugano({ stage: 'I', suffixes: ['E'], lymphomaType: 'nhl' }).fullLabel).toBe('Stage IE');
   });
 });

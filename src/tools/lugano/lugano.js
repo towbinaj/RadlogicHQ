@@ -66,6 +66,7 @@ function init() {
       btn.addEventListener('click', () => {
         formState.stage = btn.dataset.stage;
         stageCard.querySelectorAll('.benign-choice').forEach((b) => b.classList.toggle('benign-choice--active', b.dataset.stage === formState.stage));
+        buildSuffixes(); // E is offered for stage I/II only
         update();
       });
     });
@@ -85,7 +86,9 @@ function init() {
     const card = document.getElementById('suffix-card');
     if (!card) return;
     const def = luganoDefinition;
-    const availableSuffixes = def.suffixes.filter((s) => !s.hodgkinOnly || formState.lymphomaType === 'hodgkin');
+    const availableSuffixes = def.suffixes
+      .filter((s) => !s.hodgkinOnly || formState.lymphomaType === 'hodgkin')
+      .filter((s) => s.id !== 'E' || formState.stage !== 'III' && formState.stage !== 'IV');
 
     card.innerHTML = `
       <div class="step-card__question">Modifiers</div>

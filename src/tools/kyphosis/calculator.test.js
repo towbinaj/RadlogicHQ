@@ -106,3 +106,22 @@ describe('calculateKyphosis — hypokyphosis', () => {
     expect(calculateKyphosis({ thoracicAngle: 20 }).thoracicInterpretation).toBe('Normal');
   });
 });
+
+describe('kyphosis impression (audit 2026-11-28)', () => {
+  it('empty form has no impression', () => {
+    expect(calculateKyphosis({}).impressionText).toBe('');
+  });
+  it('lumbar-only input gives a lumbar impression', () => {
+    expect(calculateKyphosis({ lumbarAngle: 30 }).impressionText).toBe('Lumbar lordosis 30°: Decreased (hypolordosis).');
+  });
+  it('both angles are summarized', () => {
+    expect(calculateKyphosis({ thoracicAngle: 50, lumbarAngle: 50 }).impressionText)
+      .toBe('Thoracic kyphosis 50°: Increased (hyperkyphosis). Lumbar lordosis 50°: Normal.');
+  });
+  it('Scheuermann is not stated when there is no anterior wedging, and appears in the impression otherwise', () => {
+    const none = calculateKyphosis({ thoracicAngle: 30, wedging: 'none', scheuermann: true });
+    expect(none.scheuermannsProvided).toBe(false);
+    const yes = calculateKyphosis({ thoracicAngle: 55, wedging: 'present', scheuermann: true });
+    expect(yes.impressionText).toMatch(/Scheuermann/);
+  });
+});

@@ -8,6 +8,7 @@ const FINDINGS_BLOCKS = [
   { id: 'alpha', label: 'Alpha Angle', template: 'Alpha angle: {{alphaLabel}}', enabled: true, condition: 'alphaProvided' },
   { id: 'beta', label: 'Beta Angle', template: 'Beta angle: {{betaLabel}}', enabled: true, condition: 'betaProvided' },
   { id: 'grade', label: 'Classification', template: '{{gradeLabel}}{{#if description}}: {{description}}{{/if}}', enabled: true, condition: 'gradeProvided' },
+  { id: 'angleNote', label: 'Angle check', template: 'Note: {{angleNote}}', enabled: true, condition: 'angleNoteProvided' },
 ];
 
 function bts(blocks, headers, impression) {
@@ -19,7 +20,9 @@ const RH = { findings: '[STRUCTURED REPORT]', additionalFindings: '[OTHER FINDIN
 // Single-side impression: "Right hip: Type Ib."
 // Bilateral impression: gradeLabel already embeds both side prefixes,
 // so use "Right: Type Ib, Left: Type IIc." without double-prefixing.
-const IMP = '{{#unless bilateral}}{{sideLabel}} hip: {{/unless}}{{gradeLabel}}.';
+// impressionText is built in the calculator (empty until a grade is chosen;
+// adds an angle-consistency note when angles do not fit the Graf type).
+const IMP = '{{impressionText}}';
 
 export const hipDysplasiaTemplates = {
   ps360: { label: 'PowerScribe 360', ...bts(FINDINGS_BLOCKS, SH, IMP) },

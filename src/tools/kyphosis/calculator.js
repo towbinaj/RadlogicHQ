@@ -24,7 +24,16 @@ export function calculateKyphosis(formState) {
     else lumbarInterpretation = 'Increased (hyperlordosis)';
   }
 
-  const scheuermannsLabel = scheuermann ? 'Features consistent with Scheuermann disease' : '';
+  // Scheuermann needs anterior wedging (Sorensen: >=5 deg in >=3 adjacent
+  // vertebrae); with "No anterior wedging" selected the label is withheld.
+  const scheuermannStated = !!scheuermann && wedging !== 'none';
+  const scheuermannsLabel = scheuermannStated ? 'Features consistent with Scheuermann disease' : '';
+
+  const imp = [];
+  if (hasThoracic) imp.push(`Thoracic kyphosis ${thoracicAngle}°: ${thoracicInterpretation}.`);
+  if (hasLumbar) imp.push(`Lumbar lordosis ${lumbarAngle}°: ${lumbarInterpretation}.`);
+  if (scheuermannStated && imp.length) imp.push(`${scheuermannsLabel}.`);
+  const impressionText = imp.join(' ');
 
   return {
     thoracicAngle: hasThoracic ? thoracicAngle : null,
@@ -39,7 +48,8 @@ export function calculateKyphosis(formState) {
     wedgingLabel: wedging === 'present' ? 'Anterior vertebral body wedging (≥5° in ≥3 adjacent vertebrae)' : wedging === 'none' ? 'No anterior wedging' : '',
     wedgingProvided: !!wedging,
     scheuermannsLabel,
-    scheuermannsProvided: !!scheuermann,
+    scheuermannsProvided: scheuermannStated,
+    impressionText,
     priorThoracicText: priorThoracic || '',
     priorThoracicProvided: !!priorThoracic,
     priorLumbarText: priorLumbar || '',

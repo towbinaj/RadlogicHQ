@@ -108,6 +108,7 @@ input.no-spinner[type="number"] {
 /* Toggle group (Male/Female style) */
 .toggle-group {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: var(--space-xs);
 }
 

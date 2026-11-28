@@ -49,7 +49,7 @@ function init() {
             `).join('')}
           </div>
         </div>
-        <div class="input-group" style="flex:1; min-width:140px;">
+        <div class="input-group" style="flex:0 1 auto; min-width:140px;">
           <label>Modality</label>
           <div class="toggle-group">
             ${def.modalityOptions.map((o) => `
@@ -58,7 +58,7 @@ function init() {
             `).join('')}
           </div>
         </div>
-        <div class="input-group" style="flex:1; min-width:140px;">
+        <div class="input-group" style="flex:0 1 auto; min-width:140px;">
           <label>Laterality</label>
           <div class="toggle-group">
             ${def.lateralityOptions.map((o) => `

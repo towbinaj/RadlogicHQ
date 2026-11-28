@@ -200,3 +200,25 @@ describe('hip dysplasia — Graf IIa- description', () => {
     expect(t.description).toMatch(/<\s*3 months|under 3 months|6-12 weeks/i);
   });
 });
+
+describe('hip dysplasia report rules (audit 2026-11-28)', () => {
+  it('angles are not reported in AAOS mode', () => {
+    const r = calculateHipDysplasia({ side: 'right', grade: 'normal', alpha: 55, beta: 60 }, 'aaos');
+    expect(r.alphaProvided).toBe(false);
+    expect(r.betaProvided).toBe(false);
+  });
+  it('flags an alpha angle outside the selected Graf type range', () => {
+    const r = calculateHipDysplasia({ side: 'right', grade: 'Ia', alpha: 45, beta: 80 }, 'graf');
+    expect(r.angleNote).toMatch(/alpha 45/i);
+    expect(r.impressionText).toMatch(/Type Ia/);
+    expect(calculateHipDysplasia({ side: 'right', grade: 'Ia', alpha: 64, beta: 50 }, 'graf').angleNote).toBe('');
+    expect(calculateHipDysplasia({ side: 'right', grade: 'IIc', alpha: 46, beta: 70 }, 'graf').angleNote).toBe('');
+    expect(calculateHipDysplasia({ side: 'right', grade: 'D', alpha: 46, beta: 70 }, 'graf').angleNote).toMatch(/beta 70/i);
+  });
+  it('no impression until a grade is chosen; side prefix only when known', () => {
+    expect(calculateHipDysplasia({}, 'graf').impressionText).toBe('');
+    expect(calculateHipDysplasia({ grade: 'IIb' }, 'graf').impressionText).toMatch(/^Hip: Type IIb/);
+    expect(calculateHipDysplasia({ side: 'left', grade: 'IIb' }, 'graf').impressionText).toMatch(/^Left hip: Type IIb/);
+    expect(calculateHipDysplasia({ side: 'bilateral' }, 'graf').impressionText).toBe('');
+  });
+});
