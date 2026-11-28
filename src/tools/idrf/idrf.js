@@ -6,7 +6,7 @@ import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
 import { idrfDefinition } from './definition.js';
-import { calculateIdrf } from './calculator.js';
+import { calculateIdrf, idrfFormStateFromParse, ALL_FACTOR_IDS } from './calculator.js';
 import { idrfTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { trackEvent } from '../../core/storage.js';
@@ -60,6 +60,22 @@ function init() {
     });
     stepContainer.appendChild(locCard);
 
+    // "No IDRFs" records every factor as assessed and absent (L1).
+    const noneCard = document.createElement('div');
+    noneCard.className = 'step-card card';
+    const allAbsent = ALL_FACTOR_IDS.every((id) => formState[id] === false);
+    noneCard.innerHTML = `
+      <div class="ancillary-grid idrf-grid">
+        <button class="ancillary-card ${allAbsent ? 'selected' : ''}" data-none="1"
+          title="All image-defined risk factors assessed and absent">No IDRFs identified</button>
+      </div>`;
+    noneCard.querySelector('button').addEventListener('click', () => {
+      const next = !allAbsent;
+      for (const id of ALL_FACTOR_IDS) formState[id] = next ? false : undefined;
+      buildUI();
+    });
+    stepContainer.appendChild(noneCard);
+
     // IDRF factor groups — rendered as ancillary-style toggle cards
     for (const group of def.idrfGroups) {
       const groupCard = document.createElement('div');
@@ -76,7 +92,9 @@ function init() {
       groupCard.querySelectorAll('.ancillary-card').forEach((btn) => {
         btn.addEventListener('click', () => {
           const id = btn.dataset.factor;
+          const wasAllAbsent = ALL_FACTOR_IDS.every((fid) => formState[fid] === false);
           formState[id] = !formState[id];
+          if (wasAllAbsent || !formState[id]) { buildUI(); return; }
           btn.classList.toggle('selected', formState[id]);
           update();
         });
@@ -102,7 +120,7 @@ function init() {
 
     const impressionParts = [];
     if (data.locationProvided) impressionParts.push(`${data.locationLabel} neuroblastoma.`);
-    impressionParts.push(data.stageFullLabel + '.');
+    if (data.stage !== '--') impressionParts.push(data.stageFullLabel + '.');
     if (data.idrfPresent) {
       impressionParts.push(`IDRFs: ${data.idrfFactorList}.`);
     } else if (data.stage === 'L1') {
@@ -143,7 +161,7 @@ function init() {
     if (!text) return;
     const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, idrfDefinition);
     for (const key of Object.keys(formState)) delete formState[key];
-    Object.assign(formState, parsed);
+    Object.assign(formState, idrfFormStateFromParse(parsed, text));
     additionalFindingsEl.value = remainder || '';
     studyAdditionalFindings = additionalFindingsEl.value;
     buildUI();

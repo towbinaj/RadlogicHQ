@@ -67,14 +67,14 @@ describe('calculatePretext — annotation codes', () => {
       ann_V: 'yes', ann_P: 'yes',
     });
     expect(r.annotationSummary).toBe('VP');
-    expect(r.groupFullLabel).toBe('PRETEXT 1 VP');
+    expect(r.groupFullLabel).toBe('PRETEXT I V P');
     expect(r.positiveAnnotations).toEqual(['V', 'P']);
   });
 
   it('no positive annotations → summary is "None"', () => {
     const r = calculatePretext(involved('rightPosterior'));
     expect(r.annotationSummary).toBe('None');
-    expect(r.groupFullLabel).toBe('PRETEXT 1');
+    expect(r.groupFullLabel).toBe('PRETEXT I');
   });
 
   it('annotation three-state: yes/no/unknown/unset', () => {
@@ -95,7 +95,7 @@ describe('calculatePretext — annotation codes', () => {
     for (const c of ['V', 'P', 'E', 'F', 'R', 'N', 'M']) fs['ann_' + c] = 'yes';
     const r = calculatePretext(fs);
     expect(r.annotationSummary).toBe('VPEFRNM');
-    expect(r.groupFullLabel).toBe('PRETEXT 1 VPEFRNM');
+    expect(r.groupFullLabel).toBe('PRETEXT I V P E F R N M');
   });
 });
 
@@ -163,5 +163,33 @@ describe('calculatePretext — group from contiguous free sections', () => {
 
   it('C + RP + LL is PRETEXT II (RA and LM free and contiguous)', () => {
     expect(calculatePretext({ caudate: 'yes', rightPosterior: 'yes', leftLateral: 'yes' }).group).toBe(2);
+  });
+});
+
+import { parseFindings } from '../../core/parser.js';
+import { pretextDefinition } from './definition.js';
+import { pretextFormStateFromParse } from './calculator.js';
+
+describe('PRETEXT report data and parse (audit 2026-11-28)', () => {
+  it('section involvement is available to the template (C, RP, RA, LM, LL)', () => {
+    const r = calculatePretext({ rightPosterior: 'yes', rightAnterior: 'no' });
+    expect(r.RP).toBe('Involved');
+    expect(r.RA).toBe('Free');
+    expect(r.LL).toBe('Not assessed');
+  });
+  it('caudate involvement adds the 2017 C annotation to the staging', () => {
+    const r = calculatePretext({ caudate: 'yes', rightPosterior: 'yes', ann_V: 'yes' });
+    expect(r.groupFullLabel).toBe('PRETEXT II C V');
+  });
+  it('parsed annotations, sections and size reach the calculator', () => {
+    const text = 'Tumor involves the right posterior and right anterior sections, measuring 8.2 x 6.0 cm. No portal vein thrombus. Hepatic vein involvement. No tumor rupture.';
+    const fs = pretextFormStateFromParse(parseFindings(text, pretextDefinition).formState);
+    expect(fs.ann_V).toBe('yes');
+    expect(fs.ann_P).toBe('no');
+    expect(fs.ann_R).toBe('no');
+    expect(fs.rightPosterior).toBe('yes');
+    expect(fs.rightAnterior).toBe('yes');
+    expect(fs.maxDiameter).toBe(82);
+    expect(calculatePretext(fs).group).toBe(2);
   });
 });

@@ -6,7 +6,7 @@ import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
 import { pretextDefinition } from './definition.js';
-import { calculatePretext } from './calculator.js';
+import { calculatePretext, pretextFormStateFromParse } from './calculator.js';
 import { pretextTemplates } from './templates.js';
 import { parseFindings } from '../../core/parser.js';
 import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
@@ -147,11 +147,9 @@ function init() {
 
     const summaryParts = [];
     if (data.sizeProvided) summaryParts.push(`${data.sizeMm} mm`);
-    summaryParts.push(data.groupLabel);
-    if (data.positiveAnnotations.length > 0) {
-      summaryParts.push(`Annotations: ${data.positiveAnnotations.join(', ')}`);
-    }
-    const impressionSummary = `Hepatoblastoma, ${summaryParts.join('. ')}.`;
+    summaryParts.push(data.groupFullLabel);
+    // groupFullLabel already lists positive annotations.
+    const impressionSummary = data.group ? `Hepatoblastoma, ${summaryParts.join('. ')}.` : '';
 
     reportEl.renderFn = (config, _data) => {
       if (config.editorContent) {
@@ -187,7 +185,7 @@ function init() {
     if (!text) return;
     const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, pretextDefinition);
     for (const key of Object.keys(formState)) delete formState[key];
-    Object.assign(formState, parsed);
+    Object.assign(formState, pretextFormStateFromParse(parsed));
     additionalFindingsEl.value = remainder || '';
     studyAdditionalFindings = additionalFindingsEl.value;
     buildUI();

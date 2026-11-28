@@ -93,16 +93,30 @@ export const pretextDefinition = {
   ],
 
   parseRules: {
+    // Sections: "involves the right posterior and right anterior sections".
+    caudate: { options: { yes: ['caudate'] } },
+    rightPosterior: { options: { yes: ['right posterior'] } },
+    rightAnterior: { options: { yes: ['right anterior'] } },
+    leftMedial: { options: { yes: ['left medial'] } },
+    leftLateral: { options: { yes: ['left lateral'] } },
+    // Largest dimension, in mm.
+    maxDiameter: {
+      pattern: /(\d*\.?\d+)(?:\s*x\s*\d*\.?\d+)*\s*(cm|mm)\b/,
+      transform: (m) => {
+        const max = Math.max(...m[0].match(/\d*\.?\d+/g).map(parseFloat));
+        return Math.round((m[2] === 'cm' ? max * 10 : max) * 10) / 10;
+      },
+    },
     V: {
       options: {
         'yes': ['hepatic vein involvement', 'ivc involvement', 'ivc thrombus', 'vein thrombus', 'v-positive', 'v positive'],
-        'no': ['v-negative', 'v negative', 'veins patent', 'ivc patent'],
+        'no': ['v-negative', 'v negative', 'veins patent', 'ivc patent', 'no hepatic vein involvement'],
       },
     },
     P: {
       options: {
         'yes': ['portal vein involvement', 'portal thrombus', 'portal vein thrombus', 'p-positive', 'p positive'],
-        'no': ['p-negative', 'p negative', 'portal vein patent'],
+        'no': ['p-negative', 'p negative', 'portal vein patent', 'no portal vein thrombus', 'no portal vein involvement'],
       },
     },
     E: {
@@ -120,7 +134,7 @@ export const pretextDefinition = {
     R: {
       options: {
         'yes': ['rupture', 'tumor rupture', 'r-positive', 'r positive'],
-        'no': ['r-negative', 'r negative', 'no rupture', 'intact capsule'],
+        'no': ['r-negative', 'r negative', 'no rupture', 'no tumor rupture', 'intact capsule'],
       },
     },
     N: {

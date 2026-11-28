@@ -8,12 +8,12 @@
 import { idrfDefinition } from './definition.js';
 
 const STAGE_INFO = {
-  L1: { level: 1, label: 'L1 — Localized without IDRFs', management: 'Localized tumor confined to one body compartment. No image-defined risk factors.' },
-  L2: { level: 3, label: 'L2 — Locoregional with IDRFs', management: 'Locoregional tumor with one or more image-defined risk factors.' },
+  L1: { level: 1, label: 'L1 - Localized without IDRFs', management: 'Localized tumor confined to one body compartment. No image-defined risk factors.' },
+  L2: { level: 3, label: 'L2 - Locoregional with IDRFs', management: 'Locoregional tumor with one or more image-defined risk factors.' },
 };
 
 // Flatten all factor IDs from the definition
-const ALL_FACTOR_IDS = idrfDefinition.idrfGroups.flatMap((g) => g.factors.map((f) => f.id));
+export const ALL_FACTOR_IDS = idrfDefinition.idrfGroups.flatMap((g) => g.factors.map((f) => f.id));
 
 /**
  * @param {Object} formState
@@ -60,7 +60,9 @@ function buildResult(stage, formState, reason, presentFactors) {
   return {
     stage: stage || '--',
     stageLabel: info?.label || 'Incomplete',
-    stageFullLabel: stage ? `INRG ${info.label}` : '--',
+    // INRG L1/L2 apply only without distant metastases (M/MS), which this
+    // tool does not ask about.
+    stageFullLabel: stage ? `INRG ${info.label} (if no distant metastases)` : '--',
     stageLevel: stage === 'L2' ? 3 : stage === 'L1' ? 1 : 0,
     management: info?.management || '',
     reason,
@@ -71,4 +73,20 @@ function buildResult(stage, formState, reason, presentFactors) {
     locationLabel: locationLabels[formState.location] || '',
     locationProvided: !!formState.location,
   };
+}
+
+const NO_IDRF_RE = /\bno\s+(?:image[-\s]defined\s+risk\s+factors?|idrfs?)\b/i;
+
+/**
+ * Turn parseFindings output into the calculator's per-factor flags.
+ * The parser returns `selectedFactors: [...]`; the calculator reads
+ * `formState[factorId] === true/false`. "No image-defined risk factors"
+ * records every factor as assessed and absent.
+ */
+export function idrfFormStateFromParse(parsed, text = '') {
+  const fs = {};
+  if (parsed.location) fs.location = parsed.location;
+  if (NO_IDRF_RE.test(text)) for (const id of ALL_FACTOR_IDS) fs[id] = false;
+  for (const id of parsed.selectedFactors || []) fs[id] = true;
+  return fs;
 }

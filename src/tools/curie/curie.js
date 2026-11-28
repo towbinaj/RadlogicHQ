@@ -5,10 +5,9 @@ import '../../components/report-output.js';
 import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
-import { curieDefinition } from './definition.js';
+import { curieDefinition, parseMibg } from './definition.js';
 import { calculateMibg } from './calculator.js';
 import { curieTemplates, siopenTemplates } from './templates.js';
-import { parseFindings } from '../../core/parser.js';
 import { getStored, setStored , trackEvent } from '../../core/storage.js';
 import '../../core/tool-name.js';
 
@@ -190,7 +189,7 @@ function init() {
     const text = parseInput.value.trim();
     if (!text) return;
     const scores = mode === 'siopen' ? siopenScores : curieScores;
-    const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, curieDefinition);
+    const { formState: parsed, matched, unmatched, remainder } = parseMibg(text, mode);
     for (const key of Object.keys(scores)) delete scores[key];
     Object.assign(scores, parsed);
     additionalFindingsEl.value = remainder || '';

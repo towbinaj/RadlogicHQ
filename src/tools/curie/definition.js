@@ -6,6 +6,8 @@
  * - Matthay KK et al. J Clin Oncol 2003;21(6):1366-1372. (Curie)
  * - Lewington V et al. Eur J Nucl Med Mol Imaging 2017;44(2):222-233. (SIOPEN)
  */
+import { parseFindings } from '../../core/parser.js';
+
 export const curieDefinition = {
   id: 'curie',
   name: 'MIBG Score',
@@ -83,5 +85,47 @@ export const curieDefinition = {
       group: 1,
       transform: (m) => m[1],
     },
+    chest: segRule(String.raw`(?:chest|ribs?|thorax)`, 3),
+    lumSacSpine: segRule(String.raw`(?:lumb(?:ar|o)(?:\s*(?:and|-)?\s*sacral)?\s*spine|lumbosacral\s+spine)`, 3),
+    upperArms: segRule(String.raw`(?:upper\s+arms?|humer(?:us|i))`, 3),
+    lowerArmsHands: segRule(String.raw`(?:lower\s+arms?(?:\s+and\s+hands)?|forearms?)`, 3),
+    femurs: segRule(String.raw`(?:femurs?|femora)`, 3),
+    lowerLegsFeet: segRule(String.raw`(?:lower\s+legs?(?:\s+and\s+feet)?)`, 3),
   },
 };
+
+/** "<segment> [score] [:=] N" with N limited to the scale maximum. */
+function segRule(name, max) {
+  return {
+    pattern: new RegExp(name + String.raw`\s*(?:score)?\s*[:=]?\s*([0-${max}])\b`, 'i'),
+    group: 1,
+    transform: (m) => m[1],
+  };
+}
+
+const LIMB = (prox, side, limb) => segRule(
+  String.raw`${prox}\s+${side}\s+${limb}\s+(?:limb|extremity)`, 6);
+
+/** SIOPEN scoring (0-6 per segment) uses its own segment keys. */
+export const siopenParseDefinition = {
+  id: 'curie-siopen',
+  parseRules: {
+    skull: segRule(String.raw`skull`, 6),
+    thoracicCage: segRule(String.raw`(?:thoracic\s+cage|ribs?|chest)`, 6),
+    spine: segRule(String.raw`spine`, 6),
+    pelvisSiopen: segRule(String.raw`pelvi(?:s|c)`, 6),
+    proxRightUpper: LIMB('proximal', 'right', 'upper'),
+    distRightUpper: LIMB('distal', 'right', 'upper'),
+    proxLeftUpper: LIMB('proximal', 'left', 'upper'),
+    distLeftUpper: LIMB('distal', 'left', 'upper'),
+    proxRightLower: LIMB('proximal', 'right', 'lower'),
+    distRightLower: LIMB('distal', 'right', 'lower'),
+    proxLeftLower: LIMB('proximal', 'left', 'lower'),
+    distLeftLower: LIMB('distal', 'left', 'lower'),
+  },
+};
+
+/** Parse with the rule set for the active scoring mode. */
+export function parseMibg(text, mode) {
+  return parseFindings(text, mode === 'siopen' ? siopenParseDefinition : curieDefinition);
+}

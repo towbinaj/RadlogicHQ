@@ -96,8 +96,15 @@ function buildResult(group, formState, reason) {
     ? positiveAnnotations.join('')
     : 'None';
 
+  // PRETEXT 2017 annotation factors: C (caudate involvement) is shown with
+  // the others, e.g. "PRETEXT II C V".
+  const ROMAN = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
+  const stagingAnnotations = [
+    ...(formState.caudate === 'yes' ? ['C'] : []),
+    ...positiveAnnotations,
+  ];
   const fullStaging = group
-    ? `PRETEXT ${group}${positiveAnnotations.length > 0 ? ' ' + positiveAnnotations.join('') : ''}`
+    ? `PRETEXT ${ROMAN[group]}${stagingAnnotations.length > 0 ? ' ' + stagingAnnotations.join(' ') : ''}`
     : '--';
 
   // Section involvement summary
@@ -121,9 +128,24 @@ function buildResult(group, formState, reason) {
     positiveAnnotations,
     annotationDetails,
     sectionDetails,
+    ...sectionDetails,
     ...annotationDetails,
     sizeMm,
     sizeProvided: sizeMm != null,
     sizeCm: sizeMm != null ? (sizeMm / 10).toFixed(1) : null,
   };
+}
+
+const ANNOTATION_CODES = ['V', 'P', 'E', 'F', 'R', 'N', 'M'];
+
+/**
+ * parseFindings output -> form state. The parse rules key annotations by
+ * code (V, P...); the UI and calculator use ann_V, ann_P...
+ */
+export function pretextFormStateFromParse(parsed) {
+  const fs = {};
+  for (const [k, v] of Object.entries(parsed)) {
+    fs[ANNOTATION_CODES.includes(k) ? 'ann_' + k : k] = v;
+  }
+  return fs;
 }

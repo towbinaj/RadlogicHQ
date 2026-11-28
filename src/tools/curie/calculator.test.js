@@ -126,3 +126,16 @@ describe('calculateMibg — segment details', () => {
     expect(chest.score).toBeNull();
   });
 });
+
+import { parseMibg } from './definition.js';
+
+describe('MIBG parse by mode (audit 2026-11-28)', () => {
+  it('Curie mode parses all segments with Curie keys', () => {
+    const fs = parseMibg('Skull 2, chest 1, lumbar spine 3, femurs 2, soft tissue 1.', 'curie').formState;
+    expect(fs).toMatchObject({ craniofacial: '2', chest: '1', lumSacSpine: '3', femurs: '2', softTissue: '1' });
+  });
+  it('SIOPEN mode writes SIOPEN keys only', () => {
+    const fs = parseMibg('Skull 4. Spine 5. Pelvis 6. Proximal right lower limb 2.', 'siopen').formState;
+    expect(fs).toEqual({ skull: '4', spine: '5', pelvisSiopen: '6', proxRightLower: '2' });
+  });
+});

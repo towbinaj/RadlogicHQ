@@ -114,3 +114,26 @@ describe('calculateIdrf — location label', () => {
     expect(r.locationProvided).toBe(false);
   });
 });
+
+import { parseFindings } from '../../core/parser.js';
+import { idrfFormStateFromParse, ALL_FACTOR_IDS } from './calculator.js';
+
+describe('IDRF parse -> form state (audit 2026-11-28)', () => {
+  it('parsed factors become true flags the calculator counts', () => {
+    const text = 'Mass encasing the celiac axis with intraspinal extension.';
+    const fs = idrfFormStateFromParse(parseFindings(text, idrfDefinition).formState, text);
+    expect(fs.celiacAxis).toBe(true);
+    expect(fs.spinalCanal).toBe(true);
+    expect(calculateIdrf(fs).stage).toBe('L2');
+  });
+  it('"no image-defined risk factors" records every factor as absent -> L1', () => {
+    const text = 'Left adrenal mass. No image-defined risk factors.';
+    const fs = idrfFormStateFromParse(parseFindings(text, idrfDefinition).formState, text);
+    expect(ALL_FACTOR_IDS.every((id) => fs[id] === false)).toBe(true);
+    expect(calculateIdrf(fs).stage).toBe('L1');
+  });
+  it('L1/L2 labels note that staging assumes no metastatic disease', () => {
+    const fs = Object.fromEntries(ALL_FACTOR_IDS.map((id) => [id, false]));
+    expect(calculateIdrf(fs).stageFullLabel).toMatch(/no distant metastases/i);
+  });
+});

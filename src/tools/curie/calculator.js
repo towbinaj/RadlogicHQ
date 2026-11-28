@@ -47,10 +47,12 @@ export function calculateMibg(segmentScores, mode) {
   let level = 0;
   if (allAssessed) {
     if (favorable) {
-      interpretation = `Score ≤${threshold}: Favorable prognosis`;
+      // Prognostic cutoffs were validated after induction chemotherapy
+      // (Yanik 2013, Decarolis 2013); say so rather than imply any timepoint.
+      interpretation = `Score <=${threshold}: Favorable prognosis (post-induction cutoff)`;
       level = 1;
     } else {
-      interpretation = `Score >${threshold}: Unfavorable prognosis`;
+      interpretation = `Score >${threshold}: Unfavorable prognosis (post-induction cutoff)`;
       level = 4;
     }
   }
