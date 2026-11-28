@@ -206,3 +206,22 @@ describe('calculateRecist — partial nadir entries', () => {
     expect(r.targetResponse).toBe('SD');
   });
 });
+
+describe('RECIST 1.1 lymph node rules (audit 2026-11-28)', () => {
+  const T = (organ, baseline, current) => ({ label: 'T', organ, baseline, current, nadir: null });
+  it('residual target node <10 mm short axis with other targets gone is CR', () => {
+    const r = calculateRecist({ nonTarget: 'none', newLesion: 'no' }, [T('Lymph node', 20, 8), T('Liver', 30, 0)]);
+    expect(r.targetResponse).toBe('CR');
+    expect(r.overallResponse).toBe('CR');
+  });
+  it('target node still >=10 mm is not CR', () => {
+    const r = calculateRecist({ nonTarget: 'none', newLesion: 'no' }, [T('Lymph node', 20, 11), T('Liver', 30, 0)]);
+    expect(r.targetResponse).not.toBe('CR');
+  });
+  it('warns about baseline targets below measurability and organ/total limits', () => {
+    const r = calculateRecist({}, [T('Lymph node', 12, 10), T('Liver', 8, 8), T('Liver', 20, 20), T('Liver', 22, 22)]);
+    expect(r.targetWarning).toMatch(/15 mm/);
+    expect(r.targetWarning).toMatch(/10 mm/);
+    expect(r.targetWarning).toMatch(/2 per organ/);
+  });
+});

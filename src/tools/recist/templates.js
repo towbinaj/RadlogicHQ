@@ -10,6 +10,7 @@ const FINDINGS_BLOCKS = [
   { id: 'nonTarget', label: 'Non-Target', template: 'Non-target lesions: {{nonTargetLabel}}', enabled: true, condition: 'nonTargetProvided' },
   { id: 'newLesion', label: 'New Lesions', template: 'New lesions: {{newLesionLabel}}', enabled: true, condition: 'newLesionProvided' },
   { id: 'overall', label: 'Overall Response', template: 'Overall RECIST 1.1 Response: {{overallResponseFullLabel}}', enabled: true },
+  { id: 'targetWarning', label: 'Target check', template: 'Note: {{targetWarning}}', enabled: true, condition: 'targetWarningProvided' },
 ];
 
 export const recistTemplates = {

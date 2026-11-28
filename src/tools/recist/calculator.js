@@ -4,7 +4,8 @@
  * Reference: Eisenhauer EA et al. Eur J Cancer 2009;45(2):228-247.
  *
  * Target lesion response (sum of longest diameters):
- *   CR — Complete Response: all target lesions disappeared (sum = 0)
+ *   CR — Complete Response: all non-nodal targets disappeared and all
+ *        target lymph nodes <10 mm short axis
  *   PR — Partial Response: ≥30% decrease from baseline sum
  *   PD — Progressive Disease: ≥20% increase from nadir AND ≥5mm absolute increase
  *   SD — Stable Disease: neither PR nor PD criteria met
@@ -85,12 +86,36 @@ export function calculateRecist(formState, targets) {
     ? round1(currentSum - nadirSum)
     : null;
 
+  // Lymph node targets are measured in short axis. CR = every non-nodal
+  // target gone AND every nodal target <10 mm (the sum need not be 0).
+  const isNode = (t) => /\b(?:lymph\s*nodes?|nodes?|nodal|LN)\b/i.test(t.organ || '');
+  const allCurrent = validTargets.length > 0 && validTargets.every((t) => t.current != null);
+  const targetCR = allCurrent && validTargets.every((t) => (isNode(t) ? t.current < 10 : t.current === 0));
+
+  // Baseline target selection checks (Eisenhauer 2009): measurable lesion
+  // >=10 mm, node >=15 mm short axis; max 2 per organ and 5 in total.
+  const warnings = [];
+  const smallNodes = validTargets.filter((t) => isNode(t) && t.baseline != null && t.baseline < 15);
+  const smallOther = validTargets.filter((t) => !isNode(t) && t.baseline != null && t.baseline < 10);
+  if (smallNodes.length) warnings.push('target lymph nodes need a baseline short axis of 15 mm or more');
+  if (smallOther.length) warnings.push('non-nodal targets need a baseline longest diameter of 10 mm or more');
+  const perOrgan = {};
+  for (const t of validTargets) {
+    const key = isNode(t) ? 'lymph node' : (t.organ || '').trim().toLowerCase();
+    if (key) perOrgan[key] = (perOrgan[key] || 0) + 1;
+  }
+  if (Object.values(perOrgan).some((n) => n > 2)) warnings.push('select at most 2 per organ');
+  if (validTargets.length > 5) warnings.push('select at most 5 target lesions');
+  const targetWarning = warnings.length
+    ? `RECIST 1.1 target selection: ${warnings.join('; ')}.`
+    : '';
+
   // Target lesion response
   let targetResponse = null;
   if (hasBaseline && hasCurrent) {
     // Order matters: PD (relative to nadir) is checked before PR (relative
     // to baseline), so regrowth after a response is not reported as PR.
-    if (currentSum === 0) {
+    if (currentSum === 0 || targetCR) {
       targetResponse = 'CR';
     } else if (pctFromNadir != null && pctFromNadir >= 20 && absIncreaseFromNadir >= 5) {
       targetResponse = 'PD';
@@ -137,6 +162,8 @@ export function calculateRecist(formState, targets) {
   };
 
   return {
+    targetWarning,
+    targetWarningProvided: !!targetWarning,
     targetCount: validTargets.length,
     baselineSum: hasBaseline ? round1(baselineSum) : null,
     currentSum: hasCurrent ? round1(currentSum) : null,
