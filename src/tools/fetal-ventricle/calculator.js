@@ -21,6 +21,29 @@ function categorize(w) {
   return { category: 'Severe ventriculomegaly', categoryLabel: 'Severe (>=15 mm)', level: 5 };
 }
 
+const SEVERITY = (cat) => cat.category.replace(' ventriculomegaly', '').toLowerCase();
+
+function bilateralImpression(rW, lW, rCat, lCat) {
+  const rAbn = rCat.level > 1;
+  const lAbn = lCat.level > 1;
+  if (rCat.level && lCat.level) {
+    if (rAbn && lAbn) return `Bilateral ventriculomegaly: right ${SEVERITY(rCat)} (${rW} mm), left ${SEVERITY(lCat)} (${lW} mm).`;
+    if (rAbn) return `Right ${rCat.category.toLowerCase()} (${rW} mm). Left lateral ventricle normal (${lW} mm).`;
+    if (lAbn) return `Left ${lCat.category.toLowerCase()} (${lW} mm). Right lateral ventricle normal (${rW} mm).`;
+    return `Normal lateral ventricles (right ${rW} mm, left ${lW} mm).`;
+  }
+  if (rCat.level) return rAbn ? `Right ${rCat.category.toLowerCase()} (${rW} mm).` : `Right lateral ventricle normal (${rW} mm).`;
+  if (lCat.level) return lAbn ? `Left ${lCat.category.toLowerCase()} (${lW} mm).` : `Left lateral ventricle normal (${lW} mm).`;
+  return '';
+}
+
+function singleImpression(side, w, cat) {
+  if (!cat.level) return '';
+  const S = side === 'right' ? 'Right' : side === 'left' ? 'Left' : '';
+  if (cat.level === 1) return S ? `${S} lateral ventricle normal (${w} mm).` : `Normal lateral ventricle atrial width (${w} mm).`;
+  return S ? `${S} ${cat.category.toLowerCase()} (${w} mm).` : `${cat.category} (${w} mm).`;
+}
+
 export function calculateFetalVentricle(formState) {
   const { width, side, ga, rightWidth, leftWidth } = formState;
   const sideLabels = { right: 'Right', left: 'Left', bilateral: 'Bilateral' };
@@ -61,6 +84,7 @@ export function calculateFetalVentricle(formState) {
       leftWidthProvided: lHas,
       leftCategory: lCat.category,
       bilateral: true,
+      impressionText: bilateralImpression(rightWidth, leftWidth, rCat, lCat),
       level: combinedLevel,
     };
   }
@@ -81,6 +105,7 @@ export function calculateFetalVentricle(formState) {
     gaLabel: ga ? `${ga} weeks` : '',
     gaProvided: !!ga,
     bilateral: false,
+    impressionText: singleImpression(side, width, cat),
     level: cat.level,
   };
 }

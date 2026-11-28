@@ -93,3 +93,19 @@ describe('calculateKL — edge cases', () => {
     expect(r.jointProvided).toBe(false);
   });
 });
+
+describe('KL impression wording (audit 2026-11-28)', () => {
+  it('grade 0 and 1 are not called osteoarthritis', () => {
+    expect(calculateKL({ side: 'right', joint: 'knee', grade: '0' }).impressionText)
+      .toBe('No radiographic osteoarthritis of the right knee (Kellgren-Lawrence grade 0).');
+    expect(calculateKL({ side: 'right', joint: 'knee', grade: '1' }).impressionText)
+      .toBe('Doubtful osteoarthritis of the right knee (Kellgren-Lawrence grade 1).');
+  });
+  it('grade 2-4 and bilateral', () => {
+    expect(calculateKL({ side: 'left', joint: 'hip', grade: '3' }).impressionText)
+      .toBe('Left hip osteoarthritis, Kellgren-Lawrence grade 3 (moderate).');
+    expect(calculateKL({ side: 'bilateral', joint: 'knee', rightGrade: '3', leftGrade: '0' }).impressionText)
+      .toBe('Kellgren-Lawrence grading, knees: right grade 3 (moderate), left grade 0 (normal).');
+    expect(calculateKL({}).impressionText).toBe('');
+  });
+});

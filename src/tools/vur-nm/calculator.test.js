@@ -74,3 +74,12 @@ describe('calculateVurNm — edge cases', () => {
     expect(r.level).toBe(0);
   });
 });
+
+describe('NM cystogram impression names reflux and side (audit 2026-11-28)', () => {
+  it('single side and bilateral', () => {
+    expect(calculateVurNm({ side: 'left', grade: 'severe' }).impressionText).toBe('Left vesicoureteral reflux, severe.');
+    expect(calculateVurNm({ side: 'bilateral', rightGrade: 'mild', leftGrade: 'moderate' }).impressionText)
+      .toBe('Bilateral vesicoureteral reflux: right mild, left moderate.');
+    expect(calculateVurNm({}).impressionText).toBe('');
+  });
+});

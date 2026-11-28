@@ -81,3 +81,17 @@ describe('calculateVurVcug — edge cases', () => {
     expect(r.level).toBe(0);
   });
 });
+
+describe('VCUG impression names reflux and side (audit 2026-11-28)', () => {
+  it('single side', () => {
+    expect(calculateVurVcug({ side: 'right', grade: 'III' }).impressionText).toBe('Right vesicoureteral reflux, grade III.');
+    expect(calculateVurVcug({ grade: 'III' }).impressionText).toBe('Vesicoureteral reflux, grade III.');
+    expect(calculateVurVcug({}).impressionText).toBe('');
+  });
+  it('bilateral', () => {
+    expect(calculateVurVcug({ side: 'bilateral', rightGrade: 'IV', leftGrade: 'II' }).impressionText)
+      .toBe('Bilateral vesicoureteral reflux: right grade IV, left grade II.');
+    expect(calculateVurVcug({ side: 'bilateral', rightGrade: 'IV' }).impressionText)
+      .toBe('Right vesicoureteral reflux, grade IV.');
+  });
+});

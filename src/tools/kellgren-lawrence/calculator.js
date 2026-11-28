@@ -11,6 +11,17 @@ import { klDefinition } from './definition.js';
  *      combined gradeLabel like "Right: Grade 3 -- Moderate, Left:
  *      Grade 2 -- Minimal".
  */
+const KL_SEVERITY = { 0: 'normal', 1: 'doubtful', 2: 'minimal', 3: 'moderate', 4: 'severe' };
+
+/** Grades 0-1 are not reported as osteoarthritis. */
+function klImpression(grade, sideWord, jointWord) {
+  if (grade == null || grade === '') return '';
+  const site = [sideWord, jointWord || 'joint'].filter(Boolean).join(' ');
+  if (grade === '0') return `No radiographic osteoarthritis of the ${site} (Kellgren-Lawrence grade 0).`;
+  if (grade === '1') return `Doubtful osteoarthritis of the ${site} (Kellgren-Lawrence grade 1).`;
+  return `${site.charAt(0).toUpperCase()}${site.slice(1)} osteoarthritis, Kellgren-Lawrence grade ${grade} (${KL_SEVERITY[grade]}).`;
+}
+
 export function calculateKL(formState) {
   const { grade, joint, side, rightGrade, leftGrade } = formState;
   const findGrade = (g) => klDefinition.grades.find((x) => x.id === g);
@@ -42,6 +53,14 @@ export function calculateKL(formState) {
       leftGradeLabel: lInfo?.label || '--',
       leftGradeProvided: !!leftGrade,
       bilateral: true,
+      impressionText: (() => {
+        const parts = [];
+        if (rInfo) parts.push(`right grade ${rightGrade} (${KL_SEVERITY[rightGrade]})`);
+        if (lInfo) parts.push(`left grade ${leftGrade} (${KL_SEVERITY[leftGrade]})`);
+        if (!parts.length) return '';
+        const j = jointInfo ? `, ${jointInfo.label.toLowerCase()}${joint === 'other' ? '' : 's'}` : '';
+        return `Kellgren-Lawrence grading${j}: ${parts.join(', ')}.`;
+      })(),
       level: Math.max(rLevel, lLevel),
     };
   }
@@ -58,6 +77,7 @@ export function calculateKL(formState) {
     sideLabel: sideInfo?.label || '',
     sideProvided: !!side,
     bilateral: false,
+    impressionText: info ? klImpression(grade, sideInfo?.label.toLowerCase(), jointInfo?.label.toLowerCase()) : '',
     level: gradeLevel(grade),
   };
 }

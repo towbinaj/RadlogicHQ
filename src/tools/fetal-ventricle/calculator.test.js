@@ -151,3 +151,21 @@ describe('calculateFetalVentricle — 12 mm boundary', () => {
     expect(calculateFetalVentricle({ width: 12.1 }).category).toMatch(/Moderate/);
   });
 });
+
+describe('fetal ventricle impression (audit 2026-11-28)', () => {
+  it('unilateral dilation in bilateral mode is not called bilateral', () => {
+    expect(calculateFetalVentricle({ side: 'bilateral', rightWidth: 8, leftWidth: 11 }).impressionText)
+      .toBe('Left mild ventriculomegaly (11 mm). Right lateral ventricle normal (8 mm).');
+  });
+  it('both sides dilated', () => {
+    expect(calculateFetalVentricle({ side: 'bilateral', rightWidth: 11, leftWidth: 13 }).impressionText)
+      .toBe('Bilateral ventriculomegaly: right mild (11 mm), left moderate (13 mm).');
+  });
+  it('both normal, single side, empty', () => {
+    expect(calculateFetalVentricle({ side: 'bilateral', rightWidth: 7, leftWidth: 8 }).impressionText)
+      .toBe('Normal lateral ventricles (right 7 mm, left 8 mm).');
+    expect(calculateFetalVentricle({ side: 'right', width: 11 }).impressionText).toBe('Right mild ventriculomegaly (11 mm).');
+    expect(calculateFetalVentricle({ width: 7 }).impressionText).toBe('Normal lateral ventricle atrial width (7 mm).');
+    expect(calculateFetalVentricle({}).impressionText).toBe('');
+  });
+});

@@ -1,5 +1,23 @@
 import { vurVcugDefinition } from './definition.js';
 
+/**
+ * Impression naming the finding and side. `term(info)` gives the grade
+ * wording ("grade III" / "severe").
+ */
+function vurImpression(side, info, rInfo, lInfo, term) {
+  if (side === 'bilateral') {
+    if (rInfo && lInfo) return `Bilateral vesicoureteral reflux: right ${term(rInfo)}, left ${term(lInfo)}.`;
+    const one = rInfo || lInfo;
+    if (!one) return '';
+    return `${rInfo ? 'Right' : 'Left'} vesicoureteral reflux, ${term(one)}.`;
+  }
+  if (!info) return '';
+  const prefix = side === 'right' ? 'Right v' : side === 'left' ? 'Left v' : 'V';
+  return `${prefix}esicoureteral reflux, ${term(info)}.`;
+}
+
+const TERM = (i) => i.label.replace('Grade', 'grade');
+
 function gradeLevel(grade) {
   if (!grade) return 0;
   if (grade <= 'II') return 2;
@@ -34,6 +52,7 @@ export function calculateVurVcug(formState) {
       leftDescription: lInfo?.description || '',
       leftProvided: !!leftGrade,
       bilateral: true,
+      impressionText: vurImpression('bilateral', null, rInfo, lInfo, TERM),
       gradeProvided: !!rightGrade || !!leftGrade,
       sideLabel: 'Bilateral',
       sideProvided: true,
@@ -48,6 +67,7 @@ export function calculateVurVcug(formState) {
     description: info?.description || '',
     gradeProvided: !!grade,
     bilateral: false,
+    impressionText: vurImpression(side, info, null, null, TERM),
     sideLabel: sideLabels[side] || '',
     sideProvided: !!side,
     level: gradeLevel(grade),

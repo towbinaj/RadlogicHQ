@@ -9,7 +9,7 @@ function bts(blocks, headers, impression) {
 
 const SH = { findings: 'FINDINGS:', additionalFindings: 'Other findings:', impression: 'IMPRESSION:' };
 const RH = { findings: '[STRUCTURED REPORT]', additionalFindings: '[OTHER FINDINGS]', impression: '[IMPRESSION]' };
-const IMP = '{{gradeLabel}}.';
+const IMP = '{{impressionText}}';
 
 export const vurVcugTemplates = {
   ps360: { label: 'PowerScribe 360', ...bts(FINDINGS_BLOCKS, SH, IMP) },
