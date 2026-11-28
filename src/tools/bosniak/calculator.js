@@ -7,7 +7,8 @@
  *
  * Classification hierarchy (highest class wins):
  *   IV  — Enhancing soft tissue component
- *   III — Thickened/irregular wall or septa with measurable enhancement
+ *   III — Thickened/irregular enhancing wall or septa
+ *   (IIF/III features must enhance; without enhancement -> at most II)
  *   IIF — Minimally thickened smooth wall/septa, OR many (>=4) thin smooth septa
  *   II  — few (1-3) thin smooth septa (may enhance), OR perceived enhancement, OR any calcification
  *   I   — Simple cyst: thin smooth wall, no septa, no enhancement
@@ -39,7 +40,20 @@ export function calculateBosniak(formState) {
     return buildResult('IV', formState, 'Enhancing soft tissue component');
   }
 
-  // --- III: Thickened/irregular wall or septa with measurable enhancement ---
+  // v2019: IIF and III wall/septal features count only when they enhance
+  // (perceived or measurable). Ask for enhancement before using them; with
+  // no enhancement they do not qualify, and the mass is at most class II.
+  const higherFeature = wall === 'thickIrregular' || septa === 'thickIrregular'
+    || wall === 'minThickSmooth' || septa === 'minThickSmooth' || septa === 'thinSmoothMany';
+  const enhancing = enhancement === 'perceived' || enhancement === 'measurable';
+  if (higherFeature && !enhancement) {
+    return buildResult(null, formState, 'Select enhancement (IIF and III wall/septal features must enhance)');
+  }
+  if (higherFeature && !enhancing) {
+    return buildResult('II', formState, 'Wall or septal thickening without enhancement (does not meet IIF/III)');
+  }
+
+  // --- III: Thickened/irregular wall or septa with enhancement ---
   if (wall === 'thickIrregular' || septa === 'thickIrregular') {
     const features = [];
     if (wall === 'thickIrregular') features.push('thickened/irregular wall');

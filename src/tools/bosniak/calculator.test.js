@@ -9,22 +9,22 @@ describe('calculateBosniak', () => {
   });
 
   it('wall thickIrregular → Bosniak III', () => {
-    const result = calculateBosniak({ wall: 'thickIrregular', softTissue: 'absent' });
+    const result = calculateBosniak({ wall: 'thickIrregular', softTissue: 'absent', enhancement: 'measurable' });
     expect(result.categoryShort).toBe('III');
   });
 
   it('septa thickIrregular → Bosniak III', () => {
-    const result = calculateBosniak({ septa: 'thickIrregular', wall: 'thinSmooth', softTissue: 'absent' });
+    const result = calculateBosniak({ septa: 'thickIrregular', wall: 'thinSmooth', softTissue: 'absent', enhancement: 'measurable' });
     expect(result.categoryShort).toBe('III');
   });
 
   it('wall minThickSmooth → Bosniak IIF', () => {
-    const result = calculateBosniak({ wall: 'minThickSmooth', softTissue: 'absent' });
+    const result = calculateBosniak({ wall: 'minThickSmooth', softTissue: 'absent', enhancement: 'measurable' });
     expect(result.categoryShort).toBe('IIF');
   });
 
   it('septa thinSmoothMany → Bosniak IIF', () => {
-    const result = calculateBosniak({ septa: 'thinSmoothMany', wall: 'thinSmooth', softTissue: 'absent' });
+    const result = calculateBosniak({ septa: 'thinSmoothMany', wall: 'thinSmooth', softTissue: 'absent', enhancement: 'perceived' });
     expect(result.categoryShort).toBe('IIF');
   });
 
@@ -66,7 +66,7 @@ describe('calculateBosniak — v2019 septa counts', () => {
   });
 
   it('many (>=4) thin smooth septa is class IIF', () => {
-    const r = calculateBosniak({ wall: 'thinSmooth', septa: 'thinSmoothMany' });
+    const r = calculateBosniak({ wall: 'thinSmooth', septa: 'thinSmoothMany', enhancement: 'perceived' });
     expect(r.categoryShort).toBe('IIF');
     expect(r.reason).toMatch(/>=4/);
   });
@@ -81,5 +81,21 @@ describe('calculateBosniak — v2019 septa counts', () => {
   it('thin smooth wall, no septa, with calcification is class II (not I)', () => {
     const r = calculateBosniak({ wall: 'thinSmooth', septa: 'none', calcification: 'thick' });
     expect(r.categoryShort).toBe('II');
+  });
+});
+
+describe('Bosniak v2019: IIF/III features must enhance (audit 2026-11-28)', () => {
+  it('thick wall with measurable or perceived enhancement -> III', () => {
+    expect(calculateBosniak({ wall: 'thickIrregular', enhancement: 'measurable' }).categoryShort).toBe('III');
+    expect(calculateBosniak({ wall: 'thickIrregular', enhancement: 'perceived' }).categoryShort).toBe('III');
+  });
+  it('thick wall or septa with no enhancement is not IIF/III', () => {
+    const r = calculateBosniak({ wall: 'thickIrregular', enhancement: 'none' });
+    expect(['IIF', 'III', 'IV']).not.toContain(r.categoryShort);
+    expect(calculateBosniak({ wall: 'thinSmooth', septa: 'minThickSmooth', enhancement: 'none' }).categoryShort).toBe('II');
+  });
+  it('IIF/III feature with enhancement not yet answered -> incomplete', () => {
+    expect(calculateBosniak({ wall: 'thickIrregular' }).categoryShort).toBe('--');
+    expect(calculateBosniak({ wall: 'minThickSmooth' }).categoryShort).toBe('--');
   });
 });

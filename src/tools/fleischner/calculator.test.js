@@ -179,3 +179,19 @@ describe('calculateFleischner — metadata', () => {
     expect(r.riskNeeded).toBe(true);
   });
 });
+
+describe('Fleischner: size rounded to nearest mm before categorizing (audit 2026-11-28)', () => {
+  const base = { noduleType: 'solid', noduleCount: 'single', riskLevel: 'low' };
+  it('8.4 mm categorizes as 8 mm (6-8 group), 8.5 as 9 mm (>8)', () => {
+    expect(calculateFleischner({ ...base, size: 8.4 }).recommendation)
+      .toBe(calculateFleischner({ ...base, size: 8 }).recommendation);
+    expect(calculateFleischner({ ...base, size: 8.5 }).recommendation)
+      .toBe(calculateFleischner({ ...base, size: 9 }).recommendation);
+  });
+  it('5.9 mm categorizes as 6 mm', () => {
+    expect(calculateFleischner({ ...base, size: 5.9 }).recommendation)
+      .toBe(calculateFleischner({ ...base, size: 6 }).recommendation);
+    expect(calculateFleischner({ ...base, size: 5.4 }).recommendation)
+      .toBe(calculateFleischner({ ...base, size: 5 }).recommendation);
+  });
+});

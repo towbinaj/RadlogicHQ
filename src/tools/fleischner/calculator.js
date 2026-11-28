@@ -147,7 +147,9 @@ const PS_MULTIPLE = [
  */
 export function calculateFleischner(formState) {
   const { noduleType, noduleCount, riskLevel } = formState;
-  const sizeMm = formState.size;
+  // Fleischner 2017: average diameter rounded to the nearest millimeter
+  // before applying the 6 mm and 8 mm thresholds.
+  const sizeMm = formState.size == null ? null : Math.round(formState.size);
 
   if (!noduleType) {
     return buildResult(null, formState, 'Select nodule type');
@@ -246,7 +248,7 @@ function buildResult(recKey, formState, reason) {
     noduleTypeLabel: typeLabels[formState.noduleType] || '',
     noduleCountLabel: countLabels[formState.noduleCount] || '',
     riskLevelLabel: riskLabels[formState.riskLevel] || 'Not assessed',
-    riskNeeded: formState.noduleType === 'solid' && (sizeMm == null || sizeMm <= 8),
+    riskNeeded: formState.noduleType === 'solid' && (sizeMm == null || Math.round(sizeMm) <= 8),
     sizeMm,
     sizeProvided: sizeMm != null,
     sizeCm: sizeMm != null ? (sizeMm / 10).toFixed(1) : null,
