@@ -43,6 +43,8 @@ export function calculatePirads(formState) {
   if (isPZ) {
     // PZ: DWI-dominant
     if (dwi == null) return buildResult(null, formState, 'Select DWI score');
+    // DWI 3 is decided by DCE: ask for it (or 'not performed' for bpMRI).
+    if (dwi === 3 && !dce) return buildResult(null, formState, 'Select DCE (decides PZ DWI 3)');
     category = dwi;
     reason = `PZ dominant: DWI ${dwi}`;
 
@@ -54,6 +56,8 @@ export function calculatePirads(formState) {
   } else {
     // TZ: T2-dominant
     if (t2 == null) return buildResult(null, formState, 'Select T2 score');
+    // T2 2 and 3 can be upgraded by DWI: ask for it first.
+    if ((t2 === 2 || t2 === 3) && dwi == null) return buildResult(null, formState, 'Select DWI score (decides TZ T2 2-3)');
     category = t2;
     reason = `TZ dominant: T2 ${t2}`;
 
@@ -98,7 +102,7 @@ function buildResult(category, formState, reason) {
     zoneProvided: !!formState.location,
     t2Label: scoreLabel(formState.t2Score),
     dwiLabel: scoreLabel(formState.dwiScore),
-    dceLabel: formState.dce === 'positive' ? 'Positive' : formState.dce === 'negative' ? 'Negative' : 'Not assessed',
+    dceLabel: formState.dce === 'positive' ? 'Positive' : formState.dce === 'negative' ? 'Negative' : formState.dce === 'notPerformed' ? 'Not performed (biparametric)' : 'Not assessed',
     t2Provided: !!formState.t2Score,
     dwiProvided: !!formState.dwiScore,
     dceProvided: !!formState.dce,

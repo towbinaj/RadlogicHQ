@@ -59,6 +59,13 @@ export function calculateLirads(formState) {
     return buildResult(null, formState, 'Enter observation size to categorize');
   }
 
+  // Unanswered major features are not assumed absent. Threshold growth may
+  // stay unassessed (no prior exam) and then counts as absent.
+  const unanswered = ['aphe', 'washout', 'capsule'].filter((k) => formState[k] !== 'yes' && formState[k] !== 'no');
+  if (unanswered.length) {
+    return buildResult(null, formState, 'Assess APHE, washout and enhancing capsule to categorize');
+  }
+
   const hasAPHE = formState.aphe === 'yes';
   const hasWashout = formState.washout === 'yes';
   const hasCapsule = formState.capsule === 'yes';

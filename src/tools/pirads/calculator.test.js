@@ -32,7 +32,8 @@ describe('calculatePirads — PZ (DWI-dominant)', () => {
     [4, 'High'],
     [5, 'Very High'],
   ])('DWI %d → PI-RADS %d (%s)', (dwi, label) => {
-    const r = calculatePirads({ location: 'pz', dwiScore: String(dwi) });
+    // DWI 3 needs a DCE answer; negative keeps it at 3.
+    const r = calculatePirads({ location: 'pz', dwiScore: String(dwi), dce: 'negative' });
     expect(r.categoryShort).toBe(dwi);
     expect(r.categoryLabel).toBe(label);
     expect(r.categoryLevel).toBe(dwi);
@@ -79,7 +80,8 @@ describe('calculatePirads — TZ (T2-dominant)', () => {
     [4, 'High'],
     [5, 'Very High'],
   ])('T2 %d → PI-RADS %d (%s)', (t2, label) => {
-    const r = calculatePirads({ location: 'tz', t2Score: String(t2) });
+    // T2 2-3 need DWI; DWI 3 does not upgrade any T2 score.
+    const r = calculatePirads({ location: 'tz', t2Score: String(t2), dwiScore: '3' });
     expect(r.categoryShort).toBe(t2);
     expect(r.categoryLabel).toBe(label);
   });
@@ -140,5 +142,20 @@ describe('calculatePirads — TZ v2.1 upgrade of T2 score 2', () => {
   ])('TZ T2 2 + DWI %s -> PI-RADS %s', (dwi, expected) => {
     const r = calculatePirads({ location: 'tz', t2Score: '2', dwiScore: dwi });
     expect(String(r.category)).toContain(expected);
+  });
+});
+
+describe('PI-RADS: no category before the deciding input (audit 2026-11-28)', () => {
+  it('PZ DWI 3 needs DCE; biparametric (not performed) stays 3', () => {
+    expect(calculatePirads({ location: 'pz', dwiScore: '3' }).categoryShort).toBe('--');
+    expect(calculatePirads({ location: 'pz', dwiScore: '3', dce: 'notPerformed' }).categoryShort).toBe(3);
+    expect(calculatePirads({ location: 'pz', dwiScore: '3', dce: 'positive' }).categoryShort).toBe(4);
+    expect(calculatePirads({ location: 'pz', dwiScore: '4' }).categoryShort).toBe(4);
+  });
+  it('TZ T2 2 or 3 needs DWI', () => {
+    expect(calculatePirads({ location: 'tz', t2Score: '2' }).categoryShort).toBe('--');
+    expect(calculatePirads({ location: 'tz', t2Score: '3' }).categoryShort).toBe('--');
+    expect(calculatePirads({ location: 'tz', t2Score: '4' }).categoryShort).toBe(4);
+    expect(calculatePirads({ location: 'tz', t2Score: '2', dwiScore: '3' }).categoryShort).toBe(2);
   });
 });

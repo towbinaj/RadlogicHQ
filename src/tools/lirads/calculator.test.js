@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { calculateLirads } from './calculator.js';
 
+// Major features default to 'no' (answered) so each test isolates its rule;
+// unanswered features leave the observation uncategorized.
+const calc = (fs) => calculateLirads({ aphe: 'no', washout: 'no', capsule: 'no', ...fs });
+
 // Retroactive coverage for Phase 2 multi-item parse rollout.
 // See docs/test.md section 9.
 
@@ -44,61 +48,61 @@ describe('calculateLirads — early exits', () => {
 
 describe('calculateLirads — APHE+ table boundaries', () => {
   it('<10 mm + APHE + 0 features → LR-3', () => {
-    const r = calculateLirads({ size: 8, aphe: 'yes' });
+    const r = calc({ size: 8, aphe: 'yes' });
     expect(r.category).toBe('LR-3');
   });
 
   it('<10 mm + APHE + 1 feature → LR-4', () => {
-    const r = calculateLirads({ size: 8, aphe: 'yes', washout: 'yes' });
+    const r = calc({ size: 8, aphe: 'yes', washout: 'yes' });
     expect(r.category).toBe('LR-4');
   });
 
   it('<10 mm + APHE + 2 features → LR-4 (cannot reach LR-5 <10mm)', () => {
-    const r = calculateLirads({
+    const r = calc({
       size: 8, aphe: 'yes', washout: 'yes', capsule: 'yes',
     });
     expect(r.category).toBe('LR-4');
   });
 
   it('10 mm + APHE + 0 features → LR-3', () => {
-    const r = calculateLirads({ size: 10, aphe: 'yes' });
+    const r = calc({ size: 10, aphe: 'yes' });
     expect(r.category).toBe('LR-3');
   });
 
   it('10-19 mm + APHE + washout only → LR-5 (v2018)', () => {
-    const r = calculateLirads({ size: 15, aphe: 'yes', washout: 'yes' });
+    const r = calc({ size: 15, aphe: 'yes', washout: 'yes' });
     expect(r.category).toBe('LR-5');
   });
 
   it('10-19 mm + APHE + threshold growth only → LR-5 (v2018)', () => {
-    const r = calculateLirads({ size: 15, aphe: 'yes', thresholdGrowth: 'yes' });
+    const r = calc({ size: 15, aphe: 'yes', thresholdGrowth: 'yes' });
     expect(r.category).toBe('LR-5');
   });
 
   it('10-19 mm + APHE + capsule only → LR-4 (v2018)', () => {
-    const r = calculateLirads({ size: 15, aphe: 'yes', capsule: 'yes' });
+    const r = calc({ size: 15, aphe: 'yes', capsule: 'yes' });
     expect(r.category).toBe('LR-4');
   });
 
   it('10-19 mm + APHE + 2 features → LR-5', () => {
-    const r = calculateLirads({
+    const r = calc({
       size: 15, aphe: 'yes', washout: 'yes', capsule: 'yes',
     });
     expect(r.category).toBe('LR-5');
   });
 
   it('≥20 mm + APHE + 0 features → LR-4', () => {
-    const r = calculateLirads({ size: 25, aphe: 'yes' });
+    const r = calc({ size: 25, aphe: 'yes' });
     expect(r.category).toBe('LR-4');
   });
 
   it('≥20 mm + APHE + 1 feature → LR-5', () => {
-    const r = calculateLirads({ size: 25, aphe: 'yes', washout: 'yes' });
+    const r = calc({ size: 25, aphe: 'yes', washout: 'yes' });
     expect(r.category).toBe('LR-5');
   });
 
   it('≥20 mm + APHE + 3 features caps at column ≥2 → LR-5', () => {
-    const r = calculateLirads({
+    const r = calc({
       size: 25, aphe: 'yes',
       washout: 'yes', capsule: 'yes', thresholdGrowth: 'yes',
     });
@@ -109,36 +113,36 @@ describe('calculateLirads — APHE+ table boundaries', () => {
 
 describe('calculateLirads — APHE- table boundaries', () => {
   it('<10 mm + no APHE + 0 features → LR-3 (no separate <10 mm row without APHE)', () => {
-    const r = calculateLirads({ size: 8 });
+    const r = calc({ size: 8 });
     expect(r.category).toBe('LR-3');
   });
 
   it('<10 mm + no APHE + 2 features → LR-4', () => {
-    const r = calculateLirads({ size: 5, washout: 'yes', capsule: 'yes' });
+    const r = calc({ size: 5, washout: 'yes', capsule: 'yes' });
     expect(r.category).toBe('LR-4');
   });
 
   it('10 mm + no APHE + 0 features → LR-3', () => {
-    const r = calculateLirads({ size: 10 });
+    const r = calc({ size: 10 });
     expect(r.category).toBe('LR-3');
   });
 
   it('10-19 mm + no APHE + 2 features → LR-4', () => {
-    const r = calculateLirads({
+    const r = calc({
       size: 15, washout: 'yes', capsule: 'yes',
     });
     expect(r.category).toBe('LR-4');
   });
 
   it('≥20 mm + no APHE + 1 feature → LR-4', () => {
-    const r = calculateLirads({ size: 25, washout: 'yes' });
+    const r = calc({ size: 25, washout: 'yes' });
     expect(r.category).toBe('LR-4');
   });
 });
 
 describe('calculateLirads — ancillary feature adjustment', () => {
   it('ancillary favoring HCC upgrades LR-3 to LR-4', () => {
-    const r = calculateLirads({
+    const r = calc({
       size: 8, aphe: 'yes',
       anc_hcc_something: true,
     });
@@ -148,7 +152,7 @@ describe('calculateLirads — ancillary feature adjustment', () => {
   });
 
   it('ancillary favoring benign downgrades LR-3 to LR-2', () => {
-    const r = calculateLirads({
+    const r = calc({
       size: 8, aphe: 'yes',
       anc_benign_something: true,
     });
@@ -157,7 +161,7 @@ describe('calculateLirads — ancillary feature adjustment', () => {
   });
 
   it('ancillary cannot upgrade to LR-5 (capped at LR-4)', () => {
-    const r = calculateLirads({
+    const r = calc({
       size: 15, aphe: 'yes', capsule: 'yes',  // base LR-4
       anc_hcc_something: true,
     });
@@ -167,7 +171,7 @@ describe('calculateLirads — ancillary feature adjustment', () => {
   });
 
   it('conflicting ancillary (both groups) → no adjustment', () => {
-    const r = calculateLirads({
+    const r = calc({
       size: 8, aphe: 'yes',  // base LR-3
       anc_hcc_something: true,
       anc_benign_something: true,
@@ -179,7 +183,7 @@ describe('calculateLirads — ancillary feature adjustment', () => {
 
 describe('calculateLirads — feature summary + metadata', () => {
   it('lists all present features in summary', () => {
-    const r = calculateLirads({
+    const r = calc({
       size: 25, aphe: 'yes', washout: 'yes', capsule: 'yes',
     });
     expect(r.featureSummary).toContain('APHE');
@@ -188,18 +192,18 @@ describe('calculateLirads — feature summary + metadata', () => {
   });
 
   it('summary is "None" when no major features', () => {
-    const r = calculateLirads({ size: 12 });
+    const r = calc({ size: 12 });
     expect(r.featureSummary).toBe('None');
   });
 
   it('exposes sizeMm + sizeCm', () => {
-    const r = calculateLirads({ size: 25 });
+    const r = calc({ size: 25 });
     expect(r.sizeMm).toBe(25);
     expect(r.sizeCm).toBe('2.5');
   });
 
   it('reason string describes the categorization inputs', () => {
-    const r = calculateLirads({ size: 15, aphe: 'yes', washout: 'yes' });
+    const r = calc({ size: 15, aphe: 'yes', washout: 'yes' });
     expect(r.reason).toContain('15 mm');
     expect(r.reason).toContain('APHE+');
     expect(r.reason).toContain('1 additional feature');
@@ -215,5 +219,16 @@ describe('LI-RADS ancillary lists match v2018', () => {
     expect(benign).not.toContain('homogeneousSignal');
     const hcc = liradsDefinition.ancillaryFeatures.favoringHCC.map((f) => f.label.toLowerCase()).join(' ');
     expect(hcc).toMatch(/fat in mass/);
+  });
+});
+
+describe('LI-RADS: no category until APHE, washout and capsule are answered (audit 2026-11-28)', () => {
+  it('size only -> incomplete', () => {
+    expect(calculateLirads({ size: 25 }).category).toBe('--');
+    expect(calculateLirads({ size: 25, aphe: 'yes' }).category).toBe('--');
+  });
+  it('all three answered -> categorized (growth may be left unassessed)', () => {
+    expect(calculateLirads({ size: 25, aphe: 'yes', washout: 'yes', capsule: 'no' }).category).toBe('LR-5');
+    expect(calculateLirads({ size: 25, aphe: 'no', washout: 'no', capsule: 'no' }).category).toBe('LR-3');
   });
 });

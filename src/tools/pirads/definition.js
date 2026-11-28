@@ -69,6 +69,7 @@ export const piradsDefinition = {
     options: [
       { id: 'negative', label: 'Negative', tooltip: 'No early or contemporaneous enhancement, or diffuse/multifocal enhancement not corresponding to a focal finding on T2W or DWI' },
       { id: 'positive', label: 'Positive', tooltip: 'Focal, earlier than or contemporaneous with enhancement of adjacent normal prostatic tissue, corresponding to suspicious finding on T2W and/or DWI' },
+      { id: 'notPerformed', label: 'Not performed', tooltip: 'Biparametric MRI (no contrast): PZ DWI 3 stays PI-RADS 3' },
     ],
   },
 
