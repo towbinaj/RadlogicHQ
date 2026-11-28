@@ -71,8 +71,10 @@ describe('calculateReimers impressionText', () => {
   });
 
   it('does not mention coxa valga when not assessed', () => {
-    const text = calculateReimers({}).impressionText;
+    const text = calculateReimers({ rightM1: 5, rightM2: 40 }).impressionText;
     expect(text).toBe('Migration percentages as above.');
+    // Empty form: no impression at all (audit 2026-11-28).
+    expect(calculateReimers({}).impressionText).toBe('');
     expect(text.toLowerCase()).not.toContain('coxa valga');
   });
 });

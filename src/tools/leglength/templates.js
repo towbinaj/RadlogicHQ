@@ -16,6 +16,7 @@ const TOTAL_BLOCKS = [
 // --- Segmental mode blocks ---
 const SEGMENTAL_BLOCKS = [
   { id: 'table', label: 'Measurements', template: '{{measurementTable}}', enabled: true, condition: 'hasAnySegment' },
+  { id: 'discrepancy', label: 'Discrepancy', template: '{{discrepancyLabel}}', enabled: true, condition: 'bothTotal' },
   { id: 'rightAlignment', label: 'Right Alignment', template: 'There is {{rightAlignmentLabel}} alignment of the RIGHT lower extremity at the knee.', enabled: true, condition: 'rightAlignmentProvided' },
   { id: 'leftAlignment', label: 'Left Alignment', template: 'There is {{leftAlignmentLabel}} alignment of the LEFT lower extremity at the knee.', enabled: true, condition: 'leftAlignmentProvided' },
   { id: 'physes', label: 'Physes', template: 'The physes are {{physesLabel}}.', enabled: true, condition: 'physesProvided' },
@@ -44,8 +45,8 @@ const RADAI_HEADERS = {
 
 // --- Total mode templates ---
 export const leglengthTemplates = {
-  ps360: { label: 'PowerScribe 360', ...buildTemplateSet(TOTAL_BLOCKS, STANDARD_HEADERS, 'Lower extremity lengths and alignment as described above.') },
-  ps1: { label: 'PowerScribe One', ...buildTemplateSet(TOTAL_BLOCKS, STANDARD_HEADERS, 'Lower extremity lengths and alignment as described above.') },
+  ps360: { label: 'PowerScribe 360', ...buildTemplateSet(TOTAL_BLOCKS, STANDARD_HEADERS, '{{#if anyProvided}}Lower extremity lengths and alignment as described above.{{/if}}') },
+  ps1: { label: 'PowerScribe One', ...buildTemplateSet(TOTAL_BLOCKS, STANDARD_HEADERS, '{{#if anyProvided}}Lower extremity lengths and alignment as described above.{{/if}}') },
   radai: {
     label: 'RadAI Omni',
     ...buildTemplateSet([
@@ -55,13 +56,13 @@ export const leglengthTemplates = {
       { id: 'rightAlignment', label: 'Right Alignment', template: 'Right_Alignment: {{rightAlignmentLabel}}', enabled: true, condition: 'rightAlignmentProvided' },
       { id: 'leftAlignment', label: 'Left Alignment', template: 'Left_Alignment: {{leftAlignmentLabel}}', enabled: true, condition: 'leftAlignmentProvided' },
       { id: 'physes', label: 'Physes', template: 'Physes: {{physesLabel}}', enabled: true, condition: 'physesProvided' },
-    ], RADAI_HEADERS, 'Lower extremity lengths and alignment as described above.\n[END STRUCTURED REPORT]'),
+    ], RADAI_HEADERS, '{{#if anyProvided}}Lower extremity lengths and alignment as described above.{{/if}}\n[END STRUCTURED REPORT]'),
   },
 };
 
 // --- Segmental mode templates ---
 export const segmentalTemplates = {
-  ps360: { label: 'PowerScribe 360', ...buildTemplateSet(SEGMENTAL_BLOCKS, STANDARD_HEADERS, 'Lower extremity lengths and alignment as described above.') },
-  ps1: { label: 'PowerScribe One', ...buildTemplateSet(SEGMENTAL_BLOCKS, STANDARD_HEADERS, 'Lower extremity lengths and alignment as described above.') },
-  radai: { label: 'RadAI Omni', ...buildTemplateSet(SEGMENTAL_BLOCKS, RADAI_HEADERS, 'Lower extremity lengths and alignment as described above.\n[END STRUCTURED REPORT]') },
+  ps360: { label: 'PowerScribe 360', ...buildTemplateSet(SEGMENTAL_BLOCKS, STANDARD_HEADERS, '{{#if anyProvided}}Lower extremity lengths and alignment as described above.{{/if}}') },
+  ps1: { label: 'PowerScribe One', ...buildTemplateSet(SEGMENTAL_BLOCKS, STANDARD_HEADERS, '{{#if anyProvided}}Lower extremity lengths and alignment as described above.{{/if}}') },
+  radai: { label: 'RadAI Omni', ...buildTemplateSet(SEGMENTAL_BLOCKS, RADAI_HEADERS, '{{#if anyProvided}}Lower extremity lengths and alignment as described above.{{/if}}\n[END STRUCTURED REPORT]') },
 };

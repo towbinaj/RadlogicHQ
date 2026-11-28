@@ -13,7 +13,7 @@ function bts(blocks, headers, impression) {
 
 const SH = { findings: 'FINDINGS:', additionalFindings: 'Other findings:', impression: 'IMPRESSION:' };
 const RH = { findings: '[STRUCTURED REPORT]', additionalFindings: '[OTHER FINDINGS]', impression: '[IMPRESSION]' };
-const IMP = 'Posterior fossa measurements as above.';
+const IMP = '{{#if anyMeasurement}}Posterior fossa measurements as above.{{/if}}';
 
 export const fetalPFTemplates = {
   ps360: { label: 'PowerScribe 360', ...bts(FINDINGS_BLOCKS, SH, IMP) },

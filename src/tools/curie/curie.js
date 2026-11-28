@@ -153,7 +153,7 @@ function init() {
       .map((s) => `${s.label}: ${s.score}`);
     data.segmentScoreText = lines.length > 0 ? lines.join('\n') : 'No segments scored';
 
-    const impressionSummary = result.allAssessed
+    const impressionSummary = !result.assessed ? '' : result.allAssessed
       ? `${result.modeLabel} score: ${result.total}/${result.maxTotal}. ${result.interpretation}.`
       : `${result.modeLabel} score: ${result.total ?? 0}/${result.maxTotal} (${result.assessed}/${result.segmentCount} segments assessed).`;
 

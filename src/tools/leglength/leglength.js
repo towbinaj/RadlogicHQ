@@ -303,17 +303,24 @@ function init() {
   function updateSegmentalReport() {
     const result = calculateSegmental(segmentalState);
 
-    // Build the measurement table as plain text
-    const dash = '—';
-    const rFemur = result.rightFemur != null ? result.rightFemur : dash;
-    const lFemur = result.leftFemur != null ? result.leftFemur : dash;
-    const fDiff = result.femurDiff != null ? result.femurDiff : dash;
-    const rTibia = result.rightTibia != null ? result.rightTibia : dash;
-    const lTibia = result.leftTibia != null ? result.leftTibia : dash;
-    const tDiff = result.tibiaDiff != null ? result.tibiaDiff : dash;
-    const rTotal = result.rightTotal != null ? result.rightTotal : dash;
-    const lTotal = result.leftTotal != null ? result.leftTotal : dash;
-    const totDiff = result.totalDiff != null ? result.totalDiff : dash;
+    // Build the measurement table as plain text (ASCII only). Differences
+    // name the longer side, e.g. "0.6 (L longer)".
+    const dash = '-';
+    const val = (v) => (v != null ? v : dash);
+    const diffText = (d, r, l) => {
+      if (d == null) return dash;
+      if (d === 0) return '0';
+      return `${d} (${r > l ? 'R' : 'L'} longer)`;
+    };
+    const rFemur = val(result.rightFemur);
+    const lFemur = val(result.leftFemur);
+    const fDiff = diffText(result.femurDiff, result.rightFemur, result.leftFemur);
+    const rTibia = val(result.rightTibia);
+    const lTibia = val(result.leftTibia);
+    const tDiff = diffText(result.tibiaDiff, result.rightTibia, result.leftTibia);
+    const rTotal = val(result.rightTotal);
+    const lTotal = val(result.leftTotal);
+    const totDiff = diffText(result.totalDiff, result.rightTotal, result.leftTotal);
 
     // Pad columns for alignment
     function col(val, width) {
@@ -347,7 +354,8 @@ function init() {
       const sections = [];
 
       // For segmental, render the table directly then add alignment/physes
-      const findingsLines = ['The following measurements were obtained:\n', table];
+      const findingsLines = data.hasAnySegment ? ['The following measurements were obtained:\n', table] : [];
+      if (data.bothTotal && data.discrepancyLabel) findingsLines.push(`\n${data.discrepancyLabel}`);
       if (data.rightAlignmentProvided) findingsLines.push(`\nThere is ${data.rightAlignmentLabel} alignment of the RIGHT lower extremity at the knee.`);
       if (data.leftAlignmentProvided) findingsLines.push(`There is ${data.leftAlignmentLabel} alignment of the LEFT lower extremity at the knee.`);
       if (data.physesProvided) findingsLines.push(`The physes are ${data.physesLabel}.`);

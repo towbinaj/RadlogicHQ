@@ -1,5 +1,5 @@
 import { copyToClipboard } from '../core/clipboard.js';
-import { renderReport, renderBlocks } from '../core/report.js';
+import { renderReport, renderBlocks, stripPlaceholders } from '../core/report.js';
 import { getStored, setStored, trackEvent } from '../core/storage.js';
 import { isLoggedIn } from '../core/auth.js';
 import { saveReport, getSavedReports, deleteSavedReport, shareTemplate } from '../core/user-data.js';
@@ -319,7 +319,7 @@ export class ReportOutput extends HTMLElement {
       this._renderPillEditor();
     } else {
       const config = this._getConfig();
-      const text = this._renderFn(config, this._templateData);
+      const text = stripPlaceholders(this._renderFn(config, this._templateData));
       this._els.text.textContent = text;
       this._els.text.contentEditable = 'false';
       this._els.text.className = 'report-output__text';
@@ -770,6 +770,7 @@ export class ReportOutput extends HTMLElement {
     } else {
       text = '';
     }
+    text = stripPlaceholders(text);
 
     const success = await copyToClipboard(text);
     if (success) {
@@ -806,9 +807,9 @@ export class ReportOutput extends HTMLElement {
 
   async _saveToHistory() {
     const config = this._getConfig();
-    const text = config.editorContent
+    const text = stripPlaceholders(config.editorContent
       ? renderEditorContent(config.editorContent, config.pillStates, this._templateData)
-      : (this._renderFn ? this._renderFn(config, this._templateData) : '');
+      : (this._renderFn ? this._renderFn(config, this._templateData) : ''));
     if (!text) return;
     const label = this._els.saveLabelInput.value.trim() || `${this._toolId} report`;
     await saveReport(this._toolId, text, label);

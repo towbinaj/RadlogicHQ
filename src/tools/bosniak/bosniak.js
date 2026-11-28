@@ -248,7 +248,8 @@ function init() {
       return data;
     });
 
-    const summaryLines = allCystData.map((d) => {
+    // No impression line for a cyst until it has a category.
+    const summaryLines = allCystData.filter((d) => d.categoryFullLabel && !/--/.test(d.categoryFullLabel)).map((d) => {
       const loc = d.locationProvided ? `${d.location} ` : '';
       const size = d.sizeProvided ? `${d.sizeMm} mm ` : '';
       return `${d.cystLabel}: ${loc}${size}cystic renal mass. ${d.categoryFullLabel}. ${d.management}`;

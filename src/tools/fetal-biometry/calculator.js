@@ -49,6 +49,7 @@ export function calculateFetalBiometry(formState) {
   }
 
   return {
+    anyMeasurement: hasBpd || hasCerebellum || hasCm,
     gaLabel: hasGa ? `${ga} weeks` : '',
     gaProvided: hasGa,
     bpdLabel: hasBpd ? `${bpd} mm` : '--',

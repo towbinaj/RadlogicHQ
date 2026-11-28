@@ -264,7 +264,8 @@ function init() {
       return data;
     });
 
-    const summaryLines = allNoduleData.map((d) => {
+    // No impression line for a nodule until it has a recommendation.
+    const summaryLines = allNoduleData.filter((d) => d.recommendationFullLabel && !/--/.test(d.recommendationFullLabel)).map((d) => {
       const loc = d.locationProvided ? `${d.location} ` : '';
       const size = d.sizeProvided ? `${d.sizeMm} mm ` : '';
       return `${d.noduleLabel}: ${loc}${size}${d.noduleTypeLabel} nodule. ${d.recommendationFullLabel}. ${d.management}`;

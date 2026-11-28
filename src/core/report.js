@@ -116,3 +116,31 @@ export function renderBlocks(blocks, data, globalShowPoints = true) {
 
   return lines.join('\n');
 }
+
+// A "--" or "?" placeholder token: "Grade --", "-- stenosis", "? mm".
+const PLACEHOLDER_RE = /(?:^|[\s(:/])--(?=$|[\s.,;:)/])|(?:^|\s)\?(?=\s*(?:mm|cm|$|[\s.,;)]))/;
+
+/**
+ * Remove report sentences that still carry a placeholder, so an empty or
+ * partial form never shows a conclusion like "ICA: -- stenosis ()." or
+ * "Corpus callosum: --. .". Works line by line: sentences holding "--" or
+ * "?" placeholders are dropped, empty "()" and punctuation-only fragments
+ * are removed, and a line emptied this way disappears (blank separator
+ * lines and section headers stay).
+ */
+export function stripPlaceholders(text) {
+  if (!text) return text;
+  const out = [];
+  for (const line of text.split('\n')) {
+    if (!line.trim()) { out.push(line); continue; }
+    const sentences = line.split(/(?<=[.!])\s+/);
+    const kept = sentences
+      .filter((s) => !PLACEHOLDER_RE.test(s))
+      .map((s) => s.replace(/\s*\(\s*\)/g, ''))
+      .filter((s) => /[A-Za-z0-9]/.test(s));
+    if (!kept.length) continue;
+    out.push(kept.join(' '));
+  }
+  // Collapse runs of blank lines left behind and trim the end.
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').replace(/\s+$/, '');
+}

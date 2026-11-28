@@ -7,7 +7,7 @@ const FINDINGS_BLOCKS = [
   { id: 'rightPct', label: 'Right', template: 'Right: {{rightPct}}%', enabled: true, condition: 'rightProvided' },
   { id: 'leftPct', label: 'Left', template: 'Left: {{leftPct}}%', enabled: true, condition: 'leftProvided' },
   { id: 'coxaValga', label: 'Coxa Valga', template: '{{coxaValgaLabel}}', enabled: true, condition: 'coxaValgaProvided' },
-  { id: 'normal', label: 'Normal Pelvis', template: 'Remaining portions of the osseous pelvis are normal. There is no visible fracture or soft tissue abnormality.', enabled: true },
+  { id: 'normal', label: 'Normal Pelvis', template: 'Remaining portions of the osseous pelvis are normal. There is no visible fracture or soft tissue abnormality.', enabled: true, condition: 'anyProvided' },
 ];
 
 function buildTemplateSet(blocks, headers, impression) {

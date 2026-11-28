@@ -64,6 +64,7 @@ export function calculateLegLength(formState) {
     leftAlignmentProvided: !!leftAlignment,
     physesLabel: PHYSES_LABELS[physes] || '',
     physesProvided: !!physes,
+    anyProvided: hasRight || hasLeft || !!rightAlignment || !!leftAlignment || !!physes,
   };
 }
 
@@ -108,5 +109,10 @@ export function calculateSegmental(formState) {
     leftAlignmentProvided: !!formState.leftAlignment,
     physesLabel: PHYSES_LABELS[formState.physes] || '',
     physesProvided: !!formState.physes,
+    // Which leg is longer, by total (femur + tibia) length.
+    discrepancyLabel: totalDisc.label,
+    hasAnySegment: hasRF || hasLF || hasRT || hasLT,
+    anyProvided: hasRF || hasLF || hasRT || hasLT
+      || !!formState.rightAlignment || !!formState.leftAlignment || !!formState.physes,
   };
 }

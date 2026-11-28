@@ -225,7 +225,8 @@ function init() {
       return data;
     });
 
-    const summaryLines = allData.map((d) => {
+    // No impression line for a nodule until it has a category.
+    const summaryLines = allData.filter((d) => d.categoryFullLabel && !/--/.test(d.categoryFullLabel)).map((d) => {
       const loc = d.locationProvided ? `${d.location} ` : '';
       const size = d.sizeProvided ? `${d.sizeMm} mm ` : '';
       return `${d.noduleLabel}: ${loc}${size}${d.noduleTypeLabel} nodule. ${d.categoryFullLabel}. ${d.management}`;

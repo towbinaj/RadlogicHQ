@@ -11,7 +11,7 @@ function bts(blocks, headers, impression) {
 
 const SH = { findings: 'FINDINGS:', additionalFindings: 'Other findings:', impression: 'IMPRESSION:' };
 const RH = { findings: '[STRUCTURED REPORT]', additionalFindings: '[OTHER FINDINGS]', impression: '[IMPRESSION]' };
-const IMP = 'Fetal brain biometry as above.';
+const IMP = '{{#if anyMeasurement}}Fetal brain biometry as above.{{/if}}';
 
 export const fetalBiometryTemplates = {
   ps360: { label: 'PowerScribe 360', ...bts(FINDINGS_BLOCKS, SH, IMP) },
