@@ -216,9 +216,9 @@ function init() {
     );
 
     const sizeCm = nodule.formState['nodule-size'] ?? null;
-    const tiradsResult = calculateTirads(totalScore, sizeCm, getMissingFeatures(nodule.formState));
+    const tiradsResult = calculateTirads(totalScore, sizeCm, getMissingFeatures(nodule.formState), nodule.formState);
 
-    scoreDisplay.textContent = totalScore;
+    scoreDisplay.textContent = tiradsResult.totalScore;
     levelDisplay.textContent = tiradsResult.tiradsFullLabel;
     levelDisplay.dataset.level = tiradsResult.tiradsLevel;
 
@@ -233,7 +233,7 @@ function init() {
         nodule.formState
       );
       const sizeCm = nodule.formState['nodule-size'] ?? null;
-      const tiradsResult = calculateTirads(totalScore, sizeCm, getMissingFeatures(nodule.formState));
+      const tiradsResult = calculateTirads(totalScore, sizeCm, getMissingFeatures(nodule.formState), nodule.formState);
 
       const templateData = buildTemplateData(
         tiradsDefinition,

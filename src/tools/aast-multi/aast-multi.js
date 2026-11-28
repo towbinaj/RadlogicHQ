@@ -146,7 +146,7 @@ function init() {
     multiLabel.className = 'aast-multi-check';
     multiLabel.innerHTML = `
       <input type="checkbox" ${os.formState.multipleInjuries ? 'checked' : ''}>
-      Multiple Grade I/II injuries present (advances to Grade III)
+      Multiple injuries present (advance one grade, up to Grade III)
     `;
     multiLabel.querySelector('input').addEventListener('change', (e) => {
       os.formState.multipleInjuries = e.target.checked;
@@ -284,6 +284,7 @@ function init() {
       if (matched.length > 0) {
         os.enabled = true;
         Object.assign(os.formState, parsed);
+        os.formState.selectedFindings = new Set(parsed.selectedFindings || []);
         totalMatched += matched.length;
         remainder = rem || '';
       }

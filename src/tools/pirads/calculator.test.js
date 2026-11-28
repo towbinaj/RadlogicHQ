@@ -99,11 +99,11 @@ describe('calculatePirads — TZ (T2-dominant)', () => {
     expect(r.categoryShort).toBe(3);
   });
 
-  it('T2 2 + DWI 5 does NOT upgrade (rule only applies to T2 3)', () => {
+  it('T2 2 + DWI 5 upgrades to 3 (v2.1 TZ rule; v2 did not)', () => {
     const r = calculatePirads({
       location: 'tz', t2Score: '2', dwiScore: '5',
     });
-    expect(r.categoryShort).toBe(2);
+    expect(r.categoryShort).toBe(3);
   });
 });
 
@@ -130,5 +130,15 @@ describe('calculatePirads — metadata', () => {
     expect(r.t2Label).toBe('Not assessed');
     expect(r.dceLabel).toBe('Not assessed');
     expect(r.epeLabel).toBe('Not assessed');
+  });
+});
+
+// --- Audit fix: PI-RADS v2.1 TZ rule T2 2 + DWI >=4 -> 3 (Turkbey 2019) ---
+describe('calculatePirads — TZ v2.1 upgrade of T2 score 2', () => {
+  it.each([
+    ['4', '3'], ['5', '3'], ['3', '2'], ['1', '2'],
+  ])('TZ T2 2 + DWI %s -> PI-RADS %s', (dwi, expected) => {
+    const r = calculatePirads({ location: 'tz', t2Score: '2', dwiScore: dwi });
+    expect(String(r.category)).toContain(expected);
   });
 });

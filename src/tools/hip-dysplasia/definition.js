@@ -17,7 +17,7 @@ export const hipDysplasiaDefinition = {
     { id: 'Ia', label: 'Type Ia — Mature', image: '/images/hip-dysplasia/graf-ia.svg', description: 'Alpha ≥60\u00b0, beta <55\u00b0. Normal hip.' },
     { id: 'Ib', label: 'Type Ib — Mature', image: '/images/hip-dysplasia/graf-ib.svg', description: 'Alpha ≥60\u00b0, beta 55\u00b0-77\u00b0. Normal hip, broad cartilaginous roof.' },
     { id: 'IIa-plus', label: 'Type IIa+ — Immature (age-appropriate)', image: '/images/hip-dysplasia/graf-iia-plus.svg', description: 'Alpha 50\u00b0-59\u00b0, age <3 months. Physiologic immaturity, follow-up.' },
-    { id: 'IIa-minus', image: '/images/hip-dysplasia/graf-iia-minus.svg', label: 'Type IIa\u2212 — Immature (delayed)', description: 'Alpha 50\u00b0-59\u00b0, age >3 months. Deficient bony acetabulum.' },
+    { id: 'IIa-minus', image: '/images/hip-dysplasia/graf-iia-minus.svg', label: 'Type IIa\u2212 — Immature (delayed)', description: 'Alpha 50-59 deg, age 6-12 weeks (under 3 months), below the minimum expected for age: maturity deficit.' },
     { id: 'IIb', label: 'Type IIb — Deficient', image: '/images/hip-dysplasia/graf-iib.svg', description: 'Alpha 50\u00b0-59\u00b0, age >3 months. Ossification deficit, needs treatment.' },
     { id: 'IIc', label: 'Type IIc — Critical', image: '/images/hip-dysplasia/graf-iic.svg', description: 'Alpha 43\u00b0-49\u00b0, beta <77\u00b0. Critical range, close to subluxation.' },
     { id: 'D', label: 'Type D — Decentering', image: '/images/hip-dysplasia/graf-d.svg', description: 'Alpha 43\u00b0-49\u00b0, beta >77\u00b0. Femoral head decentering.' },

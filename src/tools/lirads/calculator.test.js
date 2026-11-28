@@ -65,8 +65,18 @@ describe('calculateLirads — APHE+ table boundaries', () => {
     expect(r.category).toBe('LR-3');
   });
 
-  it('10-19 mm + APHE + 1 feature → LR-4', () => {
+  it('10-19 mm + APHE + washout only → LR-5 (v2018)', () => {
     const r = calculateLirads({ size: 15, aphe: 'yes', washout: 'yes' });
+    expect(r.category).toBe('LR-5');
+  });
+
+  it('10-19 mm + APHE + threshold growth only → LR-5 (v2018)', () => {
+    const r = calculateLirads({ size: 15, aphe: 'yes', thresholdGrowth: 'yes' });
+    expect(r.category).toBe('LR-5');
+  });
+
+  it('10-19 mm + APHE + capsule only → LR-4 (v2018)', () => {
+    const r = calculateLirads({ size: 15, aphe: 'yes', capsule: 'yes' });
     expect(r.category).toBe('LR-4');
   });
 
@@ -98,9 +108,14 @@ describe('calculateLirads — APHE+ table boundaries', () => {
 });
 
 describe('calculateLirads — APHE- table boundaries', () => {
-  it('<10 mm + no APHE + 0 features → LR-2', () => {
+  it('<10 mm + no APHE + 0 features → LR-3 (no separate <10 mm row without APHE)', () => {
     const r = calculateLirads({ size: 8 });
-    expect(r.category).toBe('LR-2');
+    expect(r.category).toBe('LR-3');
+  });
+
+  it('<10 mm + no APHE + 2 features → LR-4', () => {
+    const r = calculateLirads({ size: 5, washout: 'yes', capsule: 'yes' });
+    expect(r.category).toBe('LR-4');
   });
 
   it('10 mm + no APHE + 0 features → LR-3', () => {
@@ -143,7 +158,7 @@ describe('calculateLirads — ancillary feature adjustment', () => {
 
   it('ancillary cannot upgrade to LR-5 (capped at LR-4)', () => {
     const r = calculateLirads({
-      size: 15, aphe: 'yes', washout: 'yes',  // base LR-4
+      size: 15, aphe: 'yes', capsule: 'yes',  // base LR-4
       anc_hcc_something: true,
     });
     // Would be LR-5 via upgrade, but ancillary can't reach LR-5.
@@ -188,5 +203,17 @@ describe('calculateLirads — feature summary + metadata', () => {
     expect(r.reason).toContain('15 mm');
     expect(r.reason).toContain('APHE+');
     expect(r.reason).toContain('1 additional feature');
+  });
+});
+
+// --- Audit fix: v2018 ancillary feature lists ---
+describe('LI-RADS ancillary lists match v2018', () => {
+  it('benign list has no fat-in-mass (it favors HCC) and no homogeneous signal (not a v2018 feature)', async () => {
+    const { liradsDefinition } = await import('./definition.js');
+    const benign = liradsDefinition.ancillaryFeatures.favoringBenign.map((f) => f.id);
+    expect(benign).not.toContain('fatInMass');
+    expect(benign).not.toContain('homogeneousSignal');
+    const hcc = liradsDefinition.ancillaryFeatures.favoringHCC.map((f) => f.label.toLowerCase()).join(' ');
+    expect(hcc).toMatch(/fat in mass/);
   });
 });

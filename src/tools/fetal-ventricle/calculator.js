@@ -16,9 +16,9 @@
 function categorize(w) {
   if (w == null || w < 0) return { category: '', categoryLabel: '', level: 0 };
   if (w < 10) return { category: 'Normal', categoryLabel: 'Normal (<10 mm)', level: 1 };
-  if (w < 12) return { category: 'Mild ventriculomegaly', categoryLabel: 'Mild (10\u201312 mm)', level: 2 };
-  if (w < 15) return { category: 'Moderate ventriculomegaly', categoryLabel: 'Moderate (12\u201315 mm)', level: 3 };
-  return { category: 'Severe ventriculomegaly', categoryLabel: 'Severe (\u226515 mm)', level: 5 };
+  if (w <= 12) return { category: 'Mild ventriculomegaly', categoryLabel: 'Mild (10-12 mm)', level: 2 };
+  if (w < 15) return { category: 'Moderate ventriculomegaly', categoryLabel: 'Moderate (12.1-14.9 mm)', level: 3 };
+  return { category: 'Severe ventriculomegaly', categoryLabel: 'Severe (>=15 mm)', level: 5 };
 }
 
 export function calculateFetalVentricle(formState) {

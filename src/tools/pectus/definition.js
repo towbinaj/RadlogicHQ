@@ -2,7 +2,8 @@
  * Pectus Excavatum Measurements — definition.
  *
  * Five indices:
- *   PI (Pectus/Haller Index): width / depth. Abnormal >3.25.
+ *   PI (Pectus/Haller Index): width / depth. Normal <2.5, mild to moderate
+ *   2.5-3.25, severe >3.25.
  *   CI (Correction Index): (depthA - depthB) / depthA * 100%. Abnormal >10%.
  *   DI (Depression Index): depression depth / vertebral body width. Abnormal >0.2.
  *   mCCI (Modified Cardiac Compression Index): H / M. Dictate as fraction.

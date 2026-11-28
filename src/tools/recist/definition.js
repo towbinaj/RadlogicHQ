@@ -13,6 +13,7 @@ export const recistDefinition = {
   cdeSetId: null,
 
   nonTargetOptions: [
+    { id: 'none', label: 'None at baseline', tooltip: 'No non-target lesions were recorded at baseline' },
     { id: 'absent', label: 'Absent (CR)', tooltip: 'All non-target lesions have disappeared' },
     { id: 'present', label: 'Present (non-CR/non-PD)', tooltip: 'Persistence of one or more non-target lesions' },
     { id: 'progression', label: 'Unequivocal Progression', tooltip: 'Unequivocal progression of existing non-target lesions' },

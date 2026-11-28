@@ -8,9 +8,15 @@ export function calculateAgatston(formState) {
   const { score } = formState;
 
   const hasScore = score != null && score >= 0;
-  const cat = hasScore ? agatstonDefinition.riskCategories.find((c) => score >= c.min && score <= c.max) : null;
+  // Categories are integer ranges (0, 1-10, 11-99, ...); decimal scores such
+  // as 10.5 fall between them. Use the upper bounds: the first band whose max
+  // is not exceeded (so 10.5 > 10 -> 11-99; any score above 0 is at least 1-10).
+  const cats = agatstonDefinition.riskCategories;
+  const cat = !hasScore ? null
+    : score === 0 ? cats[0]
+    : cats.find((c) => c.min > 0 && score <= c.max) || cats[cats.length - 1];
 
-  const level = !cat ? 0 : score === 0 ? 1 : score <= 10 ? 1 : score <= 99 ? 2 : score <= 299 ? 3 : 5;
+  const level = cat ? cat.level : 0;
 
   return {
     score: hasScore ? score : null,
@@ -22,5 +28,8 @@ export function calculateAgatston(formState) {
     recommendation: cat?.recommendation || '',
     recommendationProvided: !!cat?.recommendation,
     level,
+    impressionText: cat
+      ? `Agatston score ${score} (${cat.label}). ${cat.risk} cardiovascular risk.`
+      : 'Not yet scored.',
   };
 }

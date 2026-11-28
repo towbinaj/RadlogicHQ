@@ -50,9 +50,15 @@ export function calculateAdrenalWashout(formState) {
   let interpretation = '';
   let interpretationLevel = 0;
 
+  // Washout is only meaningful for an enhancing lesion.
+  const nonEnhancing = hasUnenh && hasEnh && enhanced <= unenhanced;
+
   if (lipidRich) {
-    interpretation = 'Lipid-rich adenoma (unenhanced ≤10 HU)';
+    interpretation = 'Lipid-rich adenoma (unenhanced <=10 HU)';
     interpretationLevel = 1;
+  } else if (nonEnhancing) {
+    interpretation = 'Washout not applicable: no enhancement (enhanced attenuation not above unenhanced)';
+    interpretationLevel = 3;
   } else if (absoluteWashout != null) {
     if (absoluteWashout >= 60) {
       interpretation = 'Consistent with adenoma (absolute washout ≥60%)';

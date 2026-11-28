@@ -58,7 +58,7 @@ function init() {
         <tbody>
           ${agatstonDefinition.riskCategories.map((c) => `
             <tr style="border-top:1px solid var(--border);">
-              <td style="padding:4px;">${c.min}${c.max === Infinity ? '+' : '–' + c.max}</td>
+              <td style="padding:4px;">${c.min === c.max ? c.min : c.min + (c.max === Infinity ? '+' : '-' + c.max)}</td>
               <td style="padding:4px;">${c.label}</td>
               <td style="padding:4px;">${c.risk}</td>
             </tr>

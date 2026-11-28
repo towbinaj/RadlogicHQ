@@ -4,7 +4,9 @@
  *
  * Rules:
  *   1. Grade = highest grade among all selected findings.
- *   2. Multiple Grade I/II injuries → advance to Grade III, unless the
+ *   2. Multiple Grade I/II injuries → advance one grade, up to Grade III
+ *      (Kozar 2018: "advance one grade for multiple injuries up to grade
+ *      III"), unless the
  *      definition sets advanceMultipleInjuries: false (2024 pancreas and
  *      2025 kidney scales do not advance).
  *   3. definition.escalations: [{ allOf, anyOf, grade }] raise the grade when
@@ -56,7 +58,7 @@ export function calculateAast(formState, definition) {
 
   // Multiple Grade I/II injuries → advance to III
   if (multipleInjuries && maxGrade <= 2 && maxGrade > 0) {
-    maxGrade = 3;
+    maxGrade += 1;
   }
 
   // Combination rules (never lower the grade)

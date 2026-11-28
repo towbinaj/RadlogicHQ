@@ -338,15 +338,15 @@ function init() {
       matchedFieldCount = segments.reduce((n, s) => n + s.matched.length, 0);
 
       // Study-level fields (nonTarget, newLesion, clinicalStatus,
-      // steroidDose) can appear anywhere -- pull from first source that
+      // steroids) can appear anywhere -- pull from first source that
       // has them.
-      for (const key of ['nonTarget', 'newLesion', 'clinicalStatus', 'steroidDose']) {
+      for (const key of ['nonTarget', 'newLesion', 'clinicalStatus', 'steroids']) {
         for (const src of [...segments.map((s) => s.formState), ungrouped.formState]) {
           if (src && src[key]) { formState[key] = src[key]; break; }
         }
       }
     } else if (ungrouped.formState && Object.keys(ungrouped.formState).length > 0) {
-      for (const key of ['nonTarget', 'newLesion', 'clinicalStatus', 'steroidDose']) {
+      for (const key of ['nonTarget', 'newLesion', 'clinicalStatus', 'steroids']) {
         if (ungrouped.formState[key]) formState[key] = ungrouped.formState[key];
       }
       if (ungrouped.formState.dimensions || ungrouped.formState.size != null || ungrouped.formState.location) {

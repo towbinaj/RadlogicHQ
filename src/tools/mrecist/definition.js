@@ -15,6 +15,7 @@ export const mrecistDefinition = {
   name: 'mRECIST',
 
   nonTargetOptions: [
+    { id: 'none', label: 'None at baseline' },
     { id: 'absent', label: 'Absent (CR)' },
     { id: 'present', label: 'Present (non-CR/non-PD)' },
     { id: 'progression', label: 'Unequivocal progression' },

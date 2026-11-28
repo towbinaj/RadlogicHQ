@@ -135,3 +135,22 @@ describe('calculateAdrenalWashout — edge cases', () => {
     expect(r.interpretationLevel).toBe(1);
   });
 });
+
+// --- Audit fix: washout requires an enhancing lesion ---
+describe('calculateAdrenalWashout — non-enhancing lesions', () => {
+  it('enhanced HU below unenhanced: no adenoma call', () => {
+    const r = calculateAdrenalWashout({ unenhanced: 40, enhanced: 30, delayed: 50 });
+    expect(r.interpretation).not.toMatch(/adenoma/i);
+    expect(r.interpretation).toMatch(/not applicable/i);
+  });
+
+  it('enhanced equal to unenhanced: no adenoma call from relative washout', () => {
+    const r = calculateAdrenalWashout({ unenhanced: 30, enhanced: 30, delayed: 10 });
+    expect(r.interpretation).not.toMatch(/consistent with adenoma/i);
+  });
+
+  it('enhancing lesion still evaluated normally', () => {
+    const r = calculateAdrenalWashout({ unenhanced: 30, enhanced: 100, delayed: 50 });
+    expect(r.interpretation).toMatch(/consistent with adenoma/i);
+  });
+});

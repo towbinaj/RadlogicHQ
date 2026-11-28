@@ -13,8 +13,8 @@ export const hydronephrosisDefinition = {
   utdPostnatal: [
     { id: 'normal', label: 'Normal', description: 'APRPD <10 mm, no calyceal dilation', management: 'No follow-up needed' },
     { id: 'P1', label: 'UTD P1 (Mild)', description: 'APRPD 10–<15 mm and/or central calyceal dilation only', management: 'Follow-up ultrasound' },
-    { id: 'P2', label: 'UTD P2 (Moderate)', description: 'APRPD ≥15 mm or peripheral calyceal dilation', management: 'Follow-up ultrasound; consider further evaluation' },
-    { id: 'P3', label: 'UTD P3 (Severe)', description: 'Any APRPD with ureteral dilation, abnormal parenchyma, cysts, or bladder abnormalities', management: 'Further evaluation recommended' },
+    { id: 'P2', label: 'UTD P2 (Moderate)', description: 'APRPD >=15 mm, peripheral calyceal dilation, and/or abnormal (dilated) ureter', management: 'Follow-up ultrasound; consider further evaluation' },
+    { id: 'P3', label: 'UTD P3 (Severe)', description: 'Abnormal parenchymal thickness or appearance, or bladder abnormality (with any of the P2 features)', management: 'Further evaluation recommended' },
   ],
 
   utdAntenatal: [

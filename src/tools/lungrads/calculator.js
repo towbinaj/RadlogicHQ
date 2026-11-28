@@ -29,7 +29,9 @@
  *   <30mm → 2
  *   ≥30mm → 3
  *
- * Growth → upgrade (new solid = 4A, growing = upgrade by 1)
+ * New / growing: v2022 table (solid new 4-<6 = 3, 6-<8 = 4A, >=8 = 4B;
+ *   solid growing <8 = 4A, >=8 = 4B; part-solid new/growing <6 total = 3,
+ *   solid component <4 = 4A, >=4 = 4B; GGN <30 stays 2)
  * Additional suspicious features → append X
  */
 
@@ -68,22 +70,36 @@ export function calculateLungrads(formState) {
     if (sizeMm < 6) {
       category = '2';
     } else {
-      const ss = solidSizeMm ?? 0;
+      // A part-solid nodule >=6 mm cannot be categorized without its solid
+      // component size (do not silently treat a missing value as 0 mm).
+      if (solidSizeMm == null) return buildResult(null, formState, 'Enter solid component size');
+      const ss = solidSizeMm;
       if (ss < 6) category = '3';
       else if (ss < 8) category = '4A';
       else category = '4B';
     }
   }
 
-  // Growth adjustments
-  if (priorComparison === 'new' && noduleType === 'solid') {
-    if (sizeMm >= 4 && category === '2') category = '3';
-    if (sizeMm >= 6) category = '4A';
-  }
-  if (priorComparison === 'growing') {
-    if (category === '2') category = '3';
-    else if (category === '3') category = '4A';
-    else if (category === '4A') category = '4B';
+  // New / growing nodules: ACR Lung-RADS v2022 table (growth = >1.5 mm
+  // increase in mean diameter within 12 months). These replace the
+  // baseline category rather than stepping it up.
+  const newOrGrowing = priorComparison === 'new' || priorComparison === 'growing';
+  if (noduleType === 'solid' && newOrGrowing) {
+    if (priorComparison === 'new') {
+      if (sizeMm < 4) category = '2';
+      else if (sizeMm < 6) category = '3';
+      else if (sizeMm < 8) category = '4A';
+      else category = '4B';
+    } else {
+      category = sizeMm < 8 ? '4A' : '4B';
+    }
+  } else if (noduleType === 'partSolid' && newOrGrowing) {
+    if (sizeMm < 6) category = '3';
+    else if (solidSizeMm < 4) category = '4A';
+    else category = '4B';
+  } else if (noduleType === 'groundGlass' && newOrGrowing) {
+    // GGN: <30 mm is category 2 even if new or growing; >=30 mm new is 3.
+    category = sizeMm < 30 ? '2' : '3';
   }
 
   // Suspicious features → append X

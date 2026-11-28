@@ -6,59 +6,29 @@
  * The 5 sections are: Caudate (C), Right Posterior (RP), Right Anterior (RA),
  * Left Medial (LM), Left Lateral (LL).
  *
- * Grouping logic from the PRETEXT lookup table:
- *   Group 1: Tumor confined to 1 section, 3+ contiguous sections free
- *   Group 2: Tumor in 1-2 sections, 2 contiguous sections free
- *   Group 3: Tumor in 2-3 sections, only 1 contiguous section free
- *   Group 4: Tumor in all sections, no section free
+ * Group = 4 minus the largest run of contiguous tumor-free sections
+ * (RP, RA, LM, LL); caudate involvement -> at least Group II.
  */
 
-// Complete lookup table from the Excel reference.
-// Key = sorted involved section IDs joined by comma.
-// Value = PRETEXT group.
-const GROUP_TABLE = {
-  // Group 1 — single section, favorable location
-  'rightPosterior': 1,
-  'leftLateral': 1,
+// PRETEXT group (Towbin AJ et al., Pediatr Radiol 2018; PRETEXT 2017):
+// 4 minus the largest number of contiguous tumor-free sections, with the
+// four sections in anatomic order RP - RA - LM - LL. Caudate involvement
+// makes the tumor at least PRETEXT II. Computed rather than looked up: the
+// previous hand-written table had two wrong entries (RP+LM, C+RP+LL) and
+// duplicate keys.
+const LINEAR_SECTIONS = ['rightPosterior', 'rightAnterior', 'leftMedial', 'leftLateral'];
 
-  // Group 2
-  'caudate': 2,
-  'rightAnterior': 2,
-  'leftMedial': 2,
-  'caudate,rightPosterior': 2,
-  'caudate,leftLateral': 2,
-  'caudate,rightAnterior': 2,
-  'caudate,leftMedial': 2,
-  'rightPosterior,rightAnterior': 2,
-  'leftMedial,leftLateral': 2,
-  'caudate,rightPosterior,rightAnterior': 2,
-  'caudate,leftMedial,leftLateral': 2,
-  'rightPosterior,leftLateral': 2,
-  'rightAnterior,leftLateral': 2,
-  'rightPosterior,leftMedial': 2,
-
-  // Group 3
-  'rightAnterior,leftMedial': 3,
-  'rightAnterior,leftLateral': 3,
-  'rightPosterior,rightAnterior,leftMedial': 3,
-  'rightPosterior,rightAnterior,leftLateral': 3,
-  'rightPosterior,leftMedial,leftLateral': 3,
-  'rightAnterior,leftMedial,leftLateral': 3,
-  'caudate,rightAnterior,leftMedial': 3,
-  'caudate,rightAnterior,leftLateral': 3,
-  'caudate,rightPosterior,leftMedial': 3,
-  'caudate,rightPosterior,leftLateral': 3,
-  'caudate,leftMedial,rightAnterior': 3,
-  'caudate,rightPosterior,rightAnterior,leftLateral': 3,
-  'caudate,rightPosterior,rightAnterior,leftMedial': 3,
-  'caudate,rightPosterior,leftMedial,leftLateral': 3,
-  'caudate,rightAnterior,leftMedial,leftLateral': 3,
-  'rightPosterior,rightAnterior,leftMedial,leftLateral': 3,
-
-  // Group 4
-  'caudate,rightPosterior,rightAnterior,leftMedial,leftLateral': 4,
-  'rightPosterior,rightAnterior,leftMedial,leftLateral': 4,
-};
+export function pretextGroup(involved) {
+  let best = 0;
+  let run = 0;
+  for (const s of LINEAR_SECTIONS) {
+    run = involved.includes(s) ? 0 : run + 1;
+    best = Math.max(best, run);
+  }
+  let group = 4 - best;
+  if (involved.includes('caudate')) group = Math.max(group, 2);
+  return group;
+}
 
 // Canonical section order for consistent key generation
 const SECTION_ORDER = ['caudate', 'rightPosterior', 'rightAnterior', 'leftMedial', 'leftLateral'];
@@ -83,17 +53,7 @@ export function calculatePretext(formState) {
     return buildResult(null, formState, 'Select involved liver sections');
   }
 
-  // Look up group from table
-  const key = involved.join(',');
-  let group = GROUP_TABLE[key];
-
-  // Fallback: if exact combo not found, estimate by count
-  if (group == null) {
-    if (involvedCount === 1) group = 2;
-    else if (involvedCount === 2) group = 3;
-    else if (involvedCount === 3) group = 3;
-    else if (involvedCount >= 4) group = 4;
-  }
+  const group = pretextGroup(involved);
 
   const sectionLabels = involved.map((s) => {
     const map = { caudate: 'C', rightPosterior: 'RP', rightAnterior: 'RA', leftMedial: 'LM', leftLateral: 'LL' };

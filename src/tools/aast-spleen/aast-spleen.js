@@ -75,7 +75,7 @@ function init() {
     multiCard.innerHTML = `
       <label class="aast-multi-check">
         <input type="checkbox" id="multi-injuries" ${formState.multipleInjuries ? 'checked' : ''}>
-        Multiple Grade I/II injuries present (advances to Grade III)
+        Multiple injuries present (advance one grade, up to Grade III)
       </label>
     `;
     multiCard.querySelector('#multi-injuries').addEventListener('change', (e) => {
@@ -132,6 +132,8 @@ function init() {
     if (!text) return;
     const { formState: parsed, matched, unmatched, remainder } = parseFindings(text, aastSpleenDefinition);
     Object.assign(formState, parsed);
+    // parseFindings returns multi-select findings as an array; the UI uses a Set.
+    formState.selectedFindings = new Set(parsed.selectedFindings || []);
     additionalFindingsEl.value = remainder || '';
     studyAdditionalFindings = additionalFindingsEl.value;
     buildUI();

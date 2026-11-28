@@ -56,6 +56,7 @@ export const rapnoDefinition = {
   name: 'RAPNO',
 
   nonTargetOptions: [
+    { id: 'none', label: 'None at baseline' },
     { id: 'absent', label: 'Absent (CR)' },
     { id: 'present', label: 'Present (non-CR/non-PD)' },
     { id: 'progression', label: 'Unequivocal progression' },
@@ -140,7 +141,7 @@ export const rapnoDefinition = {
         'worsened': ['clinically worsened', 'neurologically worsened', 'clinical decline'],
       },
     },
-    steroidDose: {
+    steroids: {
       options: {
         'stable-decreased': ['stable steroids', 'decreased steroids', 'reduced steroids', 'steroid taper', 'off steroids'],
         'increased': ['increased steroids', 'steroid increase', 'escalated steroids'],

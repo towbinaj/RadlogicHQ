@@ -121,12 +121,18 @@ export function getManagement(tiradsLevel, sizeCm) {
  * Run the full TI-RADS calculation.
  * @param {number} totalScore - Sum from engine.calculateScore()
  * @param {number|null} sizeCm - Nodule size from form
+ * @param {Object} [formState] - Nodule selections (used for the spongiform rule)
  * @param {string[]} [missing] - Required features not yet selected
  *   (from getMissingFeatures). When non-empty, no level or management
  *   recommendation is assigned.
  * @returns {Object} Result object with all fields needed for report templates
  */
-export function calculateTirads(totalScore, sizeCm, missing = []) {
+export function calculateTirads(totalScore, sizeCm, missing = [], formState = {}) {
+  // ACR TI-RADS chart: spongiform -- "do not add further points for other
+  // categories". A spongiform nodule totals 0 points (TR1) whatever else is
+  // selected.
+  if (formState.composition === 'spongiform') totalScore = 0;
+
   if (missing.length > 0) {
     return {
       totalScore,

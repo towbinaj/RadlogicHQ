@@ -22,8 +22,10 @@ const TABLE_WITH_APHE = [
   ['LR-4', 'LR-5', 'LR-5'],  // ≥20mm
 ];
 
+// v2018 CT/MRI diagnostic table: without APHE there is no separate <10 mm
+// row (<20 mm: 0-1 features LR-3, >=2 LR-4).
 const TABLE_NO_APHE = [
-  ['LR-2', 'LR-3', 'LR-3'],  // <10mm (note: <10mm with no APHE and 0 features = LR-2)
+  ['LR-3', 'LR-3', 'LR-4'],  // <10mm
   ['LR-3', 'LR-3', 'LR-4'],  // 10-19mm
   ['LR-3', 'LR-4', 'LR-4'],  // ≥20mm
 ];
@@ -72,6 +74,13 @@ export function calculateLirads(formState) {
   const table = hasAPHE ? TABLE_WITH_APHE : TABLE_NO_APHE;
   const featureCol = Math.min(additionalCount, 2);
   let category = table[sizeGroup][featureCol];
+
+  // v2018 footnote: 10-19 mm with nonrim APHE and exactly one additional
+  // feature is LR-5 if that feature is washout or threshold growth; LR-4
+  // only when it is enhancing capsule.
+  if (hasAPHE && sizeGroup === 1 && additionalCount === 1 && (hasWashout || hasGrowth)) {
+    category = 'LR-5';
+  }
 
   // --- Ancillary feature adjustment ---
   const upgradeCount = countAncillary(formState, 'favoringHCC');

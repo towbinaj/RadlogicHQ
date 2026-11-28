@@ -28,35 +28,45 @@ describe('calculateFetalPF — GA validation', () => {
   });
 });
 
-describe('calculateFetalPF — Vermian height diff', () => {
-  it('exact expected → Within normal range', () => {
-    const expected = expectedVermianHeight(25);
-    const r = calculateFetalPF({ ga: 25, vermianHeight: expected });
-    expect(r.vhInterpretation).toBe('Within normal range');
+// Cignini P et al. PLoS One 2016;11:e0147528, Table 3 (normal-based
+// centiles by completed week, 20-35 weeks).
+describe('calculateFetalPF — vermian height vs Cignini 2016 centiles', () => {
+  it('mean at 21 weeks is within normal range', () => {
+    const r = calculateFetalPF({ ga: 21, vermianHeight: 11.96 });
+    expect(r.vhInterpretation).toMatch(/within normal range/i);
+    expect(r.vhExpected).toBe('11.96 mm');
   });
 
-  it('+3 mm → Within normal range (boundary)', () => {
-    const r = calculateFetalPF({
-      ga: 25, vermianHeight: expectedVermianHeight(25) + 3,
-    });
-    expect(r.vhInterpretation).toBe('Within normal range');
-  });
-
-  it('+4 mm → Above expected', () => {
-    const r = calculateFetalPF({
-      ga: 25, vermianHeight: expectedVermianHeight(25) + 4,
-    });
-    expect(r.vhInterpretation).toBe('Above expected');
-  });
-
-  it('-4 mm → vermian hypoplasia flag (contributes level 3)', () => {
-    const r = calculateFetalPF({
-      ga: 25, vermianHeight: expectedVermianHeight(25) - 4,
-    });
+  it('21 weeks, 9.5 mm (below the 1st centile 10.40) flags hypoplasia', () => {
+    const r = calculateFetalPF({ ga: 21, vermianHeight: 9.5 });
+    expect(r.vhInterpretation).toMatch(/below 1st centile/i);
     expect(r.vhInterpretation).toMatch(/hypoplasia/i);
     expect(r.level).toBeGreaterThanOrEqual(3);
   });
+
+  it('21 weeks, 10.6 mm (between 1st 10.40 and 5th 10.86) is below the 5th centile', () => {
+    const r = calculateFetalPF({ ga: 21, vermianHeight: 10.6 });
+    expect(r.vhInterpretation).toMatch(/below 5th centile/i);
+    expect(r.vhInterpretation).not.toMatch(/1st/);
+  });
+
+  it('30 weeks, 22.0 mm (above 95th 21.65) is above the 95th centile', () => {
+    expect(calculateFetalPF({ ga: 30, vermianHeight: 22.0 }).vhInterpretation).toMatch(/above 95th centile/i);
+  });
+
+  it('uses the completed week (21.6 weeks -> 21-week row)', () => {
+    expect(calculateFetalPF({ ga: 21.6, vermianHeight: 9.5 }).vhInterpretation).toMatch(/below 1st/i);
+  });
+
+  it('outside 20-35 weeks: no interpretation, reference range noted', () => {
+    const r = calculateFetalPF({ ga: 18, vermianHeight: 9 });
+    expect(r.vhInterpretation).toBe('');
+    expect(r.vhExpectedProvided).toBe(false);
+    expect(r.vhNote).toMatch(/20-35 weeks/);
+    expect(calculateFetalPF({ ga: 37, vermianHeight: 22 }).vhInterpretation).toBe('');
+  });
 });
+
 
 describe('calculateFetalPF — TVA categorization', () => {
   it.each([
@@ -92,7 +102,7 @@ describe('calculateFetalPF — Level aggregation', () => {
   it('hypoplasia vermian + normal TVA → level 3', () => {
     const r = calculateFetalPF({
       ga: 25,
-      vermianHeight: expectedVermianHeight(25) - 5,
+      vermianHeight: 12, // below the 25-week 1st centile (12.77)
       tva: 10,
     });
     expect(r.level).toBe(3);

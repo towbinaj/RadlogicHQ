@@ -6,7 +6,7 @@ import { calculateRecist } from './calculator.js';
 
 describe('calculateRecist — target response', () => {
   it('all current = 0 → CR', () => {
-    const r = calculateRecist({}, [
+    const r = calculateRecist({ nonTarget: 'none' }, [
       { label: 'L1', baseline: 20, current: 0 },
       { label: 'L2', baseline: 15, current: 0 },
     ]);
@@ -163,5 +163,46 @@ describe('calculateRecist — incomplete', () => {
     expect(r.baselineSumProvided).toBe(true);
     expect(r.currentSumProvided).toBe(false);
     expect(r.targetResponse).toBe('--');
+  });
+});
+
+// --- Audit fixes (Eisenhauer 2009, RECIST 1.1) ---
+describe('calculateRecist — PD is evaluated before PR', () => {
+  it('shrank 50% then regrew >=20% and >=5 mm from nadir -> PD, not PR', () => {
+    const r = calculateRecist({ nonTarget: 'none' }, [{ label: 'L1', baseline: 100, nadir: 50, current: 65 }]);
+    expect(r.targetResponse).toBe('PD');
+    expect(r.overallResponse).toBe('PD');
+  });
+
+  it('still PR when below -30% from baseline and not progressing from nadir', () => {
+    const r = calculateRecist({ nonTarget: 'none' }, [{ label: 'L1', baseline: 100, nadir: 60, current: 62 }]);
+    expect(r.targetResponse).toBe('PR');
+  });
+
+  it('reappearance after a nadir of 0 is PD', () => {
+    const r = calculateRecist({ nonTarget: 'none' }, [{ label: 'L1', baseline: 20, nadir: 0, current: 6 }]);
+    expect(r.targetResponse).toBe('PD');
+  });
+});
+
+describe('calculateRecist — non-target "not evaluated" vs "none"', () => {
+  it('target CR + non-target not evaluated (unset) -> PR', () => {
+    const r = calculateRecist({}, [{ label: 'L1', baseline: 20, current: 0 }]);
+    expect(r.overallResponse).toBe('PR');
+  });
+
+  it('target CR + no non-target lesions -> CR', () => {
+    const r = calculateRecist({ nonTarget: 'none' }, [{ label: 'L1', baseline: 20, current: 0 }]);
+    expect(r.overallResponse).toBe('CR');
+  });
+});
+
+describe('calculateRecist — partial nadir entries', () => {
+  it('ignores nadir when it is missing for some targets (falls back to baseline)', () => {
+    const r = calculateRecist({ nonTarget: 'none' }, [
+      { label: 'T1', baseline: 50, current: 50 },
+      { label: 'T2', baseline: 50, nadir: 10, current: 52 },
+    ]);
+    expect(r.targetResponse).toBe('SD');
   });
 });

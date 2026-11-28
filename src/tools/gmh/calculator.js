@@ -10,5 +10,9 @@ export function calculateGmh(formState) {
     grade: grade || '--', gradeLabel: info?.label || '--', description: info?.description || '',
     prognosis: info?.prognosis || '', gradeProvided: !!grade, prognosisProvided: !!info?.prognosis,
     sideLabel: sideLabels[side] || '', sideProvided: !!side, level,
+    // Never assert hemorrhage before a grade is chosen.
+    impressionText: info
+      ? `${side ? `${sideLabels[side]} germinal matrix` : 'Germinal matrix'} hemorrhage, ${info.label}.`
+      : 'Not yet graded.',
   };
 }

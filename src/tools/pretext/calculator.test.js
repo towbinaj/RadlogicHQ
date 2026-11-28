@@ -134,3 +134,34 @@ describe('calculatePretext — size metadata', () => {
     expect(r.sizeCm).toBeNull();
   });
 });
+
+// --- Audit fix: PRETEXT group from the contiguous-free-sections rule ---
+// Towbin AJ et al., Pediatr Radiol 2018 (PRETEXT 2017): group = 4 minus the
+// largest number of contiguous tumor-free sections (RP, RA, LM, LL in order);
+// caudate involvement makes the tumor at least PRETEXT II.
+describe('calculatePretext — group from contiguous free sections', () => {
+  const ORDER = ['rightPosterior', 'rightAnterior', 'leftMedial', 'leftLateral'];
+  const expected = (inv) => {
+    let best = 0, run = 0;
+    for (const s of ORDER) { run = inv.includes(s) ? 0 : run + 1; best = Math.max(best, run); }
+    let g = 4 - best;
+    if (inv.includes('caudate')) g = Math.max(g, 2);
+    return g;
+  };
+  const all = ['caudate', ...ORDER];
+  const combos = [];
+  for (let m = 1; m < 32; m++) combos.push(all.filter((_, i) => m & (1 << i)));
+
+  it.each(combos.map((c) => [c.join('+'), c]))('%s', (_, inv) => {
+    const fs = Object.fromEntries(inv.map((s) => [s, 'yes']));
+    expect(calculatePretext(fs).group).toBe(expected(inv));
+  });
+
+  it('RP + LM is PRETEXT III (free RA and LL are not contiguous)', () => {
+    expect(calculatePretext({ rightPosterior: 'yes', leftMedial: 'yes' }).group).toBe(3);
+  });
+
+  it('C + RP + LL is PRETEXT II (RA and LM free and contiguous)', () => {
+    expect(calculatePretext({ caudate: 'yes', rightPosterior: 'yes', leftLateral: 'yes' }).group).toBe(2);
+  });
+});

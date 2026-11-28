@@ -6,6 +6,8 @@
  * G&P-specific and no longer accepts a method parameter.
  */
 
+import { interpretBoneAge } from './brush.js';
+
 export function calculateBoneAge(formState) {
   const { sex, chronoYears, chronoMonths, boneAgeYears, boneAgeMonths } = formState;
 
@@ -19,6 +21,7 @@ export function calculateBoneAge(formState) {
   let difference = null;
   let interpretation = '';
   let level = 0;
+  let brush = interpretBoneAge(sex, null, null);
 
   if (boneAgeYears != null || boneAgeMonths != null) {
     boneAgeTotal = (boneAgeYears || 0) + (boneAgeMonths || 0) / 12;
@@ -27,19 +30,22 @@ export function calculateBoneAge(formState) {
 
   if (hasChrono && boneAgeTotal != null) {
     difference = Math.round((boneAgeTotal - chronoTotal) * 10) / 10;
-    if (Math.abs(difference) <= 1) { interpretation = 'Concordant with chronological age'; level = 1; }
-    else if (difference > 1) { interpretation = `Advanced by approximately ${Math.abs(difference).toFixed(1)} years`; level = 3; }
-    else { interpretation = `Delayed by approximately ${Math.abs(difference).toFixed(1)} years`; level = 3; }
+    // Greulich & Pyle Brush Foundation SD by age and sex (CA +/- 2 SD).
+    brush = interpretBoneAge(sex, chronoTotal * 12, boneAgeTotal * 12);
+    interpretation = brush.interpretation;
+    level = brush.level;
   }
 
   return {
-    methodLabel: 'Greulich & Pyle',
+    methodLabel: 'Greulich and Pyle',
     sexLabel: sexLabels[sex] || '', sexProvided: !!sex,
     chronoLabel, chronoProvided: hasChrono,
     boneAgeLabel, boneAgeProvided: boneAgeTotal != null,
     difference, differenceLabel: difference != null ? `${difference >= 0 ? '+' : ''}${difference.toFixed(1)} years` : '--',
     differenceProvided: difference != null,
     interpretation, interpretationProvided: !!interpretation, level,
+    zLabel: brush.zLabel, normalRangeLabel: brush.normalRangeLabel, normalRangeProvided: !!brush.normalRangeLabel,
+    sdLabel: brush.sdLabel, interpretationNote: brush.note, interpretationNoteProvided: !!brush.note,
   };
 }
 

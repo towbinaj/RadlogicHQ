@@ -57,8 +57,8 @@ export const bosniakDefinition = {
     label: 'Septa',
     options: [
       { id: 'none', label: 'No Septa', tooltip: 'No internal septation' },
-      { id: 'thinSmooth', label: 'Thin and Smooth (1-2)', tooltip: 'One to two thin (≤2 mm) smooth septa' },
-      { id: 'thinSmoothMany', label: 'Thin and Smooth (≥3)', tooltip: 'Three or more thin (≤2 mm) smooth septa' },
+      { id: 'thinSmooth', label: 'Thin and Smooth, few (1-3)', tooltip: 'Few (1-3) thin (<=2 mm) smooth septa (class II)' },
+      { id: 'thinSmoothMany', label: 'Thin and Smooth, many (>=4)', tooltip: 'Many (>=4) thin (<=2 mm) smooth septa (class IIF)' },
       { id: 'minThickSmooth', label: 'Minimally Thickened Smooth', tooltip: 'Smooth minimally thickened (3 mm) enhancing septa' },
       { id: 'thickIrregular', label: 'Thickened or Irregular', tooltip: 'Thickened (≥4 mm) or irregular enhancing septum(s) with measurable enhancement' },
     ],
@@ -79,7 +79,7 @@ export const bosniakDefinition = {
   calcification: {
     id: 'calcification',
     label: 'Calcification',
-    tooltip: 'Calcification does not change Bosniak class in v2019; it is noted but not a classifying feature',
+    tooltip: 'Any calcification excludes class I (a simple cyst has none); otherwise calcification does not raise the class in v2019',
     options: [
       { id: 'none', label: 'None' },
       { id: 'thin', label: 'Thin / Fine' },

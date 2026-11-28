@@ -5,26 +5,32 @@ import { calculatePectus } from './calculator.js';
 // See docs/test.md section 9.
 
 describe('calculatePectus — Pectus (Haller) Index', () => {
-  it('width/depth ratio → Haller index', () => {
+  // Three bands (clinical sign-off): normal <2.5, mild to moderate 2.5-3.25,
+  // severe >3.25. Previously anything <=3.25 was labelled 'Normal'.
+  it('width/depth ratio -> Haller index', () => {
     const r = calculatePectus({ piWidth: 260, piDepth: 80 });
     expect(r.pi).toBe(3.25);
     expect(r.piLabel).toBe('3.25');
-    expect(r.piAbnormal).toBe(false);
-    expect(r.piInterpretation).toMatch(/Normal/);
   });
 
-  it('3.25 is the normal upper edge (NOT abnormal)', () => {
-    const r = calculatePectus({ piWidth: 325, piDepth: 100 });
-    expect(r.pi).toBe(3.25);
-    expect(r.piAbnormal).toBe(false);
+  it.each([
+    [240, 100, 'Normal (<2.5)', false],
+    [250, 100, 'Mild to moderate (2.5-3.25)', true],
+    [300, 100, 'Mild to moderate (2.5-3.25)', true],
+    [325, 100, 'Mild to moderate (2.5-3.25)', true],
+    [326, 100, 'Severe (>3.25)', true],
+  ])('%s/%s -> %s', (w, d, label, abnormal) => {
+    const r = calculatePectus({ piWidth: w, piDepth: d });
+    expect(r.piInterpretation).toBe(label);
+    expect(r.piAbnormal).toBe(abnormal);
   });
 
-  it('3.26 crosses into abnormal', () => {
-    // need ratio just above 3.25. 326/100 = 3.26
-    const r = calculatePectus({ piWidth: 326, piDepth: 100 });
-    expect(r.pi).toBe(3.26);
-    expect(r.piAbnormal).toBe(true);
-    expect(r.piInterpretation).toMatch(/Abnormal/);
+  it('no "surgical" wording and ASCII only', () => {
+    for (const w of [240, 300, 400]) {
+      const t = calculatePectus({ piWidth: w, piDepth: 100 }).piInterpretation;
+      expect(t).not.toMatch(/surgical/i);
+      expect(t).not.toMatch(/[^\x20-\x7E]/);
+    }
   });
 
   it('missing either width or depth → null', () => {
@@ -134,7 +140,7 @@ describe('calculatePectus — level aggregation', () => {
   });
 
   it('all normal indices → level 1', () => {
-    const r = calculatePectus({ piWidth: 250, piDepth: 100 });  // PI = 2.5 (normal)
+    const r = calculatePectus({ piWidth: 240, piDepth: 100 });  // PI = 2.4 (normal, <2.5)
     expect(r.level).toBe(1);
   });
 

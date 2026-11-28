@@ -1,5 +1,9 @@
 /**
- * AAST Kidney Injury Scale (2018 revision) — definition.
+ * AAST Kidney Injury Scale (2018 revision) - definition.
+ *
+ * Grades follow Kozar 2018: active bleeding contained within Gerota fascia is
+ * III; infarction due to vessel thrombosis without active bleeding is IV;
+ * main vessel laceration/hilar avulsion is V; laceration <=1 cm depth is II.
  *
  * Reference: Kozar RA et al. J Trauma Acute Care Surg 2018;85(6):1119-1122.
  */
@@ -16,6 +20,7 @@ export const aastKidneyDefinition = {
       label: 'Hematoma',
       findings: [
         { id: 'sub-nonexpanding', label: 'Subcapsular, nonexpanding', grade: 1 },
+        { id: 'contusion', label: 'Parenchymal contusion without laceration', grade: 1 },
         { id: 'perirenal-nonexpanding', label: 'Perirenal, nonexpanding', grade: 2 },
       ],
     },
@@ -23,7 +28,7 @@ export const aastKidneyDefinition = {
       id: 'laceration',
       label: 'Laceration',
       findings: [
-        { id: 'lac-lt1', label: '<1 cm depth, no urinary extravasation', grade: 2 },
+        { id: 'lac-lt1', label: '<=1 cm depth, no urinary extravasation', grade: 2 },
         { id: 'lac-gt1', label: '>1 cm depth, no collecting system rupture or urinary extravasation', grade: 3 },
       ],
     },
@@ -32,8 +37,8 @@ export const aastKidneyDefinition = {
       label: 'Vascular Injury',
       findings: [
         { id: 'contained', label: 'Contained vascular injury (pseudoaneurysm / AVF)', grade: 3 },
-        { id: 'active-sub', label: 'Active bleeding confined to Gerota fascia', grade: 4 },
-        { id: 'active-beyond', label: 'Active bleeding beyond Gerota fascia into retroperitoneum', grade: 4 },
+        { id: 'active-sub', label: 'Active bleeding confined to Gerota fascia', grade: 3 },
+        { id: 'active-beyond', label: 'Active bleeding beyond Gerota fascia into retroperitoneum or peritoneum', grade: 4 },
       ],
     },
     {
@@ -43,8 +48,9 @@ export const aastKidneyDefinition = {
         { id: 'urine-extrav', label: 'Laceration with urinary extravasation', grade: 4 },
         { id: 'lac-pelvis', label: 'Laceration extending into renal pelvis with urinary extravasation', grade: 4 },
         { id: 'devasc-segmental', label: 'Segmental renal artery or vein injury with devascularization', grade: 4 },
+        { id: 'thrombosis-infarct', label: 'Segmental or complete infarction due to vessel thrombosis, no active bleeding', grade: 4 },
         { id: 'shattered', label: 'Shattered kidney', grade: 5 },
-        { id: 'devasc-main', label: 'Main renal artery or vein laceration / avulsion / thrombosis', grade: 5 },
+        { id: 'devasc-main', label: 'Main renal artery or vein laceration or avulsion of hilum', grade: 5 },
         { id: 'devascularized', label: 'Devascularized kidney with active bleeding', grade: 5 },
       ],
     },
@@ -62,6 +68,7 @@ export const aastKidneyDefinition = {
       multi: true,
       options: {
         // ---- Hematoma ----
+        'contusion': ['Parenchymal contusion without laceration', 'renal contusion', 'parenchymal contusion'],
         'sub-nonexpanding': [
           'Subcapsular, nonexpanding',
           'subcapsular hematoma',
@@ -74,20 +81,16 @@ export const aastKidneyDefinition = {
           'perinephric hematoma',
           'perirenal blood',
           'perinephric blood',
-          'perirenal stranding',
-          'perinephric stranding',
-          'perirenal fluid',
-          'perinephric fluid',
         ],
 
         // ---- Laceration ----
         // Uses the pattern+test multi-rule shape so numeric sizes in dictation
         // (`2 cm laceration`, `5 mm laceration`, `laceration measuring 1.5 cm`)
-        // route to the correct grade automatically. 1 cm exactly defaults to
-        // lac-gt1 (Grade 3 = safer/more conservative clinical call).
+        // route to the correct grade automatically. Kozar 2018 defines Grade II
+        // as <=1 cm depth, so exactly 1 cm (10 mm) is lac-lt1.
         'lac-lt1': {
           keywords: [
-            '<1 cm depth, no urinary extravasation',
+            '<=1 cm depth, no urinary extravasation',
             'superficial laceration',
             'shallow laceration',
             'minor laceration',
@@ -100,22 +103,22 @@ export const aastKidneyDefinition = {
             // "0.8 cm laceration", "0.5-cm laceration", "0.3cm laceration"
             {
               re: /\b(\d+(?:\.\d+)?)\s*-?\s*cm\b(?:\s+deep)?\s+laceration/i,
-              test: (m) => parseFloat(m[1]) < 1,
+              test: (m) => parseFloat(m[1]) <= 1,
             },
             // "laceration measuring 0.5 cm", "laceration of 0.8 cm"
             {
               re: /laceration(?:,|\s+(?:measuring|of))?\s+(?:approximately\s+)?(\d+(?:\.\d+)?)\s*-?\s*cm\b/i,
-              test: (m) => parseFloat(m[1]) < 1,
+              test: (m) => parseFloat(m[1]) <= 1,
             },
             // "5 mm laceration" (<10 mm)
             {
               re: /\b(\d+(?:\.\d+)?)\s*-?\s*mm\b(?:\s+deep)?\s+laceration/i,
-              test: (m) => parseFloat(m[1]) < 10,
+              test: (m) => parseFloat(m[1]) <= 10,
             },
             // "laceration measuring 5 mm"
             {
               re: /laceration(?:,|\s+(?:measuring|of))?\s+(?:approximately\s+)?(\d+(?:\.\d+)?)\s*-?\s*mm\b/i,
-              test: (m) => parseFloat(m[1]) < 10,
+              test: (m) => parseFloat(m[1]) <= 10,
             },
           ],
         },
@@ -131,22 +134,22 @@ export const aastKidneyDefinition = {
             // "2 cm laceration", "1.5-cm laceration", "2cm laceration"
             {
               re: /\b(\d+(?:\.\d+)?)\s*-?\s*cm\b(?:\s+deep)?\s+laceration/i,
-              test: (m) => parseFloat(m[1]) >= 1,
+              test: (m) => parseFloat(m[1]) > 1,
             },
             // "laceration measuring 2 cm", "laceration of 3 cm"
             {
               re: /laceration(?:,|\s+(?:measuring|of))?\s+(?:approximately\s+)?(\d+(?:\.\d+)?)\s*-?\s*cm\b/i,
-              test: (m) => parseFloat(m[1]) >= 1,
+              test: (m) => parseFloat(m[1]) > 1,
             },
             // "15 mm laceration" (>=10 mm)
             {
               re: /\b(\d+(?:\.\d+)?)\s*-?\s*mm\b(?:\s+deep)?\s+laceration/i,
-              test: (m) => parseFloat(m[1]) >= 10,
+              test: (m) => parseFloat(m[1]) > 10,
             },
             // "laceration measuring 15 mm"
             {
               re: /laceration(?:,|\s+(?:measuring|of))?\s+(?:approximately\s+)?(\d+(?:\.\d+)?)\s*-?\s*mm\b/i,
-              test: (m) => parseFloat(m[1]) >= 10,
+              test: (m) => parseFloat(m[1]) > 10,
             },
           ],
         },
@@ -198,14 +201,22 @@ export const aastKidneyDefinition = {
           'shattered',
           'fragmented kidney',
         ],
+        'thrombosis-infarct': [
+          'Segmental or complete infarction due to vessel thrombosis, no active bleeding',
+          'main renal artery thrombosis',
+          'main renal vein thrombosis',
+          'renal artery thrombosis',
+          'renal artery occlusion',
+          'global infarction',
+          'global infarct',
+        ],
         'devasc-main': [
-          'Main renal artery or vein laceration / avulsion / thrombosis',
+          'Main renal artery or vein laceration or avulsion of hilum',
           'main renal artery laceration',
           'main renal artery avulsion',
-          'main renal artery thrombosis',
           'main renal vein laceration',
-          'main renal vein thrombosis',
-          'renal pedicle injury',
+          'hilar avulsion',
+          'renal pedicle avulsion',
         ],
         'devascularized': [
           'Devascularized kidney with active bleeding',

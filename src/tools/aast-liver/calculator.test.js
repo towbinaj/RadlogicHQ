@@ -177,7 +177,8 @@ describe('calculateAast advanceMultipleInjuries', () => {
 
   it('still advances by default (liver/spleen/2018 kidney)', () => {
     const r = calculateAast({ selectedFindings: new Set(['subCapsularLt10']), multipleInjuries: true }, mockDefinition);
-    expect(r.grade).toBe(3);
+    // Kozar 2018: "advance one grade for multiple injuries up to grade III"
+    expect(r.grade).toBe(2);
   });
 });
 
@@ -213,5 +214,38 @@ describe('calculateAast escalations', () => {
   it('never lowers a grade', () => {
     const def = { ...escDef, escalations: [{ allOf: ['lac'], grade: 1 }] };
     expect(calculateAast({ selectedFindings: new Set(['lac', 'mfk']) }, def).grade).toBe(4);
+  });
+});
+
+// --- Real 2018 liver definition vs Kozar 2018 table ---
+import { aastLiverDefinition } from './definition.js';
+
+describe('AAST liver 2018 — vascular injury grades (Kozar 2018)', () => {
+  const g = (ids, m = false) => calculateAast({ selectedFindings: new Set(ids), multipleInjuries: m }, aastLiverDefinition).grade;
+
+  it('pseudoaneurysm / AV fistula (liver vascular injury) is Grade III', () => {
+    expect(g(['pseudoaneurysm'])).toBe(3);
+  });
+
+  it('active bleeding contained within liver parenchyma is Grade III', () => {
+    expect(g(['extrav-contained'])).toBe(3);
+  });
+
+  it('active bleeding extending into the peritoneum is Grade IV', () => {
+    expect(g(['extrav-peritoneal'])).toBe(4);
+  });
+
+  it('juxtahepatic venous injury is Grade V', () => {
+    expect(g(['juxtahepatic'])).toBe(5);
+  });
+
+  it('multiple injuries advance one grade, up to III', () => {
+    expect(g(['sub-lt10', 'lac-lt1'], true)).toBe(2);
+    expect(g(['sub-10-50', 'lac-1-3'], true)).toBe(3);
+    expect(g(['lac-gt3'], true)).toBe(3);
+  });
+
+  it('report labels are ASCII', () => {
+    for (const c of aastLiverDefinition.categories) for (const f of c.findings) expect(f.label).not.toMatch(/[^\x20-\x7E]/);
   });
 });

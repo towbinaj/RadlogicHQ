@@ -246,6 +246,25 @@ function getSynonyms(label) {
  * @param {Object} def - Tool definition
  * @returns {Object} Auto-generated parseRules (same format as hand-written)
  */
+// Option labels that carry no meaning without their field ("1".."5",
+// "Present", "Absent", "Yes", ...). As bare keywords they match anywhere
+// ("12 mm lesion" -> score 1; "vascularity present" -> ascites present), so
+// they are qualified with the field label instead.
+const GENERIC_LABEL_RE = /^(?:\d+[a-z]?|present|absent|yes|no|none|positive|negative|normal|abnormal)$/i;
+
+function optionKeywords(opt, fieldLabel) {
+  const label = String(opt.label || '').trim();
+  if (fieldLabel && GENERIC_LABEL_RE.test(label)) {
+    const field = String(fieldLabel).toLowerCase();
+    const words = [label, ...getSynonyms(label)].map((w) => w.toLowerCase());
+    return words.flatMap((w) => [`${field} ${w}`, `${field}: ${w}`, `${w} ${field}`]);
+  }
+  const keywords = [opt.label];
+  if (opt.tooltip) keywords.push(opt.tooltip);
+  keywords.push(...getSynonyms(opt.label));
+  return keywords;
+}
+
 export function buildParseRules(def) {
   const rules = {};
 
@@ -350,10 +369,7 @@ export function buildParseRules(def) {
     if (val && typeof val === 'object' && !Array.isArray(val) && val.id && val.options && Array.isArray(val.options)) {
       const optMap = {};
       for (const opt of val.options) {
-        const keywords = [opt.label];
-        if (opt.tooltip) keywords.push(opt.tooltip);
-        keywords.push(...getSynonyms(opt.label));
-        optMap[opt.id] = keywords;
+        optMap[opt.id] = optionKeywords(opt, val.label);
       }
       rules[val.id] = { options: optMap };
     }
@@ -582,6 +598,23 @@ export function findNegationRanges(text) {
 
 const isNegatedAt = (ranges, index) => ranges.some(([s, e]) => index >= s && index < e);
 
+// Keywords of 3 characters or fewer ("rt", "lt", "us") must match as whole
+// words: as substrings they hit "portal", "result", "suspicion".
+const SHORT_KEYWORD_MAX = 3;
+const isWordChar = (ch) => !!ch && /[a-z0-9]/i.test(ch);
+
+/** All indexes of `needle` in `haystack`, honoring the short-keyword rule. */
+function keywordIndexes(haystack, needle) {
+  const out = [];
+  if (!needle) return out;
+  const short = needle.replace(/\s+/g, '').length <= SHORT_KEYWORD_MAX;
+  for (let i = haystack.indexOf(needle); i !== -1; i = haystack.indexOf(needle, i + 1)) {
+    if (short && (isWordChar(haystack[i - 1]) || isWordChar(haystack[i + needle.length]))) continue;
+    out.push(i);
+  }
+  return out;
+}
+
 // ============================================================
 // MAIN PARSER
 // ============================================================
@@ -646,7 +679,7 @@ export function parseFindings(text, definition) {
           const sorted = [...kws].sort((a, b) => b.length - a.length);
           for (const kw of sorted) {
             const needle = kw.toLowerCase();
-            for (let i = normalized.indexOf(needle); i !== -1; i = normalized.indexOf(needle, i + 1)) {
+            for (const i of keywordIndexes(normalized, needle)) {
               if (!isNegatedAt(negationRanges, i)) return kw;
             }
           }
@@ -694,9 +727,13 @@ export function parseFindings(text, definition) {
       let bestKeyword = '';
       let bestLength = 0;
 
+      // Longest keyword wins, counting only occurrences that are not under
+      // a negation ("not dislocated", "no retroperitoneal gas").
       for (const [optionId, keywords] of Object.entries(rule.options)) {
         for (const kw of keywords) {
-          if (normalized.includes(kw.toLowerCase()) && kw.length > bestLength) {
+          if (kw.length <= bestLength) continue;
+          const hit = keywordIndexes(normalized, kw.toLowerCase()).some((i) => !isNegatedAt(negationRanges, i));
+          if (hit) {
             bestMatch = optionId;
             bestKeyword = kw;
             bestLength = kw.length;
