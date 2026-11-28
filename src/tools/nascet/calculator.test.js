@@ -69,3 +69,54 @@ describe('NASCET impossible values and occlusion (audit 2026-11-28)', () => {
     expect(r.severity).toBe('Occlusion');
   });
 });
+
+import { calculateCarotid } from './calculator.js';
+
+describe('Carotid stenosis by modality: diameter (NASCET) vs duplex US (SRU 2003)', () => {
+  it('angiographic modality uses the NASCET diameter formula', () => {
+    const r = calculateCarotid({ modality: 'angio', stenosisDiam: 1.5, distalDiam: 5 });
+    expect(r.pct).toBe(70);
+    expect(r.methodLabel).toBe('NASCET');
+  });
+  it('no modality defaults to angiographic diameter method', () => {
+    expect(calculateCarotid({ stenosisDiam: 1.5, distalDiam: 5 }).pct).toBe(70);
+  });
+  it('duplex US: SRU categories from ICA PSV and plaque', () => {
+    const us = (o) => calculateCarotid({ modality: 'us', ...o });
+    expect(us({ psv: 100, plaque: 'none' }).category).toBe('normal');
+    expect(us({ psv: 100, plaque: 'lt50' }).category).toBe('lt50');
+    expect(us({ psv: 125, plaque: 'ge50' }).category).toBe('50to69');
+    expect(us({ psv: 230, plaque: 'ge50' }).category).toBe('50to69');
+    expect(us({ psv: 231, plaque: 'ge50' }).category).toBe('ge70');
+    expect(us({ flow: 'nearOcclusion' }).category).toBe('nearOcclusion');
+    expect(us({ flow: 'absent' }).category).toBe('occlusion');
+    expect(us({ psv: 300, plaque: 'ge50' }).methodLabel).toMatch(/SRU/);
+  });
+  it('duplex US: no category until PSV (or occlusion) is entered; diameters ignored', () => {
+    const r = calculateCarotid({ modality: 'us', stenosisDiam: 1.5, distalDiam: 5 });
+    expect(r.pctProvided).toBe(false);
+    expect(r.impressionText).toBe('');
+  });
+  it('duplex US: discordant additional parameters are noted', () => {
+    const r = calculateCarotid({ modality: 'us', psv: 150, plaque: 'ge50', ratio: 5, edv: 120 });
+    expect(r.category).toBe('50to69');
+    expect(r.note).toMatch(/ratio|EDV/i);
+  });
+  it('duplex US impression', () => {
+    expect(calculateCarotid({ modality: 'us', side: 'right', psv: 180, plaque: 'ge50' }).impressionText)
+      .toBe('Right ICA: 50-69% stenosis by SRU duplex US criteria (ICA PSV 180 cm/s).');
+  });
+});
+
+import { parseFindings } from '../../core/parser.js';
+import { nascetDefinition } from './definition.js';
+
+describe('Carotid parse: duplex US values and modality (2026-11-28)', () => {
+  it('reads PSV, EDV, ratio and duplex modality', () => {
+    const fs = parseFindings('Right carotid duplex: ICA PSV 260 cm/s, EDV 110 cm/s, ICA/CCA ratio 4.5.', nascetDefinition).formState;
+    expect(fs).toMatchObject({ modality: 'us', psv: 260, edv: 110, ratio: 4.5, side: 'right' });
+  });
+  it('reads CTA as the diameter method', () => {
+    expect(parseFindings('CTA neck. Left ICA stenosis 2 mm, distal 6 mm.', nascetDefinition).formState.modality).toBe('angio');
+  });
+});

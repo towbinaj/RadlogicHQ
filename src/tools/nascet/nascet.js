@@ -6,10 +6,10 @@ import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent } from '../../core/pill-editor.js';
 import { nascetDefinition } from './definition.js';
-import { calculateNascet } from './calculator.js';
+import { calculateCarotid } from './calculator.js';
 import { parseFindings } from '../../core/parser.js';
 import { nascetTemplates } from './templates.js';
-import { trackEvent } from '../../core/storage.js';
+import { trackEvent, getStored, setStored } from '../../core/storage.js';
 import '../../core/tool-name.js';
 
 function init() {
@@ -23,7 +23,13 @@ function init() {
   reportEl.definition = nascetDefinition;
   reportEl.setTemplates(nascetTemplates);
 
-  const formState = { stenosisDiam: null, distalDiam: null, side: null };
+  // modality: 'angio' (CTA / MRA / DSA, NASCET diameters) or 'us' (duplex,
+  // SRU velocity criteria). Asked first; the inputs differ.
+  const formState = {
+    modality: getStored('mode:nascet', 'angio'),
+    stenosisDiam: null, distalDiam: null, side: null,
+    psv: null, edv: null, ratio: null, plaque: null, flow: null,
+  };
   let studyAdditionalFindings = '';
 
   additionalFindingsEl.addEventListener('input', () => {
@@ -34,10 +40,17 @@ function init() {
   function buildUI() {
     stepContainer.innerHTML = '';
 
-    // Side selector
+    // Modality (first question) + side
     const sideCard = document.createElement('div');
     sideCard.className = 'card';
     sideCard.innerHTML = `
+      <div class="input-group" style="margin-bottom:var(--space-sm);">
+        <label title="NASCET diameter method applies to CTA, MRA and catheter angiography; duplex ultrasound uses SRU velocity criteria">Modality</label>
+        <div class="toggle-group">
+          <button class="toggle-group__btn ${formState.modality !== 'us' ? 'toggle-group__btn--active' : ''}" data-modality="angio">CTA / MRA / DSA</button>
+          <button class="toggle-group__btn ${formState.modality === 'us' ? 'toggle-group__btn--active' : ''}" data-modality="us">Duplex US</button>
+        </div>
+      </div>
       <div class="input-group">
         <label>Side</label>
         <div class="toggle-group">
@@ -48,15 +61,28 @@ function init() {
         </div>
       </div>
     `;
-    sideCard.querySelectorAll('.toggle-group__btn').forEach((btn) => {
+    sideCard.querySelectorAll('[data-modality]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        formState.modality = btn.dataset.modality;
+        setStored('mode:nascet', formState.modality);
+        buildUI();
+      });
+    });
+    sideCard.querySelectorAll('[data-value]').forEach((btn) => {
       btn.addEventListener('click', () => {
         formState.side = btn.dataset.value;
-        sideCard.querySelectorAll('.toggle-group__btn').forEach((b) =>
+        sideCard.querySelectorAll('[data-value]').forEach((b) =>
           b.classList.toggle('toggle-group__btn--active', b === btn));
         update();
       });
     });
     stepContainer.appendChild(sideCard);
+
+    if (formState.modality === 'us') {
+      buildUsCard();
+      update();
+      return;
+    }
 
     // Measurements
     const measCard = document.createElement('div');
@@ -91,6 +117,51 @@ function init() {
     update();
   }
 
+  // Duplex US inputs (SRU consensus): ICA PSV + plaque estimate are primary;
+  // ICA/CCA PSV ratio and EDV are additional.
+  function buildUsCard() {
+    const num = (id, label, val, ph, title) => `
+      <div class="input-group" style="flex:1; min-width:120px;">
+        <label for="${id}" title="${title}">${label}</label>
+        <input type="number" id="${id}" class="no-spinner" min="0" step="0.1" value="${val ?? ''}" placeholder="${ph}">
+      </div>`;
+    const choice = (key, opts) => opts.map(([id, label, title]) => `
+      <button class="toggle-group__btn ${formState[key] === id ? 'toggle-group__btn--active' : ''}" data-key="${key}" data-val="${id}" title="${title || ''}">${label}</button>`).join('');
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="step-card__question">Duplex Ultrasound (SRU criteria)</div>
+      <div class="input-group" style="margin-bottom:var(--space-sm);">
+        <label>Flow</label>
+        <div class="toggle-group">${choice('flow', [['patent', 'Patent'], ['nearOcclusion', 'Near occlusion', 'String sign / markedly narrowed lumen; velocities may be high, low or undetectable'], ['absent', 'No flow', 'No detectable patent lumen']])}</div>
+      </div>
+      <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
+        ${num('psv', 'ICA PSV (cm/s)', formState.psv, 'e.g., 180', 'Primary: peak systolic velocity at the stenosis')}
+        ${num('edv', 'ICA EDV (cm/s)', formState.edv, 'optional', 'Additional parameter')}
+        ${num('ratio', 'ICA/CCA PSV ratio', formState.ratio, 'optional', 'Additional parameter')}
+      </div>
+      <div class="input-group" style="margin-top:var(--space-sm);">
+        <label title="Primary: gray-scale / color estimate of diameter reduction">Plaque estimate</label>
+        <div class="toggle-group">${choice('plaque', [['none', 'None visible'], ['lt50', '<50%'], ['ge50', '>=50%']])}</div>
+      </div>
+    `;
+    for (const id of ['psv', 'edv', 'ratio']) {
+      card.querySelector('#' + id).addEventListener('input', (e) => {
+        formState[id] = e.target.value !== '' ? parseFloat(e.target.value) : null;
+        update();
+      });
+    }
+    card.querySelectorAll('[data-key]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const k = btn.dataset.key;
+        formState[k] = formState[k] === btn.dataset.val ? null : btn.dataset.val;
+        card.querySelectorAll(`[data-key="${k}"]`).forEach((b) => b.classList.toggle('toggle-group__btn--active', formState[k] === b.dataset.val));
+        update();
+      });
+    });
+    stepContainer.appendChild(card);
+  }
+
   function refreshResult() {
     const el = document.getElementById('nascet-result');
     if (!el) return;
@@ -104,14 +175,14 @@ function init() {
   }
 
   function update() {
-    const result = calculateNascet(formState);
-    badgePct.textContent = result.pctLabel;
+    const result = calculateCarotid(formState);
+    badgePct.textContent = result.badgeLabel || result.pctLabel;
     badgePct.dataset.level = result.level;
     updateReport();
   }
 
   function updateReport() {
-    const data = calculateNascet(formState);
+    const data = calculateCarotid(formState);
     reportEl.renderFn = (config, _data) => {
       if (config.editorContent) {
         let text = renderEditorContent(config.editorContent, config.pillStates, data);
