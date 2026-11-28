@@ -6,7 +6,7 @@ import '../../components/auth-ui.js';
 import { renderReport, renderBlocks } from '../../core/report.js';
 import { renderEditorContent, splitEditorContent } from '../../core/pill-editor.js';
 import { lungradsDefinition } from './definition.js';
-import { calculateLungrads } from './calculator.js';
+import { calculateLungrads, lungradsExamCategory } from './calculator.js';
 import { lungradsTemplates } from './templates.js';
 import { parseSegmentedFindings } from '../../core/parser.js';
 import { getSizeUnit, setStored , trackEvent } from '../../core/storage.js';
@@ -231,6 +231,12 @@ function init() {
       const size = d.sizeProvided ? `${d.sizeMm} mm ` : '';
       return `${d.noduleLabel}: ${loc}${size}${d.noduleTypeLabel} nodule. ${d.categoryFullLabel}. ${d.management}`;
     });
+    // With more than one categorized nodule, lead with the exam category
+    // (the most suspicious nodule), which drives management.
+    if (summaryLines.length > 1) {
+      const exam = lungradsExamCategory(allData.map((d) => d.category));
+      if (exam) summaryLines.unshift(`Lung-RADS exam category: ${exam} (most suspicious nodule).`);
+    }
 
     reportEl.renderFn = (config, _data) => {
       if (config.editorContent) {

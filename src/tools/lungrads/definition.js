@@ -63,7 +63,7 @@ export const lungradsDefinition = {
       { id: 'new', label: 'New Nodule', tooltip: 'Not present on prior CT' },
       { id: 'stable', label: 'Stable', tooltip: 'Unchanged from prior' },
       { id: 'growing', label: 'Growing', tooltip: 'Increased in size compared to prior' },
-      { id: 'slowGrowing', label: 'Slowly Growing', tooltip: 'GGN/part-solid growing slowly over multiple CTs' },
+      { id: 'slowGrowing', label: 'Slowly Growing', tooltip: 'Growing slowly over multiple screening CTs (GGN >=30 mm: category 2; solid or part-solid: 4B)' },
     ],
   },
 

@@ -102,6 +102,15 @@ export function calculateLungrads(formState) {
     category = sizeMm < 30 ? '2' : '3';
   }
 
+  // v2022: GGN >=30 mm that is stable or slowly growing is category 2; a
+  // slowly growing solid or part-solid nodule (growth over multiple
+  // screening exams) is category 4B.
+  if (noduleType === 'groundGlass' && (priorComparison === 'stable' || priorComparison === 'slowGrowing')) {
+    category = '2';
+  } else if ((noduleType === 'solid' || noduleType === 'partSolid') && priorComparison === 'slowGrowing') {
+    category = '4B';
+  }
+
   // Suspicious features → append X
   if (suspicious === 'present' && (category === '3' || category === '4A' || category === '4B')) {
     category = '4X';
@@ -157,4 +166,16 @@ function buildResult(category, formState, reason) {
     locationProvided: !!formState.location,
     location: formState.location || '',
   };
+}
+
+const EXAM_ORDER = ['0', '1', '2', '3', '4A', '4B', '4X'];
+
+/** Exam-level Lung-RADS category: the most suspicious nodule's category. */
+export function lungradsExamCategory(categories) {
+  let best = null;
+  for (const c of categories) {
+    const i = EXAM_ORDER.indexOf(c);
+    if (i !== -1 && (best == null || i > EXAM_ORDER.indexOf(best))) best = c;
+  }
+  return best;
 }

@@ -215,3 +215,27 @@ describe('calculateLungrads — v2022 new and growing nodules', () => {
     expect(r.category).toBe('--');
   });
 });
+
+describe('Lung-RADS v2022 stable and slowly growing (audit 2026-11-28)', () => {
+  it('GGN >=30 mm stable or slowly growing -> 2; baseline/new -> 3', () => {
+    expect(calculateLungrads({ noduleType: 'groundGlass', size: 32, priorComparison: 'stable' }).category).toBe('2');
+    expect(calculateLungrads({ noduleType: 'groundGlass', size: 32, priorComparison: 'slowGrowing' }).category).toBe('2');
+    expect(calculateLungrads({ noduleType: 'groundGlass', size: 32, priorComparison: 'none' }).category).toBe('3');
+    expect(calculateLungrads({ noduleType: 'groundGlass', size: 32, priorComparison: 'new' }).category).toBe('3');
+  });
+  it('slowly growing solid or part-solid nodule -> 4B', () => {
+    expect(calculateLungrads({ noduleType: 'solid', size: 7, priorComparison: 'slowGrowing' }).category).toBe('4B');
+    expect(calculateLungrads({ noduleType: 'partSolid', size: 10, solidSize: 3, priorComparison: 'slowGrowing' }).category).toBe('4B');
+  });
+});
+
+import { lungradsExamCategory } from './calculator.js';
+
+describe('Lung-RADS exam category = most suspicious nodule (audit 2026-11-28)', () => {
+  it('picks the highest category', () => {
+    expect(lungradsExamCategory(['2', '4A', '3'])).toBe('4A');
+    expect(lungradsExamCategory(['4B', '4X'])).toBe('4X');
+    expect(lungradsExamCategory(['--', '2'])).toBe('2');
+    expect(lungradsExamCategory([])).toBe(null);
+  });
+});
