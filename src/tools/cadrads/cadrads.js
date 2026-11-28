@@ -68,9 +68,15 @@ function init() {
     modCard.querySelectorAll('.benign-choice').forEach((btn) => {
       btn.addEventListener('click', () => {
         const mid = btn.dataset.mod;
+        const group = def.modifierOptions.find((o) => o.id === mid)?.group;
         const idx = formState.modifiers.indexOf(mid);
-        if (idx >= 0) { formState.modifiers.splice(idx, 1); btn.classList.remove('benign-choice--active'); }
-        else { formState.modifiers.push(mid); btn.classList.add('benign-choice--active'); }
+        if (idx >= 0) formState.modifiers.splice(idx, 1);
+        else {
+          // I+, I- and I+/- are mutually exclusive.
+          if (group) formState.modifiers = formState.modifiers.filter((m) => def.modifierOptions.find((o) => o.id === m)?.group !== group);
+          formState.modifiers.push(mid);
+        }
+        modCard.querySelectorAll('.benign-choice').forEach((b) => b.classList.toggle('benign-choice--active', formState.modifiers.includes(b.dataset.mod)));
         update();
       });
     });

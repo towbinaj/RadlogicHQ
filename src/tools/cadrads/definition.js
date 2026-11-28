@@ -1,7 +1,10 @@
 /**
  * CAD-RADS 2.0 — definition.
  *
- * Reference: Cury RC et al. Radiology 2022;305(2):E72.
+ * Reference: Cury RC et al. Radiology 2022;305(2):E72 (also Radiol Cardiothorac
+ *   Imaging 2022;4(5):e220183). Modifier set and label order (category/P/HRP/
+ *   I/S/G/E) implemented from the 2.0 framework; full text not accessible
+ *   here, so the order was not re-checked against the paper (2026-11-28).
  */
 
 export const cadradsDefinition = {
@@ -14,15 +17,22 @@ export const cadradsDefinition = {
     { id: '2', label: '2 — Mild stenosis', stenosis: '25–49%', management: 'Preventive therapy' },
     { id: '3', label: '3 — Moderate stenosis', stenosis: '50–69%', management: 'Consider functional assessment or ICA' },
     { id: '4A', label: '4A — Severe stenosis', stenosis: '70–99% (1–2 vessel)', management: 'ICA or functional assessment' },
-    { id: '4B', label: '4B — Severe stenosis or left main', stenosis: '70–99% (3-vessel) or LM >50%', management: 'ICA recommended' },
+    { id: '4B', label: '4B — Severe stenosis or left main', stenosis: '70-99% (3-vessel) or LM >=50%', management: 'ICA recommended' },
     { id: '5', label: '5 — Total occlusion', stenosis: '100%', management: 'ICA and/or viability assessment' },
     { id: 'N', label: 'N — Non-diagnostic', stenosis: 'N/A', management: 'Additional or alternative evaluation' },
   ],
 
+  // CAD-RADS 2.0 modifiers, in label order after plaque burden. HRP replaces
+  // the 1.0 'V' modifier; I+ / I- / I+/- (ischemia by CT-FFR or CTP, when
+  // performed) are mutually exclusive.
   modifierOptions: [
-    { id: 'S', label: 'S — Stent' },
-    { id: 'G', label: 'G — Graft' },
-    { id: 'V', label: 'V — Vulnerable / High-Risk Plaque' },
+    { id: 'HRP', label: 'HRP - High-risk plaque' },
+    { id: 'I+', label: 'I+ - Ischemia present', group: 'I' },
+    { id: 'I-', label: 'I- - No ischemia', group: 'I' },
+    { id: 'I+/-', label: 'I+/- - Borderline ischemia', group: 'I' },
+    { id: 'S', label: 'S - Stent' },
+    { id: 'G', label: 'G - Graft' },
+    { id: 'E', label: 'E - Exception (non-atherosclerotic cause)' },
   ],
 
   plaqueBurdenOptions: [
@@ -45,12 +55,12 @@ export const cadradsDefinition = {
         'N': ['non-diagnostic', 'non diagnostic', 'cad-rads n'],
       },
     },
-    modifier: {
+    modifiers: {
       multi: true,
       options: {
         'S': ['stent', 'stented'],
         'G': ['graft', 'bypass graft', 'cabg'],
-        'V': ['vulnerable plaque', 'high-risk plaque', 'positive remodeling', 'low attenuation plaque', 'napkin-ring'],
+        'HRP': ['high-risk plaque', 'high risk plaque', 'vulnerable plaque', 'positive remodeling', 'low attenuation plaque', 'napkin-ring'],
       },
     },
     plaqueBurden: {

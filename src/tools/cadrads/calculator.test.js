@@ -57,15 +57,16 @@ describe('calculateCadrads — category metadata', () => {
 
 describe('calculateCadrads — modifiers', () => {
   it('single modifier appears in fullLabel and modifiersText', () => {
-    const r = calculateCadrads({ category: '3', modifiers: ['V'] });
-    expect(r.fullLabel).toBe('CAD-RADS 3/V');
-    expect(r.modifiersText).toContain('V');
+    const r = calculateCadrads({ category: '3', modifiers: ['HRP'] });
+    expect(r.fullLabel).toBe('CAD-RADS 3/HRP');
+    expect(r.modifiersText).toContain('HRP');
     expect(r.modifiersProvided).toBe(true);
   });
 
   it('multiple modifiers join with /', () => {
-    const r = calculateCadrads({ category: '4A', modifiers: ['S', 'V'] });
-    expect(r.fullLabel).toBe('CAD-RADS 4A/S/V');
+    // 2.0 order: plaque burden, HRP, I, S, G, E regardless of click order.
+    const r = calculateCadrads({ category: '4A', modifiers: ['S', 'HRP'] });
+    expect(r.fullLabel).toBe('CAD-RADS 4A/HRP/S');
   });
 
   it('empty modifiers array → no /', () => {
@@ -87,7 +88,7 @@ describe('calculateCadrads — modifiers', () => {
 describe('calculateCadrads — plaque burden', () => {
   it('plaque burden appended in parens to fullLabel', () => {
     const r = calculateCadrads({ category: '2', plaqueBurden: 'P2' });
-    expect(r.fullLabel).toBe('CAD-RADS 2 (P2)');
+    expect(r.fullLabel).toBe('CAD-RADS 2/P2');
     expect(r.plaqueBurdenLabel).toContain('Moderate');
     expect(r.plaqueBurdenProvided).toBe(true);
   });
@@ -95,15 +96,33 @@ describe('calculateCadrads — plaque burden', () => {
   it('modifiers + plaque burden combine correctly', () => {
     const r = calculateCadrads({
       category: '4A',
-      modifiers: ['V'],
+      modifiers: ['HRP'],
       plaqueBurden: 'P4',
     });
-    expect(r.fullLabel).toBe('CAD-RADS 4A/V (P4)');
+    expect(r.fullLabel).toBe('CAD-RADS 4A/P4/HRP');
   });
 
   it('unknown plaque burden id omitted', () => {
     const r = calculateCadrads({ category: '1', plaqueBurden: 'P9' });
     expect(r.plaqueBurdenProvided).toBe(false);
     expect(r.fullLabel).toBe('CAD-RADS 1');
+  });
+});
+
+describe('CAD-RADS 2.0 modifiers and plaque burden (audit 2026-11-28)', () => {
+  it('label order: category/P/HRP/I/S/G/E', () => {
+    const r = calculateCadrads({ category: '3', plaqueBurden: 'P2', modifiers: ['E', 'S', 'I+', 'HRP', 'G'] });
+    expect(r.fullLabel).toBe('CAD-RADS 3/P2/HRP/I+/S/G/E');
+  });
+  it('only one ischemia modifier is kept (last chosen)', () => {
+    expect(calculateCadrads({ category: '3', modifiers: ['I+', 'I-'] }).fullLabel).toBe('CAD-RADS 3/I-');
+  });
+  it('legacy V reads as HRP', () => {
+    expect(calculateCadrads({ category: '2', modifiers: ['V'] }).fullLabel).toBe('CAD-RADS 2/HRP');
+  });
+  it('plaque burden and HRP are not applied to CAD-RADS 0', () => {
+    const r = calculateCadrads({ category: '0', plaqueBurden: 'P3', modifiers: ['HRP'] });
+    expect(r.fullLabel).toBe('CAD-RADS 0');
+    expect(r.plaqueBurdenProvided).toBe(false);
   });
 });
