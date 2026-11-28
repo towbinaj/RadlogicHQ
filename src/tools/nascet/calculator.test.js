@@ -54,3 +54,18 @@ describe('calculateNascet', () => {
     expect(result.sideProvided).toBe(false);
   });
 });
+
+describe('NASCET impossible values and occlusion (audit 2026-11-28)', () => {
+  it('stenosis diameter larger than distal ICA is flagged, not reported as a percentage', () => {
+    const r = calculateNascet({ stenosisDiam: 6, distalDiam: 5 });
+    expect(r.pctProvided).toBe(false);
+    expect(r.note).toMatch(/check measurements/i);
+  });
+  it('negative diameter is rejected', () => {
+    expect(calculateNascet({ stenosisDiam: -1, distalDiam: 5 }).pctProvided).toBe(false);
+  });
+  it('zero residual lumen is reported as occlusion', () => {
+    const r = calculateNascet({ stenosisDiam: 0, distalDiam: 5 });
+    expect(r.severity).toBe('Occlusion');
+  });
+});

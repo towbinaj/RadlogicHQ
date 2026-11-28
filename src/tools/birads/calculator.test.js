@@ -190,3 +190,16 @@ describe('BI-RADS v2025 — 4A/4B/4C display uppercase', () => {
     expect(calculateBirads({ category: id }).category).toBe(shown);
   });
 });
+
+describe('BI-RADS screening indication check (audit 2026-11-28)', () => {
+  it('screening with category 3-6 carries a note', () => {
+    for (const c of ['3', '4a', '4b', '4c', '5', '6']) {
+      expect(calculateBirads({ indication: 'screening', category: c }).indicationNote).toMatch(/0, 1, or 2/);
+    }
+  });
+  it('no note for screening 0/1/2 or diagnostic 4', () => {
+    expect(calculateBirads({ indication: 'screening', category: '0' }).indicationNote).toBe('');
+    expect(calculateBirads({ indication: 'screening', category: '2' }).indicationNote).toBe('');
+    expect(calculateBirads({ indication: 'diagnostic', category: '4a' }).indicationNote).toBe('');
+  });
+});

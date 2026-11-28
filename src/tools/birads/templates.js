@@ -9,6 +9,7 @@ const FINDINGS_BLOCKS = [
   { id: 'category', label: 'BI-RADS Category', template: 'BI-RADS: {{categoryLabel}}', enabled: true, condition: 'categoryProvided' },
   { id: 'risk', label: 'Malignancy Risk', template: 'Malignancy risk: {{risk}}', enabled: true, condition: 'riskProvided' },
   { id: 'management', label: 'Management', template: 'Recommendation: {{management}}', enabled: true, condition: 'managementProvided' },
+  { id: 'indicationNote', label: 'Indication check', template: 'Note: {{indicationNote}}', enabled: true, condition: 'indicationNoteProvided' },
 ];
 
 function buildTemplateSet(blocks, headers, impression) {

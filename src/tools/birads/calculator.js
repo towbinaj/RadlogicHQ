@@ -13,7 +13,16 @@ export function calculateBirads(formState) {
   const modalityLabel = labelOf(biradsDefinition.modalityOptions, modality);
   const indicationLabel = labelOf(biradsDefinition.indicationOptions, indication);
 
+  // A screening examination is assessed as BI-RADS 0, 1 or 2; categories
+  // 3-6 belong to a diagnostic (or known-cancer) examination.
+  const screeningMismatch = indication === 'screening' && !!catInfo && !['0', '0p', '1', '2'].includes(category);
+  const indicationNote = screeningMismatch
+    ? `Screening examinations are assessed as BI-RADS 0, 1, or 2; category ${catInfo.display || catInfo.id.toUpperCase()} needs a diagnostic indication.`
+    : '';
+
   return {
+    indicationNote,
+    indicationNoteProvided: !!indicationNote,
     // Both category 0 scenarios ('0', '0p') display and code as 0.
     category: catInfo ? (catInfo.display || catInfo.id) : '--',
     categoryId: catInfo ? catInfo.id : null,

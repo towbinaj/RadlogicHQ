@@ -5,6 +5,7 @@
 const FINDINGS_BLOCKS = [
   { id: 'stenosis', label: 'NASCET Stenosis', template: '{{sideLabel}} ICA stenosis (NASCET): {{pctLabel}}', enabled: true, condition: 'pctProvided' },
   { id: 'severity', label: 'Severity', template: 'Severity: {{severity}}', enabled: true, condition: 'severityProvided' },
+  { id: 'note', label: 'Measurement check', template: 'Note: {{note}}', enabled: true, condition: 'noteProvided' },
 ];
 
 function buildTemplateSet(blocks, headers, impression) {
@@ -18,7 +19,7 @@ function buildTemplateSet(blocks, headers, impression) {
 
 const STANDARD_HEADERS = { findings: 'FINDINGS:', additionalFindings: 'Other findings:', impression: 'IMPRESSION:' };
 const RADAI_HEADERS = { findings: '[STRUCTURED REPORT]', additionalFindings: '[OTHER FINDINGS]', impression: '[IMPRESSION]' };
-const IMPRESSION = '{{sideLabel}} ICA: {{pctLabel}} stenosis by NASCET criteria ({{severity}}).';
+const IMPRESSION = '{{impressionText}}';
 
 export const nascetTemplates = {
   ps360: { label: 'PowerScribe 360', ...buildTemplateSet(FINDINGS_BLOCKS, STANDARD_HEADERS, IMPRESSION) },

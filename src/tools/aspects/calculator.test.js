@@ -25,14 +25,14 @@ describe('calculateAspects — score arithmetic', () => {
     const r = calculateAspects(setOf('M1', 'M2'), 'left');
     expect(r.score).toBe(8);
     expect(r.level).toBe(2);
-    expect(r.interpretation).toBe('Small territory involvement');
+    expect(r.interpretation).toBe('Limited early ischemic change');
   });
 
   it('3 affected → score 7 (moderate territory)', () => {
     const r = calculateAspects(setOf('M1', 'M2', 'M3'), 'left');
     expect(r.score).toBe(7);
     expect(r.level).toBe(3);
-    expect(r.interpretation).toBe('Moderate territory involvement');
+    expect(r.interpretation).toBe('Moderate early ischemic change (ASPECTS 7 or less)');
   });
 
   it('4 affected → score 6 (moderate lower edge)', () => {
@@ -45,7 +45,7 @@ describe('calculateAspects — score arithmetic', () => {
     const r = calculateAspects(setOf('M1', 'M2', 'M3', 'M4', 'M5'), 'left');
     expect(r.score).toBe(5);
     expect(r.level).toBe(5);
-    expect(r.interpretation).toBe('Large territory infarct');
+    expect(r.interpretation).toBe('Extensive early ischemic change (large core, ASPECTS 5 or less)');
   });
 
   it('10 affected → score 0 (maximum damage)', () => {

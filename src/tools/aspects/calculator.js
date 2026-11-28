@@ -2,8 +2,9 @@
  * ASPECTS calculator.
  *
  * Score = 10 - (number of affected regions).
- * ≤7 = large territory infarct, poor prognosis.
- * ≥6 generally considered threshold for thrombectomy candidacy.
+ * Barber 2000: ASPECTS <=7 predicted dependence/death and symptomatic
+ * hemorrhage. 0-5 is the 'large core' range of recent thrombectomy trials.
+ * Bands: 8-10 limited, 6-7 moderate (<=7), 0-5 extensive (large core).
  *
  * Blank by default: with no region marked, a score of 10 is reported only
  * when the reader confirms "no early ischemic changes" (normalConfirmed).
@@ -39,13 +40,13 @@ export function calculateAspects(affected, side, normalConfirmed = false) {
     interpretation = 'No early ischemic changes';
     level = 1;
   } else if (score >= 8) {
-    interpretation = 'Small territory involvement';
+    interpretation = 'Limited early ischemic change';
     level = 2;
   } else if (score >= 6) {
-    interpretation = 'Moderate territory involvement';
+    interpretation = 'Moderate early ischemic change (ASPECTS 7 or less)';
     level = 3;
   } else {
-    interpretation = 'Large territory infarct';
+    interpretation = 'Extensive early ischemic change (large core, ASPECTS 5 or less)';
     level = 5;
   }
 

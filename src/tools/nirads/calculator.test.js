@@ -93,3 +93,14 @@ describe('calculateNirads — combined level (max)', () => {
     expect(r.level).toBe(2);
   });
 });
+
+describe('NI-RADS impression includes management (audit 2026-11-28)', () => {
+  it('lists each assessed site with its management', () => {
+    expect(calculateNirads({ primaryCategory: '2b', neckCategory: '1' }).impressionText)
+      .toBe('NI-RADS Primary 2b (low suspicion, deep): short-interval follow-up (3 months) or PET. NI-RADS Neck 1 (no suspicious nodes): routine surveillance.');
+  });
+  it('omits an unassessed site; empty when nothing assessed', () => {
+    expect(calculateNirads({ neckCategory: '3' }).impressionText).toBe('NI-RADS Neck 3 (high suspicion): biopsy recommended.');
+    expect(calculateNirads({}).impressionText).toBe('');
+  });
+});
